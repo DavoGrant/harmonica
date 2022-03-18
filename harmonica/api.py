@@ -35,32 +35,31 @@ class HarmonicLimbMap(object):
         The limb darkening law. `integers` corresponds to ``I/I_0 =
         1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
         corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
-        where N is the length of u. Default is 'integers'. For example
-        a quadratic law; u=[0.1, 0.2], limb_dark_law=`integers`, or a
-        4-param non-linear law u=[0.1, 0.2, 0.1, 0.2], limb_dark_law=
-        `half-integers`.
-    r :  (N,) array_like
+        where N is the length of u. Default is 'integers'.
+    r :  (M,) array_like
          Harmonic limb map coefficients. 1D array of Fourier
          coefficients that specify the planet radius as a function
-         of angle in the sky-plane. If only r=[r0] is given then
-         r0 is the radius of a circular planet.
+         of angle in the sky-plane.
 
     Methods
     -------
-    method_name
-    method_name
-    method_name
-    method_name
+    set_orbit()
+    set_stellar_limb_darkening()
+    set_planet_harmonic_limb_map()
+    get_transit_light_curve()
+    get_planet_harmonic_limb_map()
+    get_precision_estimate()
 
     Notes
     -----
-    Some notes about where the method is.
-
-    Perhaps a further not about the use of the require_gradients arg.
-
-    Examples
-    --------
-
+    Some notes about where the method is described.
+    Perhaps a further note about the limb darkening for common uses.
+    For example a quadratic law; u=[0.1, 0.2], limb_dark_law=`integers`,
+    or a 4-param non-linear law u=[0.1, 0.2, 0.1, 0.2], limb_dark_law=`
+    half-integers`.
+    Perhaps a further note about the r coeffs intuition. If only r=[r0]
+    is given then r0 is the radius of a circular planet.
+    Perhaps a further note about the use of the require_gradients arg.
 
     """
 
@@ -90,9 +89,26 @@ class HarmonicLimbMap(object):
         return '<Harmonic limb mapper: require_gradients={}>'.format(
             self._require_gradients)
 
-    def method(self):
-        a = bindings.orbit(1, 2)
-        print(a)
-        a = bindings.light_curve(2, 3)
-        print(a)
+    def set_orbit(self):
+        """ Set/update orbital parameters. """
+        return
+
+    def set_stellar_limb_darkening(self):
+        """ Set/update stellar limb darkening parameters. """
+        return
+
+    def set_planet_harmonic_limb_map(self):
+        """ Set/update planet harmonic limb map parameters. """
+        return
+
+    def get_transit_light_curve(self):
+        """ Get transit light curve. """
+        return
+
+    def get_planet_harmonic_limb_map(self):
+        """ Get harmonic limb map. """
+        return
+
+    def get_precision_estimate(self):
+        """ Get light curve precision estimates. """
         return
