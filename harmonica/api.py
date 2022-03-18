@@ -19,7 +19,8 @@ class HarmonicLimbMap(object):
     a : float
         Semi-major axis [stellar radii].
     inc : float
-        Orbital inclination [radians].
+        Orbital inclination [radians]. Only one of inc and b is
+        required.
     b : float
         Impact parameter []. Only one of inc and b is required.
     ecc : float
@@ -27,8 +28,8 @@ class HarmonicLimbMap(object):
     omega : float
         Argument of periastron [radians]. If ecc is not None or 0.
         then omega must also be given.
-    u :  (N,) array_like
-        Limb-darkening coefficients. 1D array of coefficients that
+    u : (N,) array_like
+        Limb-darkening coefficients. 1d array of coefficients that
         correspond to the limb darkening law specified by the
         limb_dark_law.
     limb_dark_law : string; `integers` or `half-integers`
@@ -36,10 +37,16 @@ class HarmonicLimbMap(object):
         1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
         corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
         where N is the length of u. Default is 'integers'.
-    r :  (M,) array_like
-         Harmonic limb map coefficients. 1D array of Fourier
-         coefficients that specify the planet radius as a function
-         of angle in the sky-plane.
+    r :  (N,) or (N, M) array_like
+        Harmonic limb map coefficients. 1D array of N Fourier
+        coefficients that specify the planet radius as a function
+        of angle in the sky-plane. Coefficients correspond to
+        ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
+        + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
+        input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
+        planet shapes, use a 2d array with N Fourier coefficients
+        and M time steps, where M is equal to the number of model
+        evaluation epochs.
 
     Methods
     -------
@@ -53,12 +60,15 @@ class HarmonicLimbMap(object):
     Notes
     -----
     Some notes about where the method is described.
+
     Perhaps a further note about the limb darkening for common uses.
     For example a quadratic law; u=[0.1, 0.2], limb_dark_law=`integers`,
     or a 4-param non-linear law u=[0.1, 0.2, 0.1, 0.2], limb_dark_law=`
     half-integers`.
+
     Perhaps a further note about the r coeffs intuition. If only r=[r0]
     is given then r0 is the radius of a circular planet.
+
     Perhaps a further note about the use of the require_gradients arg.
 
     """
@@ -67,20 +77,23 @@ class HarmonicLimbMap(object):
                  ecc=None, omega=None, u=None, limb_dark_law='integers',
                  r=None, require_gradients=False, verbose=False):
         # Orbital parameters.
-        self.t0 = t0
-        self.period = period
-        self.a = a
-        self.inc = inc
-        self.b = b
-        self.ecc = ecc
-        self.omega = omega
+        self._t0 = t0
+        self._period = period
+        self._a = a
+        self._inc = inc
+        self._b = b
+        self._ecc = ecc
+        self._omega = omega
+        self._orbit_updated = True
 
         # Stellar parameters.
-        self.u = u
-        self.limb_dark_mode = limb_dark_law
+        self._u = u
+        self._limb_dark_mode = limb_dark_law
+        self._limb_dark_updated = True
 
         # Planet parameters.
-        self.r = r
+        self._r = r
+        self._limb_map_updated = True
 
         self._require_gradients = require_gradients
         self._verbose = verbose
@@ -89,26 +102,140 @@ class HarmonicLimbMap(object):
         return '<Harmonic limb mapper: require_gradients={}>'.format(
             self._require_gradients)
 
-    def set_orbit(self):
-        """ Set/update orbital parameters. """
-        return
+    def set_orbit(self, t0=None, period=None, a=None, inc=None,
+                  b=None, ecc=None, omega=None):
+        """
+        Set/update orbital parameters.
 
-    def set_stellar_limb_darkening(self):
-        """ Set/update stellar limb darkening parameters. """
-        return
+        Parameters
+        ----------
+        t0 : float
+            Time of transit [days].
+        period : float
+            Orbital period [days].
+        a : float
+            Semi-major axis [stellar radii].
+        inc : float
+            Orbital inclination [radians]. Only one of inc and b is
+            required.
+        b : float
+            Impact parameter []. Only one of inc and b is required.
+        ecc : float
+            Eccentricity [], 0 <= ecc < 1.
+        omega : float
+            Argument of periastron [radians]. If ecc is not None or 0.
+            then omega must also be given.
 
-    def set_planet_harmonic_limb_map(self):
-        """ Set/update planet harmonic limb map parameters. """
-        return
+        """
+        self._t0 = t0
+        self._period = period
+        self._a = a
+        self._inc = inc
+        self._b = b
+        self._ecc = ecc
+        self._omega = omega
+        self._orbit_updated = True
+
+    def set_stellar_limb_darkening(self, u=None, limb_dark_law='integers'):
+        """
+        Set/update stellar limb darkening parameters.
+
+        Parameters
+        ----------
+        u :  (N,) array_like
+            Limb-darkening coefficients. 1D array of coefficients that
+            correspond to the limb darkening law specified by the
+            limb_dark_law.
+        limb_dark_law : string; `integers` or `half-integers`
+            The limb darkening law. `integers` corresponds to ``I/I_0 =
+            1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
+            corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
+            where N is the length of u. Default is 'integers'.
+
+        """
+        self._u = u
+        self._limb_dark_mode = limb_dark_law
+        self._limb_dark_updated = True
+
+    def set_planet_harmonic_limb_map(self, r=None):
+        """
+        Set/update planet harmonic limb map parameters.
+
+        Parameters
+        ----------
+        r :  (N,) or (N, M) array_like
+            Harmonic limb map coefficients. 1D array of N Fourier
+            coefficients that specify the planet radius as a function
+            of angle in the sky-plane. Coefficients correspond to
+            ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
+            + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
+            input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
+            planet shapes, use a 2d array with N Fourier coefficients
+            and M time steps, where M is equal to the number of model
+            evaluation epochs.
+
+        """
+        self._r = r
+        self._limb_map_updated = True
 
     def get_transit_light_curve(self):
-        """ Get transit light curve. """
+        """
+        Get transit light curve.
+
+        Parameters
+        ----------
+        name : type
+            Description of parameter.
+
+        Returns
+        -------
+        name : type
+            Description of return object.
+
+        """
+        # Get orbit.
+
+        # Get light curve.
+
+        # Reset update tracking flags to False. NB. this saves computation
+        # time in subsequent calls to get_transit_light_curve() if some of
+        # the parameters are the same as in the previous call.
+        self._orbit_updated = False
+        self._limb_dark_updated = False
+        self._limb_map_updated = False
+
         return
 
     def get_planet_harmonic_limb_map(self):
-        """ Get harmonic limb map. """
+        """
+        Get harmonic limb map.
+
+        Parameters
+        ----------
+        name : type
+            Description of parameter.
+
+        Returns
+        -------
+        name : type
+            Description of return object.
+
+        """
         return
 
     def get_precision_estimate(self):
-        """ Get light curve precision estimates. """
+        """
+        Get light curve precision estimates.
+
+        Parameters
+        ----------
+        name : type
+            Description of parameter.
+
+        Returns
+        -------
+        name : type
+            Description of return object.
+
+        """
         return
