@@ -178,23 +178,35 @@ class HarmonicLimbMap(object):
         self._r = r
         self._limb_map_updated = True
 
-    def get_transit_light_curve(self):
+    def get_transit_light_curve(self, times=None, positions=None, phis=None):
         """
         Get transit light curve.
 
         Parameters
         ----------
-        name : type
+        times : type
+            Description of parameter.
+
+        positions : type
+            Description of parameter.
+
+        phis : type
             Description of parameter.
 
         Returns
         -------
-        name : type
-            Description of return object.
+        if self._require_gradients == False:
+            name : type
+                Description of return object.
+        else
+            name : type
+                Description of return object.
 
         """
-        # Get orbit.
+        # Split by numpy and theano.
 
+        # Get orbit (if updated).
+        
         # Get light curve.
 
         # Reset update tracking flags to False. NB. this saves computation
