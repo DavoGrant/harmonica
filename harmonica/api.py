@@ -11,8 +11,10 @@ class HarmonicLimbMap(object):
     parameterising the planet shape as a Fourier series.
 
     # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
+    # Todo: gradients.
     # Todo: finite exposure time?
     # Todo: light travel time?
+    # Todo: update readme labels with this repo links?
 
     Parameters
     ----------
@@ -99,6 +101,10 @@ class HarmonicLimbMap(object):
         self._r = r
         self._limb_map_updated = True
 
+        self.xs = None
+        self.ys = None
+        self.phis = None
+        self.lc = None
         self._require_gradients = require_gradients
         self._verbose = verbose
 
@@ -207,9 +213,17 @@ class HarmonicLimbMap(object):
                 Description of return object.
 
         """
-        # Split by numpy and theano.
-
         # Get orbit (if updated).
+        if self._orbit_updated:
+            np_in = np.array([1, 2, 3, 4])
+            np_out = np.array([5, 6, 7, 8])
+            bindings.orbit(5, 2, self._require_gradients,
+                           np_in, np_out)
+
+            np_in = np.array([10, 20, 30, 40])
+            np_out = np.array([50, 60, 70, 80])
+            bindings.light_curve(5, 2, self._require_gradients,
+                                 np_in, np_out)
 
         # Get light curve.
 
