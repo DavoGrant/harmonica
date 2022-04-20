@@ -10,6 +10,10 @@ class HarmonicLimbMap(object):
     Compute light curves for exoplanet transmission mapping through
     parameterising the planet shape as a Fourier series.
 
+    # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
+    # Todo: finite exposure time?
+    # Todo: light travel time?
+
     Parameters
     ----------
     t0 : float
@@ -206,7 +210,7 @@ class HarmonicLimbMap(object):
         # Split by numpy and theano.
 
         # Get orbit (if updated).
-        
+
         # Get light curve.
 
         # Reset update tracking flags to False. NB. this saves computation

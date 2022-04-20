@@ -1,5 +1,4 @@
-# Compiled Source #
-###################
+# Compiled Source
 *.com
 *.class
 *.dll
@@ -8,8 +7,7 @@
 *.so
 *.pyc
 
-# Packaging #
-############
+# Packaging
 *.7z
 *.dmg
 *.gz
@@ -21,8 +19,7 @@
 build
 dist
 
-# OS Generated Files #
-######################
+# OS Generated Files
 .DS_Store
 ehthumbs.db
 Icon
@@ -33,3 +30,6 @@ tags
 vendor.tags
 tmtagsHistory
 .bundle
+
+# Caches.
+.ipynb_checkpoints
