@@ -16,4 +16,4 @@ Harmonica
    pip install planet-harmonica
 
 | Read the full documentation at: `harmonica.readthedocs.io <https://harmonica.readthedocs.io/>`_.
-| Read the methods paper at: `mnras <https://link/to/mnras/paper>`_ or on the `arxiv <https://link/to/arxiv/paper/>`_.
+| Read the full methods paper at: `mnras <https://link/to/mnras/paper>`_ or on the `arxiv <https://link/to/arxiv/paper/>`_.
