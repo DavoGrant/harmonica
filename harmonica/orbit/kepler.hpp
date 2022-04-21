@@ -6,7 +6,7 @@
 
 /**
  * Solve Kepler's equation for the sine and cosine of the true
- * anomaly.
+ * anomaly, via the eccentric anomaly.
  *
  * @param M mean anomaly.
  * @param ecc eccentricity.
@@ -31,8 +31,8 @@ double eccentric_anomaly_guess(const double M, const double ecc);
 /**
  * Compute the sine and cosine of the eccentric anomaly. The method
  * follows Raposo-Pulido+ (2017) and the implementation is adapted
- * from exoplanet-core (Dan Foreman-Mackey), which was originally by
- * Timothy Brandt. Accuracy of 1e-15 in E-ecc*sin(E)-M.
+ * from exoplanet-core (Dan Foreman-Mackey), originally written by
+ * Timothy Brandt. Accuracy of ~1e-15 in E-ecc*sin(E)-M.
  *
  * @param M mean anomaly.
  * @param ecc eccentricity.

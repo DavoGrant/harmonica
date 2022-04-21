@@ -215,10 +215,12 @@ class HarmonicLimbMap(object):
         """
         # Get orbit (if updated).
         if self._orbit_updated:
-            np_in = np.array([1, 2, 3, 4])
-            np_out = np.array([5, 6, 7, 8])
-            np_in = np.ascontiguousarray(np_in, dtype=np.float64)
-            np_out = np.ascontiguousarray(np_out, dtype=np.float64)
+            mean_anomalies = np.linspace(0, 2 * np.pi, 1000)
+            eccentricities = np.ones(1000) * 0.05
+
+            mean_anomalies = np.ascontiguousarray(mean_anomalies, dtype=np.float64)
+            eccentricities = np.ascontiguousarray(eccentricities, dtype=np.float64)
+
             bindings.orbit(1., 0., self._require_gradients, np_in, np_out)
             print(np_in)
             print(np_out)
