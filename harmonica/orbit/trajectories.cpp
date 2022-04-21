@@ -12,6 +12,7 @@ void orbital_trajectories(int i, int j,
 
     auto r1 = np_in.unchecked<1>();
     auto r2 = np_out.mutable_unchecked<1>();
+    r2(1) = 1000.;
     std::cout << r1(1) << "\n";
     std::cout << r2(1) << "\n";
 
