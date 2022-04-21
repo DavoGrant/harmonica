@@ -19,14 +19,15 @@ void orbital_trajectories(double i, double j,
 
     const double M = i;
     const double e = j;
-    double sinf = 0.1;
-    double cosf = 0.1;
 
-    exoplanet::kepler::solve_kepler(M, e, &sinf, &cosf);
+    std::tuple<double, double> sin_cos_ta;
+    for (i = 0; i < 1000000; ++i) {
+        sin_cos_ta = solve_kepler(M, e);
+    }
 
     std::cout << M << "\n";
     std::cout << e << "\n";
-    std::cout << sinf << "\n";
-    std::cout << cosf << "\n";
+    std::cout << std::get<0>(sin_cos_ta) << "\n";
+    std::cout << std::get<1>(sin_cos_ta) << "\n";
 
 }
