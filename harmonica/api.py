@@ -129,7 +129,8 @@ class HarmonicLimbMap(object):
             Orbital inclination [radians]. Only one of inc and b is
             required.
         b : float
-            Impact parameter []. Only one of inc and b is required.
+            Impact parameter [stellar radii]. Only one of inc and b
+            is required.
         ecc : float
             Eccentricity [], 0 <= ecc < 1.
         omega : float
@@ -215,17 +216,20 @@ class HarmonicLimbMap(object):
         """
         # Get orbit (if updated).
         if self._orbit_updated:
-            mean_anomalies = np.linspace(0, 2 * np.pi, 1000)
-            eccentricities = np.ones(1000) * 0.05
+            times = np.ascontiguousarray(times, dtype=np.float64)
+            ds = np.empty(times.shape, dtype=np.float64, order='C')
+            nus = np.empty(times.shape, dtype=np.float64, order='C')
+            ds_grad = np.empty(times.shape + (6,), dtype=np.float64, order='C'),
+            nus_grad = np.empty(times.shape + (6,), dtype=np.float64, order='C')
 
-            mean_anomalies = np.ascontiguousarray(mean_anomalies, dtype=np.float64)
-            eccentricities = np.ascontiguousarray(eccentricities, dtype=np.float64)
-
-            bindings.orbit(1., 0., self._require_gradients, np_in, np_out)
-            print(np_in)
-            print(np_out)
+            bindings.orbit(self._t0, self._period, self._a,
+                           self._inc, self._ecc, self._omega,
+                           times, ds, nus, ds_grad, nus_grad,
+                           self._require_gradients)
 
         # Get light curve.
+        # NB. is odd term gauss-legendre faster as a whole,
+        # or splitting into each term?
 
         # Reset update tracking flags to False. NB. this saves computation
         # time in subsequent calls to get_transit_light_curve() if some of

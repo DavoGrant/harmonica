@@ -10,9 +10,7 @@
  *
  * @param M mean anomaly.
  * @param ecc eccentricity.
- * @param *sinE pointer to sine of the true anomaly.
- * @param *cosE pointer to cosine of the true anomaly.
- * @return void.
+ * @return sine and cosine of the true anomaly.
  */
 std::tuple<double, double> solve_kepler(const double M, const double ecc);
 
