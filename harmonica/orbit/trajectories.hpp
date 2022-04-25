@@ -4,6 +4,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 
 /**
  * Compute orbital trajectories, and optionally derivatives, for
@@ -22,14 +24,14 @@
  * @param grad empty array of derivatives [tbd].
  * @return void.
  */
-void orbital_trajectories(
-  double t0, double period, double a, double inc, double ecc, double omega,
-  pybind11::array_t<double, pybind11::array::c_style> times,
-  pybind11::array_t<double, pybind11::array::c_style> ds,
-  pybind11::array_t<double, pybind11::array::c_style> nus,
-  pybind11::array_t<double, pybind11::array::c_style> ds_grad,
-  pybind11::array_t<double, pybind11::array::c_style> nus_grad,
-  bool require_gradients);
+void orbital_trajectories(double t0, double period, double a,
+                          double inc, double ecc, double omega,
+                          py::array_t<double, py::array::c_style> times,
+                          py::array_t<double, py::array::c_style> ds,
+                          py::array_t<double, py::array::c_style> nus,
+                          py::array_t<double, py::array::c_style> ds_grad,
+                          py::array_t<double, py::array::c_style> nus_grad,
+                          bool require_gradients);
 
 
 #endif

@@ -214,18 +214,21 @@ class HarmonicLimbMap(object):
                 Description of return object.
 
         """
-        # Get orbit (if updated).
+        # Get orbit (if parameters updated).
         if self._orbit_updated:
             times = np.ascontiguousarray(times, dtype=np.float64)
             ds = np.empty(times.shape, dtype=np.float64, order='C')
             nus = np.empty(times.shape, dtype=np.float64, order='C')
-            ds_grad = np.empty(times.shape + (6,), dtype=np.float64, order='C'),
-            nus_grad = np.empty(times.shape + (6,), dtype=np.float64, order='C')
+            ds_grad = np.empty(times.shape+(6,), dtype=np.float64, order='C'),
+            nus_grad = np.empty(times.shape+(6,), dtype=np.float64, order='C')
 
             bindings.orbit(self._t0, self._period, self._a,
                            self._inc, self._ecc, self._omega,
                            times, ds, nus, ds_grad, nus_grad,
                            self._require_gradients)
+            import matplotlib.pyplot as plt
+            plt.plot(times, nus)
+            plt.show()
 
         # Get light curve.
         # NB. is odd term gauss-legendre faster as a whole,

@@ -1,5 +1,5 @@
-#include <tuple>
 #include <cmath>
+#include <tuple>
 #include <cstdlib>
 
 #include "kepler.hpp"
@@ -8,11 +8,11 @@
 
 std::tuple<double, double> solve_kepler(const double M, const double ecc) {
   // Compute eccentric anomaly.
-  std::tuple<double, double> sin_cos_ea;
-  sin_cos_ea = compute_eccentric_anomaly(M, ecc);
+  std::tuple<double, double> sin_cos_E;
+  sin_cos_E = compute_eccentric_anomaly(M, ecc);
 
   // Compute true anomaly.
-  return compute_true_anomaly(ecc, sin_cos_ea);
+  return compute_true_anomaly(ecc, sin_cos_E);
 }
 
 
