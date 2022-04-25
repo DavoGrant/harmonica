@@ -21,7 +21,8 @@ namespace py = pybind11;
  * @param times array of model evaluation times [days].
  * @param ds empty array of planet-star centre separations [stellar radii].
  * @param nus empty array of planet velocity-star centre angles [radians].
- * @param grad empty array of derivatives [tbd].
+ * @param ds_grad empty array of partial derivatives dd/dx x={t0, p, a, i, e, w}.
+ * @param nus_grad empty array of partial derivatives dnu/dx x={t0, p, a, i, e, w}.
  * @return void.
  */
 void orbital_trajectories(double t0, double period, double a,

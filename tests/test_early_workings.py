@@ -4,7 +4,7 @@ from harmonica import HarmonicaTransit
 
 # Test instantiate harmonic limb mapper.
 ht = HarmonicaTransit(times=np.linspace(0, 10, 1000),
-                      require_gradients=False)
+                      require_gradients=True)
 print(ht)
 
 # Test orbit.

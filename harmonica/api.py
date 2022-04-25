@@ -26,10 +26,7 @@ class HarmonicaTransit(object):
     a : float
         Semi-major axis [stellar radii].
     inc : float
-        Orbital inclination [radians]. Only one of inc and b is
-        required.
-    b : float
-        Impact parameter []. Only one of inc and b is required.
+        Orbital inclination [radians].
     ecc : float
         Eccentricity [], 0 <= ecc < 1.
     omega : float
@@ -80,10 +77,10 @@ class HarmonicaTransit(object):
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None,
-                 t0=None, period=None, a=None, inc=None, b=None,
-                 ecc=None, omega=None, u=None, limb_dark_law='integers',
-                 r=None, require_gradients=False, verbose=False):
+    def __init__(self, times=None, ds=None, nus=None, t0=None,
+                 period=None, a=None, inc=None, ecc=None, omega=None,
+                 u=None, limb_dark_law='integers', r=None,
+                 require_gradients=False, verbose=False):
         self._verbose = verbose
 
         # Orbital parameters.
@@ -91,7 +88,6 @@ class HarmonicaTransit(object):
         self._period = period
         self._a = a
         self._inc = inc
-        self._b = b
         self._ecc = ecc
         self._omega = omega
 
@@ -134,7 +130,7 @@ class HarmonicaTransit(object):
             self._require_gradients)
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
-                  b=None, ecc=None, omega=None):
+                  ecc=None, omega=None):
         """
         Set/update orbital parameters.
 
@@ -147,11 +143,7 @@ class HarmonicaTransit(object):
         a : float
             Semi-major axis [stellar radii].
         inc : float
-            Orbital inclination [radians]. Only one of inc and b is
-            required.
-        b : float
-            Impact parameter [stellar radii]. Only one of inc and b
-            is required.
+            Orbital inclination [radians].
         ecc : float
             Eccentricity [], 0 <= ecc < 1.
         omega : float
@@ -163,7 +155,6 @@ class HarmonicaTransit(object):
         self._period = period
         self._a = a
         self._inc = inc
-        self._b = b
         self._ecc = ecc
         self._omega = omega
         self._orbit_updated = True
@@ -233,7 +224,7 @@ class HarmonicaTransit(object):
                            require_gradients=self._require_gradients)
 
         import matplotlib.pyplot as plt
-        plt.plot(self.times, self.nus)
+        plt.plot(self.times, self.ds_grad[:, 0])
         plt.show()
 
         # Get light curve.
