@@ -1,5 +1,5 @@
 __all__ = [
-    'HarmonicLimbMap',
+    'HarmonicaTransit',
 ]
 
-from .api import HarmonicLimbMap
+from .api import HarmonicaTransit

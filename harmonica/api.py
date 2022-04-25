@@ -3,15 +3,16 @@ import numpy as np
 from harmonica import bindings
 
 
-class HarmonicLimbMap(object):
+class HarmonicaTransit(object):
     """
-    Harmonic limb mapping class.
+    Harmonica transit class.
 
-    Compute light curves for exoplanet transmission mapping through
+    Compute light curves for exoplanet transmission maps/strings through
     parameterising the planet shape as a Fourier series.
 
     # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
     # Todo: gradients.
+    # Todo: update doc string for latest api args.
     # Todo: finite exposure time?
     # Todo: light travel time?
     # Todo: update readme labels with this repo links?
@@ -79,9 +80,12 @@ class HarmonicLimbMap(object):
 
     """
 
-    def __init__(self, t0=None, period=None, a=None, inc=None, b=None,
+    def __init__(self, times=None, ds=None, nus=None,
+                 t0=None, period=None, a=None, inc=None, b=None,
                  ecc=None, omega=None, u=None, limb_dark_law='integers',
                  r=None, require_gradients=False, verbose=False):
+        self._verbose = verbose
+
         # Orbital parameters.
         self._t0 = t0
         self._period = period
@@ -90,7 +94,6 @@ class HarmonicLimbMap(object):
         self._b = b
         self._ecc = ecc
         self._omega = omega
-        self._orbit_updated = True
 
         # Stellar parameters.
         self._u = u
@@ -101,15 +104,33 @@ class HarmonicLimbMap(object):
         self._r = r
         self._limb_map_updated = True
 
-        self.xs = None
-        self.ys = None
-        self.phis = None
-        self.lc = None
+        # Evaluation arrays.
+        if times is not None:
+            self.times = np.ascontiguousarray(times, dtype=np.float64)
+            self.ds = np.empty(times.shape, dtype=np.float64, order='C')
+            self.nus = np.empty(times.shape, dtype=np.float64, order='C')
+            self._orbit_updated = True
+            self.lc = np.empty(times.shape, dtype=np.float64, order='C')
+        else:
+            self.ds = np.ascontiguousarray(ds, dtype=np.float64)
+            self.nus = np.ascontiguousarray(nus, dtype=np.float64)
+            self._orbit_updated = False
+            self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
+
         self._require_gradients = require_gradients
-        self._verbose = verbose
+        if require_gradients:
+            n_od = times.shape + (6,)
+            n_lcd = times.shape + (4,)
+            self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
+            self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+            self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
+        else:
+            self.ds_grad = None
+            self.nus_grad = None
+            self.lc_grad = None
 
     def __repr__(self):
-        return '<Harmonic limb mapper: require_gradients={}>'.format(
+        return '<Harmonica transit: require_gradients={}>'.format(
             self._require_gradients)
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
@@ -189,20 +210,9 @@ class HarmonicLimbMap(object):
         self._r = r
         self._limb_map_updated = True
 
-    def get_transit_light_curve(self, times=None, positions=None, phis=None):
+    def get_transit_light_curve(self):
         """
         Get transit light curve.
-
-        Parameters
-        ----------
-        times : type
-            Description of parameter.
-
-        positions : type
-            Description of parameter.
-
-        phis : type
-            Description of parameter.
 
         Returns
         -------
@@ -216,19 +226,15 @@ class HarmonicLimbMap(object):
         """
         # Get orbit (if parameters updated).
         if self._orbit_updated:
-            times = np.ascontiguousarray(times, dtype=np.float64)
-            ds = np.empty(times.shape, dtype=np.float64, order='C')
-            nus = np.empty(times.shape, dtype=np.float64, order='C')
-            ds_grad = np.empty(times.shape+(6,), dtype=np.float64, order='C'),
-            nus_grad = np.empty(times.shape+(6,), dtype=np.float64, order='C')
-
             bindings.orbit(self._t0, self._period, self._a,
                            self._inc, self._ecc, self._omega,
-                           times, ds, nus, ds_grad, nus_grad,
-                           self._require_gradients)
-            import matplotlib.pyplot as plt
-            plt.plot(times, nus)
-            plt.show()
+                           self.times, self.ds, self.nus,
+                           self.ds_grad, self.nus_grad,
+                           require_gradients=self._require_gradients)
+
+        import matplotlib.pyplot as plt
+        plt.plot(self.times, self.nus)
+        plt.show()
 
         # Get light curve.
         # NB. is odd term gauss-legendre faster as a whole,
