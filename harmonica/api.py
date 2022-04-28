@@ -7,7 +7,7 @@ class HarmonicaTransit(object):
     """
     Harmonica transit class.
 
-    Compute light curves for exoplanet transmission maps/strings through
+    Compute light curves for exoplanet transmission strings through
     parameterising the planet shape as a Fourier series.
 
     # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
@@ -240,9 +240,9 @@ class HarmonicaTransit(object):
 
         return
 
-    def get_planet_harmonic_limb_map(self):
+    def get_planet_transmission_string(self):
         """
-        Get harmonic limb map.
+        Get harmonic transmission string evaluated at given angles.
 
         Parameters
         ----------
