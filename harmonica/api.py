@@ -10,7 +10,7 @@ class HarmonicaTransit(object):
     Compute light curves for exoplanet transmission strings through
     parameterising the planet shape as a Fourier series.
 
-    # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
+    # Todo: update doc strings for ndarray? what deos jax need.
     # Todo: gradients.
     # Todo: update doc string for latest api args.
     # Todo: finite exposure time?
