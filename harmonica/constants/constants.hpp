@@ -31,4 +31,8 @@ namespace fractions {
 
 }
 
+namespace convolution {}
+
+namespace legendre {}
+
 #endif

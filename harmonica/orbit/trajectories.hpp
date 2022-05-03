@@ -15,7 +15,6 @@ namespace py = pybind11;
  * @param period orbital period [days].
  * @param a semi-major axis [stellar radii].
  * @param inc orbital inclination [radians].
- * @param b impact parameter [stellar radii].
  * @param ecc eccentricity [].
  * @param omega argument of periastron [radians].
  * @param times array of model evaluation times [days].

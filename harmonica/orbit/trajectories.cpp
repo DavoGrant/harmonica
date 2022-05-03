@@ -6,6 +6,7 @@
 
 #include "trajectories.hpp"
 #include "kepler.hpp"
+#include "derivatives/orbit_derivatives.hpp"
 #include "../constants/constants.hpp"
 
 namespace py = pybind11;
@@ -30,6 +31,7 @@ void orbital_trajectories(double t0, double period, double a,
   }
 
   const double n = fractions::twopi / period;
+  const double sin_i = std::sin(inc);
   const double cos_i = std::cos(inc);
 
   if (ecc == 0.) {
@@ -44,25 +46,34 @@ void orbital_trajectories(double t0, double period, double a,
       double M = (times_(i) - tp) * n;
 
       // Compute sine and cosine of the true anomaly.
-      std::tuple<double, double> sin_cos_f = std::make_tuple(
-          std::sin(M), std::cos(M));
+      double sin_M = std::sin(M);
+      double cos_M = std::cos(M);
 
       // Compute location of planet centre relative to stellar centre.
-      double x = a * std::get<1>(sin_cos_f);
-      double y = a * cos_i * std::get<0>(sin_cos_f);
+      double x = a * cos_M;
+      double y = a * cos_i * sin_M;
 
       // Compute angle between x-axis and planet velocity.
-      double psi = cos_i * std::atan(-std::get<1>(sin_cos_f)
-                                     / std::get<0>(sin_cos_f));
+      double atan_mcMosM = std::atan(-cos_M / sin_M);
+      double psi = cos_i * atan_mcMosM;
 
       // Compute separation distance between planet and stellar centres.
-      ds_(i) = std::sqrt(x * x + y * y);
+      double d_squared = x * x + y * y;
+      ds_(i) = std::sqrt(d_squared);
 
       // Compute angle between planet velocity and stellar centre.
       nus_(i) = std::atan2(y, x) - psi;
 
-      // Optionally compute derivatives.
-
+      if (require_gradients == true) {
+        // Optionally compute derivatives.
+        orbital_derivatives_circular(t0, period, a, sin_i, cos_i, times_(i),
+                                     n, sin_M, cos_M, x, y, atan_mcMosM,
+                                     ds_(i), d_squared,
+                                     ds_grad_(i, 0), ds_grad_(i, 1),
+                                     ds_grad_(i, 2), ds_grad_(i, 3),
+                                     nus_grad_(i, 0), nus_grad_(i, 1),
+                                     nus_grad_(i, 2), nus_grad_(i, 3));
+      }
     }
 
   } else {
