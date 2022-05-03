@@ -19,7 +19,7 @@
  * @param cos_M cosine of mean anomaly [].
  * @param x planet x position relative to stellar centre [stellar radii].
  * @param y planet y position relative to stellar centre [stellar radii].
- * @param atan_mcMosM arctangent(-cos_M/sin_M) [radians].
+ * @param atan_mcsM arctangent(-cos_M/sin_M) [radians].
  * @param d planet-star centre separation [stellar radii].
  * @param d_squared planet-star centre separation squared [stellar radii^2].
  * @param dd_dt0 derivative [stellar radii/days].
@@ -32,11 +32,13 @@
  * @param dnu_dinc derivative [].
  * @return void.
  */
-void orbital_derivatives_circular(double &t0, double &period, double &a,
-                                  double &sin_i, double &cos_i, double &time,
-                                  double &n, double &sin_M, double &cos_M,
-                                  double &x, double &y, double &atan_mcMosM,
-                                  double &d, double &d_squared,
+void orbital_derivatives_circular(const double &t0, const double &period,
+                                  const double &a, const double &sin_i,
+                                  const double &cos_i, const double &time,
+                                  const double &n, const double &sin_M,
+                                  const double &cos_M, const double &x,
+                                  const double &y, const double &atan_mcsM,
+                                  const double &d, const double &d_squared,
                                   double &dd_dt0, double &dd_dp,
                                   double &dd_da, double &dd_dinc,
                                   double &dnu_dt0, double &dnu_dp,

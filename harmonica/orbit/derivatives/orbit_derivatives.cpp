@@ -1,15 +1,16 @@
 #include <cmath>
-#include <iostream>
 
 #include "orbit_derivatives.hpp"
-#include "../constants/constants.hpp"
+#include "../../constants/constants.hpp"
 
 
-void orbital_derivatives_circular(double &t0, double &period, double &a,
-                                  double &sin_i, double &cos_i, double &time,
-                                  double &n, double &sin_M, double &cos_M,
-                                  double &x, double &y, double &atan_mcMosM,
-                                  double &d, double &d_squared,
+void orbital_derivatives_circular(const double &t0, const double &period,
+                                  const double &a, const double &sin_i,
+                                  const double &cos_i, const double &time,
+                                  const double &n, const double &sin_M,
+                                  const double &cos_M, const double &x,
+                                  const double &y, const double &atan_mcsM,
+                                  const double &d, const double &d_squared,
                                   double &dd_dt0, double &dd_dp,
                                   double &dd_da, double &dd_dinc,
                                   double &dnu_dt0, double &dnu_dp,
@@ -29,7 +30,7 @@ void orbital_derivatives_circular(double &t0, double &period, double &a,
   double dy_dM = a * cos_M * cos_i;
   double dy_dinc = -a * sin_M * sin_i;
   double dpsi_dM = cos_i;
-  double dpsi_dinc = -sin_i * atan_mcMosM;
+  double dpsi_dinc = -sin_i * atan_mcsM;
 
   // Compute partial derivatives: third branches of the trees.
   double dM_dp = (t0 - time) * fractions::twopi / (period * period);

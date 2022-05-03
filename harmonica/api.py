@@ -56,9 +56,9 @@ class HarmonicaTransit(object):
     -------
     set_orbit()
     set_stellar_limb_darkening()
-    set_planet_harmonic_limb_map()
+    set_planet_transmission_string()
     get_transit_light_curve()
-    get_planet_harmonic_limb_map()
+    get_planet_transmission_string()
     get_precision_estimate()
 
     Notes
@@ -114,16 +114,11 @@ class HarmonicaTransit(object):
             self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
 
         self._require_gradients = require_gradients
-        if require_gradients:
-            n_od = times.shape + (6,)
-            n_lcd = times.shape + (4,)
-            self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
-            self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
-            self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
-        else:
-            self.ds_grad = None
-            self.nus_grad = None
-            self.lc_grad = None
+        n_od = times.shape + (6,)
+        n_lcd = times.shape + (4,)
+        self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
+        self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+        self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
 
     def __repr__(self):
         return '<Harmonica transit: require_gradients={}>'.format(
@@ -180,9 +175,9 @@ class HarmonicaTransit(object):
         self._limb_dark_mode = limb_dark_law
         self._limb_dark_updated = True
 
-    def set_planet_harmonic_limb_map(self, r=None):
+    def set_planet_transmission_string(self, r=None):
         """
-        Set/update planet harmonic limb map parameters.
+        Set/update planet transmission string parameters.
 
         Parameters
         ----------
@@ -223,9 +218,14 @@ class HarmonicaTransit(object):
                            self.ds_grad, self.nus_grad,
                            require_gradients=self._require_gradients)
 
-        import matplotlib.pyplot as plt
-        plt.plot(self.times, self.ds_grad[:, 0])
-        plt.show()
+        print(self.nus_grad[:, 0])
+        print(self.nus_grad[:, 1])
+        print(self.nus_grad[:, 2])
+        print(self.nus_grad[:, 3])
+        print(self.nus_grad[:, 4])
+        print(self.nus_grad[:, 5])
+
+        exit()
 
         # Get light curve.
         # NB. is odd term gauss-legendre faster as a whole,
