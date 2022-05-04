@@ -1,7 +1,6 @@
 #include <pybind11/pybind11.h>
 
 #include "orbit/trajectories.hpp"
-#include "orbit/kepler.hpp"
 #include "light_curve/fluxes.hpp"
 
 namespace py = pybind11;
@@ -24,7 +23,5 @@ PYBIND11_MODULE(bindings, m) {
           py::arg("require_gradients") = false);
 
     m.def("light_curve", &light_curve_fluxes);
-
-    m.def("test_solve_kepler", &solve_kepler);
 
 }

@@ -25,6 +25,117 @@ class TestOrbit(unittest.TestCase):
         self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
         self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
 
+    def test_orbit_data_structures(self):
+        """ Test orbit data structures. """
+        # Check circular and eccentric cases.
+        for ecc, w, in zip([0., 0.3], [0., 1.1]):
+
+            # Check input array types compatible.
+            times_shape = self.times.shape
+            ds_shape = self.ds.shape
+            nus_shape = self.nus.shape
+            ds_grad_shape = self.ds_grad.shape
+            nus_grad_shape = self.nus_grad.shape
+            self.assertIsInstance(self.times, np.ndarray)
+            self.assertIsInstance(self.ds, np.ndarray)
+            self.assertIsInstance(self.nus, np.ndarray)
+            self.assertIsInstance(self.ds_grad, np.ndarray)
+            self.assertIsInstance(self.nus_grad, np.ndarray)
+            bindings.orbit(5., 10., 7., 1.5, ecc, w,
+                           self.times, self.ds, self.nus,
+                           self.ds_grad, self.nus_grad,
+                           require_gradients=True)
+
+            # Check output array types unchanged.
+            self.assertIsInstance(self.times, np.ndarray)
+            self.assertIsInstance(self.ds, np.ndarray)
+            self.assertIsInstance(self.nus, np.ndarray)
+            self.assertIsInstance(self.ds_grad, np.ndarray)
+            self.assertIsInstance(self.nus_grad, np.ndarray)
+
+            # Check updated arrays have consistent shapes.
+            self.assertEqual(self.times.shape, times_shape)
+            self.assertEqual(self.ds.shape, ds_shape)
+            self.assertEqual(self.nus.shape, nus_shape)
+            self.assertEqual(self.ds_grad.shape, ds_grad_shape)
+            self.assertEqual(self.nus_grad.shape, nus_grad_shape)
+
+    def test_orbit_trajectory_sensical(self):
+        """ Test orbit trajectory is sensical. """
+        times = np.ascontiguousarray(np.arange(0., 10.5, 1), dtype=np.float64)
+        ds = np.empty(times.shape, dtype=np.float64, order='C')
+        nus = np.empty(times.shape, dtype=np.float64, order='C')
+        n_od = times.shape + (6,)
+        ds_grad = np.ones(n_od, dtype=np.float64, order='C')
+        nus_grad = np.ones(n_od, dtype=np.float64, order='C')
+
+        # Edge on, i=90, circular orbit.
+        bindings.orbit(5., 10., 7., np.pi/2, 0., 0.,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=False)
+        # Planet inline with stellar centre.
+        self.assertAlmostEqual(ds[0], 0., delta=1.e-13)
+        self.assertAlmostEqual(ds[5], 0., delta=1.e-13)
+        self.assertAlmostEqual(ds[-1], 0., delta=1.e-13)
+        # Planet orbiting closer/further from stellar centre.
+        self.assertGreater(ds[3], ds[4])
+        self.assertGreater(ds[7], ds[6])
+        # Planet orbiting towards/away from stellar centre.
+        self.assertAlmostEqual(nus[4], 0., delta=1.e-13)
+        self.assertAlmostEqual(nus[6], np.pi, delta=1.e-13)
+
+        # Just off edge on, i<90, circular orbit.
+        bindings.orbit(5., 10., 7., np.pi/2.01, 0., 0.,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=False)
+        # Planet not inline with stellar centre.
+        self.assertGreater(ds[0], 0.)
+        self.assertGreater(ds[5], 0.)
+        self.assertGreater(ds[-1], 0.)
+        # Planet orbiting closer/further from stellar centre.
+        self.assertGreater(ds[3], ds[4])
+        self.assertGreater(ds[7], ds[6])
+        # Planet orbiting towards/away from just below stellar centre.
+        self.assertGreater(nus[4], 0.)
+        self.assertLess(nus[6], np.pi)
+
+        # Eccentric orbit, periastron at transit.
+        bindings.orbit(5., 10., 7., np.pi/2, 0.3, np.pi/2,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=False)
+        # Planet orbit symmetric about transit.
+        self.assertAlmostEqual(ds[4], ds[6], delta=1.e-13)
+
+        # Eccentric orbit, periastron between transit and eclipse.
+        bindings.orbit(5., 10., 7., np.pi/2, 0.3, 0.,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=False)
+        # Planet orbit asymmetric about transit.
+        self.assertLess(ds[4], ds[6])
+
+    def test_orbit_circular_derivatives_switch(self):
+        """ Test orbit circular derivatives switch. """
+        times = np.ascontiguousarray(np.arange(0., 10.5, 1), dtype=np.float64)
+        ds = np.empty(times.shape, dtype=np.float64, order='C')
+        nus = np.empty(times.shape, dtype=np.float64, order='C')
+        n_od = times.shape + (6,)
+        ds_grad = np.ones(n_od, dtype=np.float64, order='C')
+        nus_grad = np.ones(n_od, dtype=np.float64, order='C')
+
+        ds_grad_a = np.copy(ds_grad)
+        nus_grad_a = np.copy(nus_grad)
+        bindings.orbit(5., 10., 7., np.pi / 2, 0., 0.,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=False)
+        self.assertTrue(np.array_equal(ds_grad_a, ds_grad))
+        self.assertTrue(np.array_equal(nus_grad_a, nus_grad))
+
+        bindings.orbit(5., 10., 7., np.pi / 2, 0., 0.,
+                       times, ds, nus, ds_grad, nus_grad,
+                       require_gradients=True)
+        self.assertFalse(np.array_equal(ds_grad_a, ds_grad))
+        self.assertFalse(np.array_equal(nus_grad_a, nus_grad))
+
     def test_orbit_derivative_circular_dd_dz(self):
         """ Test orbit derivative circular dd_dz, z={t0, p, a, i}. """
         # Check derivatives wrt t0, period, a, and inc.
