@@ -124,7 +124,7 @@ class TestOrbit(unittest.TestCase):
 
         ds_grad_a = np.copy(ds_grad)
         nus_grad_a = np.copy(nus_grad)
-        bindings.orbit(5., 10., 7., np.pi / 2, 0., 0.,
+        bindings.orbit(5., 10., 7., np.pi / 2.1, 0., 0.,
                        times, ds, nus, ds_grad, nus_grad,
                        require_gradients=False)
         self.assertTrue(np.array_equal(ds_grad_a, ds_grad))
@@ -171,12 +171,14 @@ class TestOrbit(unittest.TestCase):
                 ds_b = np.copy(self.ds)
 
                 # Check algebraic gradients match numerical.
-                for res_idx, (d_a, d_b, grad) in enumerate(zip(ds_a, ds_b, dd_dz_a)):
+                res_iter = zip(ds_a, ds_b, dd_dz_a)
+                for res_idx, (d_a, d_b, grad) in enumerate(res_iter):
                     delta_d = d_b - d_a
                     residual = np.abs(d_b - (grad * self.epsilon + d_a))
                     tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol, msg='dd/d{} failed no.{}.'.format(
-                        param_name, res_idx))
+                    self.assertLess(
+                        residual, tol, msg='dd/d{} failed no.{}.'.format(
+                            param_name, res_idx))
 
     def test_orbit_derivative_circular_dnu_dz(self):
         """ Test orbit derivative circular dnu_dz, z={t0, p, a, i}. """
@@ -213,12 +215,14 @@ class TestOrbit(unittest.TestCase):
                 nus_b = np.copy(self.nus)
 
                 # Check algebraic gradients match numerical.
-                for res_idx, (nu_a, nu_b, grad) in enumerate(zip(nus_a, nus_b, dnu_dz_a)):
+                res_iter = zip(nus_a, nus_b, dnu_dz_a)
+                for res_idx, (nu_a, nu_b, grad) in enumerate(res_iter):
                     delta_nu = nu_b - nu_a
                     residual = np.abs(nu_b - (grad * self.epsilon + nu_a))
                     tol = max(np.abs(delta_nu * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol, msg='dnu/d{} failed no.{}.'.format(
-                        param_name, res_idx))
+                    self.assertLess(
+                        residual, tol, msg='dnu/d{} failed no.{}.'.format(
+                            param_name, res_idx))
 
     def test_orbit_derivative_eccentric_dd_dz(self):
         """ Test orbit derivative eccentric dd_dz, z={t0, p, a, i, e, w}. """
@@ -257,12 +261,14 @@ class TestOrbit(unittest.TestCase):
                 ds_b = np.copy(self.ds)
 
                 # Check algebraic gradients match numerical.
-                for res_idx, (d_a, d_b, grad) in enumerate(zip(ds_a, ds_b, dd_dz_a)):
+                res_iter = zip(ds_a, ds_b, dd_dz_a)
+                for res_idx, (d_a, d_b, grad) in enumerate(res_iter):
                     delta_d = d_b - d_a
                     residual = np.abs(d_b - (grad * self.epsilon + d_a))
                     tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol, msg='dd/d{} failed no.{}.'.format(
-                        param_name, res_idx))
+                    self.assertLess(
+                        residual, tol, msg='dd/d{} failed no.{}.'.format(
+                            param_name, res_idx))
 
     def test_orbit_derivative_eccentric_dnu_dz(self):
         """ Test orbit derivative eccentric dnu_dz, z={t0, p, a, i, e, w}. """
@@ -301,12 +307,14 @@ class TestOrbit(unittest.TestCase):
                 nus_b = np.copy(self.nus)
 
                 # Check algebraic gradients match numerical.
-                for res_idx, (nu_a, nu_b, grad) in enumerate(zip(nus_a, nus_b, dnu_dz_a)):
+                res_iter = zip(nus_a, nus_b, dnu_dz_a)
+                for res_idx, (nu_a, nu_b, grad) in enumerate(res_iter):
                     delta_nu = nu_b - nu_a
                     residual = np.abs(nu_b - (grad * self.epsilon + nu_a))
                     tol = max(np.abs(delta_nu * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol, msg='dnu/d{} failed no.{}.'.format(
-                        param_name, res_idx))
+                    self.assertLess(
+                        residual, tol, msg='dnu/d{} failed no.{}.'.format(
+                            param_name, res_idx))
 
 
 if __name__ == '__main__':
