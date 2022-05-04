@@ -75,15 +75,17 @@ void orbital_trajectories(double t0, double period, double a,
 
   } else {
 
-    const double sin_w = std::sin(omega);
-    const double cos_w = std::cos(omega);
+    const double sin_omega = std::sin(omega);
+    const double cos_omega = std::cos(omega);
 
     // Iterate evaluation times.
     for (py::ssize_t i = 0; i < times_.shape(0); i++) {
 
       // Compute time of periastron.
-      const double E0 = 2. * std::atan2(std::sqrt(1. - ecc) * cos_w,
-                                        std::sqrt(1. + ecc) * (1 + sin_w));
+      const double some = std::sqrt(1. - ecc);
+      const double sope = std::sqrt(1. + ecc);
+      const double E0 = 2. * std::atan2(some * cos_omega,
+                                        sope * (1 + sin_omega));
       const double M0 = E0 - ecc * std::sin(E0);
       const double tp = t0 - M0 / n;
 
@@ -94,12 +96,13 @@ void orbital_trajectories(double t0, double period, double a,
       std::tuple<double, double> sin_cos_f = solve_kepler(M, ecc);
 
       // Compute location of planet centre relative to stellar centre.
-      const double r = a * (1 - ecc * ecc)
-                       / (1 + ecc * std::get<1>(sin_cos_f));
-      const double sin_fpw = std::get<1>(sin_cos_f) * sin_w
-                             + std::get<0>(sin_cos_f) * cos_w;
-      const double cos_fpw = std::get<1>(sin_cos_f) * cos_w
-                             - std::get<0>(sin_cos_f) * sin_w;
+      const double omes = 1. - ecc * ecc;
+      const double ope_cosf = 1. + ecc * std::get<1>(sin_cos_f);
+      const double r = a * omes / ope_cosf;
+      const double sin_fpw = std::get<1>(sin_cos_f) * sin_omega
+                             + std::get<0>(sin_cos_f) * cos_omega;
+      const double cos_fpw = std::get<1>(sin_cos_f) * cos_omega
+                             - std::get<0>(sin_cos_f) * sin_omega;
       const double x = r * cos_fpw;
       const double y = r * cos_i * sin_fpw;
 
@@ -114,8 +117,18 @@ void orbital_trajectories(double t0, double period, double a,
       // Compute angle between planet velocity and stellar centre.
       nus_(i) = std::atan2(y, x) - psi;
 
-      // Optionally compute derivatives.
-
+      if (require_gradients == true) {
+        // Optionally compute derivatives.
+        orbital_derivatives(t0, period, a, sin_i, cos_i, ecc, sin_omega,
+                            cos_omega, times_(i), E0, n,
+                            std::get<0>(sin_cos_f), std::get<1>(sin_cos_f),
+                            x, y, sin_fpw, cos_fpw, atan_mcs_fpw, r, some,
+                            sope, omes, ope_cosf, ds_(i), d_squared,
+                            ds_grad_(i, 0), ds_grad_(i, 1), ds_grad_(i, 2),
+                            ds_grad_(i, 3), ds_grad_(i, 4), ds_grad_(i, 5),
+                            nus_grad_(i, 0), nus_grad_(i, 1), nus_grad_(i, 2),
+                            nus_grad_(i, 3), nus_grad_(i, 4), nus_grad_(i, 5));
+      }
     }
   }
 }

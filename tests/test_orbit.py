@@ -11,12 +11,12 @@ class TestOrbit(unittest.TestCase):
         super(TestOrbit, self).__init__(*args, **kwargs)
 
         # Make reproducible.
-        np.random.seed(32)
+        np.random.seed(3)
 
         # Differential element, epsilon.
-        self.epsilon = 1.e-10
+        self.epsilon = 1.e-8
 
-        # Build input data structures.
+        # Build test input data structures.
         self.times = np.ascontiguousarray(np.linspace(0., 20., 200),
                                           dtype=np.float64)
         self.ds = np.empty(self.times.shape, dtype=np.float64, order='C')
@@ -130,7 +130,7 @@ class TestOrbit(unittest.TestCase):
         self.assertTrue(np.array_equal(ds_grad_a, ds_grad))
         self.assertTrue(np.array_equal(nus_grad_a, nus_grad))
 
-        bindings.orbit(5., 10., 7., np.pi / 2, 0., 0.,
+        bindings.orbit(5., 10., 7., np.pi / 2.1, 0.1, 0.1,
                        times, ds, nus, ds_grad, nus_grad,
                        require_gradients=True)
         self.assertFalse(np.array_equal(ds_grad_a, ds_grad))
@@ -144,7 +144,7 @@ class TestOrbit(unittest.TestCase):
         for param_idx, param_name in zip(z_idxs, z_names):
 
             # Randomly generate many trial geometries.
-            for i in range(100):
+            for i in range(20):
                 params = {'t0': np.random.uniform(0., 10.),
                           'period': np.random.uniform(0., 10.),
                           'a': np.random.uniform(0., 10.),
@@ -171,11 +171,12 @@ class TestOrbit(unittest.TestCase):
                 ds_b = np.copy(self.ds)
 
                 # Check algebraic gradients match numerical.
-                for d_a, d_b, grad in zip(ds_a, ds_b, dd_dz_a):
+                for res_idx, (d_a, d_b, grad) in enumerate(zip(ds_a, ds_b, dd_dz_a)):
                     delta_d = d_b - d_a
                     residual = np.abs(d_b - (grad * self.epsilon + d_a))
                     tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol)
+                    self.assertLess(residual, tol, msg='dd/d{} failed no.{}.'.format(
+                        param_name, res_idx))
 
     def test_orbit_derivative_circular_dnu_dz(self):
         """ Test orbit derivative circular dnu_dz, z={t0, p, a, i}. """
@@ -185,7 +186,7 @@ class TestOrbit(unittest.TestCase):
         for param_idx, param_name in zip(z_idxs, z_names):
 
             # Randomly generate many trial geometries.
-            for i in range(100):
+            for i in range(20):
                 params = {'t0': np.random.uniform(0., 10.),
                           'period': np.random.uniform(0., 10.),
                           'a': np.random.uniform(0., 10.),
@@ -212,11 +213,100 @@ class TestOrbit(unittest.TestCase):
                 nus_b = np.copy(self.nus)
 
                 # Check algebraic gradients match numerical.
-                for d_a, d_b, grad in zip(nus_a, nus_b, dnu_dz_a):
+                for res_idx, (nu_a, nu_b, grad) in enumerate(zip(nus_a, nus_b, dnu_dz_a)):
+                    delta_nu = nu_b - nu_a
+                    residual = np.abs(nu_b - (grad * self.epsilon + nu_a))
+                    tol = max(np.abs(delta_nu * 1.e-2), 1.e-13)
+                    self.assertLess(residual, tol, msg='dnu/d{} failed no.{}.'.format(
+                        param_name, res_idx))
+
+    def test_orbit_derivative_eccentric_dd_dz(self):
+        """ Test orbit derivative eccentric dd_dz, z={t0, p, a, i, e, w}. """
+        # Check derivatives wrt t0, period, a, inc, e, and w.
+        z_idxs = [0, 1, 2, 3, 4, 5]
+        z_names = ['t0', 'period', 'a', 'inc', 'e', 'w']
+        for param_idx, param_name in zip(z_idxs, z_names):
+
+            # Randomly generate many trial geometries.
+            for i in range(20):
+                params = {'t0': np.random.uniform(0., 10.),
+                          'period': np.random.uniform(0., 10.),
+                          'a': np.random.uniform(0., 10.),
+                          'inc': np.random.uniform(0., np.pi / 2.),
+                          'e': np.random.uniform(0., 0.9),
+                          'w': np.random.uniform(0., 2. * np.pi)}
+
+                # Compute orbital separations and derivatives.
+                bindings.orbit(params['t0'], params['period'], params['a'],
+                               params['inc'], params['e'], params['w'],
+                               self.times, self.ds, self.nus,
+                               self.ds_grad, self.nus_grad,
+                               require_gradients=True)
+                ds_a = np.copy(self.ds)
+                dd_dz_a = np.copy(self.ds_grad[:, param_idx])
+
+                # Update z by epsilon.
+                params[param_name] = params[param_name] + self.epsilon
+
+                # Compute orbital separations at new z.
+                bindings.orbit(params['t0'], params['period'], params['a'],
+                               params['inc'], params['e'], params['w'],
+                               self.times, self.ds, self.nus,
+                               self.ds_grad, self.nus_grad,
+                               require_gradients=False)
+                ds_b = np.copy(self.ds)
+
+                # Check algebraic gradients match numerical.
+                for res_idx, (d_a, d_b, grad) in enumerate(zip(ds_a, ds_b, dd_dz_a)):
                     delta_d = d_b - d_a
                     residual = np.abs(d_b - (grad * self.epsilon + d_a))
                     tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(residual, tol)
+                    self.assertLess(residual, tol, msg='dd/d{} failed no.{}.'.format(
+                        param_name, res_idx))
+
+    def test_orbit_derivative_eccentric_dnu_dz(self):
+        """ Test orbit derivative eccentric dnu_dz, z={t0, p, a, i, e, w}. """
+        # Check derivatives wrt t0, period, a, inc, e, and w.
+        z_idxs = [0, 1, 2, 3, 4, 5]
+        z_names = ['t0', 'period', 'a', 'inc', 'e', 'w']
+        for param_idx, param_name in zip(z_idxs, z_names):
+
+            # Randomly generate many trial geometries.
+            for i in range(20):
+                params = {'t0': np.random.uniform(0., 10.),
+                          'period': np.random.uniform(0., 10.),
+                          'a': np.random.uniform(0., 10.),
+                          'inc': np.random.uniform(0., np.pi / 2.),
+                          'e': np.random.uniform(0., 0.9),
+                          'w': np.random.uniform(0., 2. * np.pi)}
+
+                # Compute orbital separations and derivatives.
+                bindings.orbit(params['t0'], params['period'], params['a'],
+                               params['inc'], params['e'], params['w'],
+                               self.times, self.ds, self.nus,
+                               self.ds_grad, self.nus_grad,
+                               require_gradients=True)
+                nus_a = np.copy(self.nus)
+                dnu_dz_a = np.copy(self.nus_grad[:, param_idx])
+
+                # Update z by epsilon.
+                params[param_name] = params[param_name] + self.epsilon
+
+                # Compute orbital separations at new z.
+                bindings.orbit(params['t0'], params['period'], params['a'],
+                               params['inc'], params['e'], params['w'],
+                               self.times, self.ds, self.nus,
+                               self.ds_grad, self.nus_grad,
+                               require_gradients=False)
+                nus_b = np.copy(self.nus)
+
+                # Check algebraic gradients match numerical.
+                for res_idx, (nu_a, nu_b, grad) in enumerate(zip(nus_a, nus_b, dnu_dz_a)):
+                    delta_nu = nu_b - nu_a
+                    residual = np.abs(nu_b - (grad * self.epsilon + nu_a))
+                    tol = max(np.abs(delta_nu * 1.e-2), 1.e-13)
+                    self.assertLess(residual, tol, msg='dnu/d{} failed no.{}.'.format(
+                        param_name, res_idx))
 
 
 if __name__ == '__main__':

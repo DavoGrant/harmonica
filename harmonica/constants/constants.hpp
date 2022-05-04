@@ -13,6 +13,7 @@ namespace fractions {
 
     const double one_third = 1. / 3;
     const double one_sixth = 1. / 6;
+    const double three_halves = 3. / 2;
 
     const double pi = M_PI;
     const double pi_d_12 = M_PI / 12;

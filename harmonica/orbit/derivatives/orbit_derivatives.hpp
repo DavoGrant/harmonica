@@ -45,4 +45,39 @@ void orbital_derivatives_circular(const double &t0, const double &period,
                                   double &dnu_da, double &dnu_dinc);
 
 
+/**
+ * Compute orbital derivatives, dd/dz and dnu/dz, for z in
+ * the set {t0, p, a, i, e, w} for eccentric trajectories. Here,
+ * d is the separation distance between planet and stellar centres
+ * and nu is the angle between planet velocity and stellar centre.
+ *
+ * @param t0 time of transit centre [days].
+ * @param period orbital period [days].
+ * @param a semi-major axis [stellar radii].
+ * @param sin_i sine of orbital inclination [].
+ * @param cos_i cosine of orbital inclination [].
+    ...update me...
+ * @return void.
+ */
+void orbital_derivatives(const double &t0, const double &period,
+                         const double &a, const double &sin_i,
+                         const double &cos_i, const double &ecc,
+                         const double &sin_w, const double &cos_w,
+                         const double &time, const double E0,
+                         const double &n, const double &sin_f,
+                         const double &cos_f, const double &x,
+                         const double &y, const double &sin_fpw,
+                         const double &cos_fpw,
+                         const double &atan_mcs_fpw, const double &r,
+                         const double some, const double sope,
+                         const double omes, const double ope_cosf,
+                         const double &d, const double &d_squared,
+                         double &dd_dt0, double &dd_dp,
+                         double &dd_da, double &dd_dinc,
+                         double &dd_de, double &dd_domega,
+                         double &dnu_dt0, double &dnu_dp,
+                         double &dnu_da, double &dnu_dinc,
+                         double &dnu_de, double &dnu_domega);
+
+
 #endif
