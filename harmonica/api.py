@@ -54,9 +54,9 @@ class HarmonicaTransit(object):
 
     Methods
     -------
-    set_orbit()
-    set_stellar_limb_darkening()
-    set_planet_transmission_string()
+    set_orbit_parameters()
+    set_stellar_limb_darkening_parameters()
+    set_planet_transmission_string_parameters()
     get_transit_light_curve()
     get_planet_transmission_string()
     get_precision_estimate()
@@ -124,8 +124,8 @@ class HarmonicaTransit(object):
         return '<Harmonica transit: require_gradients={}>'.format(
             self._require_gradients)
 
-    def set_orbit(self, t0=None, period=None, a=None, inc=None,
-                  ecc=None, omega=None):
+    def set_orbit_parameters(self, t0=None, period=None, a=None,
+                             inc=None, ecc=None, omega=None):
         """
         Set/update orbital parameters.
 
@@ -154,7 +154,8 @@ class HarmonicaTransit(object):
         self._omega = omega
         self._orbit_updated = True
 
-    def set_stellar_limb_darkening(self, u=None, limb_dark_law='integers'):
+    def set_stellar_limb_darkening_parameters(self, u=None,
+                                              limb_dark_law='integers'):
         """
         Set/update stellar limb darkening parameters.
 
@@ -175,7 +176,7 @@ class HarmonicaTransit(object):
         self._limb_dark_mode = limb_dark_law
         self._limb_dark_updated = True
 
-    def set_planet_transmission_string(self, r=None):
+    def set_planet_transmission_string_parameters(self, r=None):
         """
         Set/update planet transmission string parameters.
 
@@ -218,15 +219,6 @@ class HarmonicaTransit(object):
                            self.ds_grad, self.nus_grad,
                            require_gradients=self._require_gradients)
 
-        print(self.nus_grad[:, 0])
-        print(self.nus_grad[:, 1])
-        print(self.nus_grad[:, 2])
-        print(self.nus_grad[:, 3])
-        print(self.nus_grad[:, 4])
-        print(self.nus_grad[:, 5])
-
-        exit()
-
         # Get light curve.
         # NB. is odd term gauss-legendre faster as a whole,
         # or splitting into each term?
@@ -242,7 +234,7 @@ class HarmonicaTransit(object):
 
     def get_planet_transmission_string(self):
         """
-        Get harmonic transmission string evaluated at given angles.
+        Get transmission string evaluated at given angles.
 
         Parameters
         ----------
