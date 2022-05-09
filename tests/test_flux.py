@@ -17,12 +17,7 @@ class TestFlux(unittest.TestCase):
         self.epsilon = 1.e-8
 
         # Build test input data structures.
-        self.ds = np.empty(self.times.shape, dtype=np.float64, order='C')
-        self.nus = np.empty(self.times.shape, dtype=np.float64, order='C')
-        n_od = self.times.shape + (6,)
-        self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
-        self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
 
     def test_flux_data_structures(self):
         """ Test flux data structures. """
-        return
+        bindings.light_curve(require_gradients=False)

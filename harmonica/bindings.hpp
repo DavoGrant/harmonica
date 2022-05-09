@@ -38,7 +38,7 @@ void compute_orbital_separation_and_angles(
   py::array_t<double, py::array::c_style> nus,
   py::array_t<double, py::array::c_style> ds_grad,
   py::array_t<double, py::array::c_style> nus_grad,
-  bool require_gradients)
+  bool require_gradients);
 
 
 /**
@@ -49,8 +49,8 @@ void compute_orbital_separation_and_angles(
  * @param require_gradients derivatives switch.
  * @return void.
  */
-void compute_orbital_separation_and_angles(
-  bool require_gradients)
+void compute_harmonica_light_curve(
+  bool require_gradients);
 
 
 #endif
