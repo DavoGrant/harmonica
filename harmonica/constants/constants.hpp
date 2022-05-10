@@ -2,7 +2,6 @@
 #define CONSTANTS_HPP
 
 #include <cmath>
-#include <algorithm>
 
 
 #ifndef M_PI

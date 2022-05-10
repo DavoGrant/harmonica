@@ -1,5 +1,8 @@
+#include <iostream>
+#include <Eigen/Dense>
 #include <pybind11/pybind11.h>
 
+#include "bindings.hpp"
 #include "orbit/trajectories.hpp"
 #include "light_curve/fluxes.hpp"
 
@@ -54,7 +57,17 @@ void compute_orbital_separation_and_angles(
 void compute_harmonica_light_curve(
   bool require_gradients) {
 
+  Eigen::Matrix<double, 3, 3> B_1 {{-1., -1., -1.},
+                                   {0., 1., 2.},
+                                   {0., 0., -1.}};
 
+  Eigen::Matrix<double, 5, 5> B_2 {{-1., -1., -1., -1., -1.},
+                                   {0., 1., 0., 0., 0.},
+                                   {0., 0., 1., 0., 0.},
+                                   {0., 0., 0., 1., 0.},
+                                   {0., 0., 0., 0., 1.}};
+  std::cout << "Here is the matrix m:\n" << B_1 << std::endl;
+  std::cout << "Here is the matrix m:\n" << B_2 << std::endl;
 
 }
 
