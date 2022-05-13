@@ -33,7 +33,6 @@ namespace fractions {
 namespace limb_darkening {
 
 
-
 }
 
 namespace convolution {}
