@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 z = np.linspace(1, 0, 1000)
 
 # Quadratic: original form.
-u = np.array([1., 0.2, 0.3])
+u = np.array([1., 0.40, 0.29])
 u_tilde = np.array([1., -(1 - z), -(1 - z)**2])
 
 # Quadratic: polynomial form.
@@ -14,6 +14,7 @@ B_1 = np.array([[1., -1., -1.],
                 [0., 1., 2.],
                 [0., 0., -1.]])
 
+print(np.matmul(B_1, u))
 print(np.max(u_tilde.dot(u) - p_tilde.dot(np.matmul(B_1, u))))
 plt.plot(z, u_tilde.dot(u))
 plt.plot(z, p_tilde.dot(np.matmul(B_1, u)))
@@ -32,6 +33,7 @@ B_2 = np.array([[1., -1., -1., -1, -1],
                 [0., 0., 0., 1., 0.],
                 [0., 0., 0., 0., 1.]])
 
+print(np.matmul(B_2, u))
 print(np.max(u_tilde.dot(u) - p_tilde.dot(np.matmul(B_2, u))))
 plt.plot(z, u_tilde.dot(u))
 plt.plot(z, p_tilde.dot(np.matmul(B_2, u)))

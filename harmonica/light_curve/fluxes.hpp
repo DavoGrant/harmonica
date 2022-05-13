@@ -17,8 +17,6 @@ class Fluxes {
 
     // Limb darkening parameters.
     double _ld_law;
-    Eigen::Vector<double, Eigen::Dynamic> u;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> B;
     Eigen::Vector<double, Eigen::Dynamic> p;
 
     // Transmission string parameters.
@@ -45,16 +43,17 @@ class Fluxes {
     /**
      * Name and description.
      *
-     * @param WIP.
-     * @param ds array of planet-star centre separations [stellar radii].
-     * @param nus array of planet velocity-star centre angles [radians].
-     * @param fs empty array of normalised light curve fluxes [].
-     * @param ds_grad (empty) array of derivatives dd/dx x={t0, p, a, i, e, w}.
-     * @param nus_grad (empty) array of derivatives dnu/dx x={t0, p, a, i, e, w}.
-     * @param fs_grad empty array of derivatives dfs/dx x={t0, p, a, i, e, w, us, rs}.
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @param f empty normalised light curve flux [].
+     * @param dd_dz array of derivatives dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz array of derivatives dnu/dz z={t0, p, a, i, e, w}.
+     * @param df_dz empty array of derivatives df/dz z={t0, p, a, i, e, w, us, rs}.
      * @return void.
      */
-    void transit_light_curve();
+    void transit_light_curve(const double &d, const double &nu, double &f,
+                             const double* dd_dz[], const double* dnu_dz[],
+                             double* df_dz[]);
 
 
 };

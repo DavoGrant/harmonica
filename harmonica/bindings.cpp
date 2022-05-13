@@ -83,16 +83,24 @@ void compute_harmonica_light_curve(
   auto fs_grad_ = fs_grad.mutable_unchecked<2>();
 
   int n_positions = ds_.shape(0);
-  int n_partials = fs_grad_.shape(1);
-  double* fs_partials[n_partials];
+  int n_dnu_partials = ds_grad_.shape(1);
+  int n_f_partials = fs_grad_.shape(1);
+  const double* ds_partials[n_dnu_partials];
+  const double* nus_partials[n_dnu_partials];
+  double* fs_partials[n_f_partials];
 
   // Compute transit light curve.
   Fluxes flux(ld_law, us, rs, require_gradients);
   for (int i = 0; i < n_positions; i++) {
-    for (int j = 0; j < n_partials; j++) {
+    for (int j = 0; j < n_dnu_partials; j++) {
+      ds_partials[j] = &ds_grad_(i, j);
+      nus_partials[j] = &nus_grad_(i, j);
+    }
+    for (int j = 0; j < n_f_partials; j++) {
       fs_partials[j] = &fs_grad_(i, j);
     }
-    flux.transit_light_curve();
+    flux.transit_light_curve(ds_(i), nus_(i), fs_(i),
+                             ds_partials, nus_partials, fs_partials);
   }
 
 }
