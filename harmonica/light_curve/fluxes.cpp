@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <Eigen/Dense>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
 #include "fluxes.hpp"
@@ -10,12 +11,6 @@
 Fluxes::Fluxes(int ld_law,
                py::array_t<double, py::array::c_style> us,
                py::array_t<double, py::array::c_style> rs,
-               py::array_t<double, py::array::c_style> ds,
-               py::array_t<double, py::array::c_style> nus,
-               py::array_t<double, py::array::c_style> fs,
-               py::array_t<double, py::array::c_style> ds_grad,
-               py::array_t<double, py::array::c_style> nus_grad,
-               py::array_t<double, py::array::c_style> fs_grad,
                bool require_gradients) {
 
   Eigen::Matrix<double, 3, 3> B_1 {{-1., -1., -1.},

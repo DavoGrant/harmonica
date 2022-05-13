@@ -1,4 +1,5 @@
 #include <iostream>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
 #include "bindings.hpp"
@@ -20,6 +21,7 @@ void compute_orbital_separation_and_angles(
 
   // Unpack python arrays.
   auto times_ = times.unchecked<1>();
+
   auto ds_ = ds.mutable_unchecked<1>();
   auto nus_ = nus.mutable_unchecked<1>();
   auto ds_grad_ = ds_grad.mutable_unchecked<2>();
@@ -31,7 +33,8 @@ void compute_orbital_separation_and_angles(
   double* nus_partials[n_partials];
 
   // Compute orbital trajectories.
-  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
+  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega,
+                            require_gradients);
   if (ecc == 0.) {
 
     // Circular case.
@@ -41,8 +44,7 @@ void compute_orbital_separation_and_angles(
         nus_partials[j] = &nus_grad_(i, j);
       }
       orbital.compute_circular_orbit(times_(i), ds_(i), nus_(i),
-                                     ds_partials, nus_partials,
-                                     require_gradients);
+                                     ds_partials, nus_partials);
     }
   } else {
 
@@ -53,8 +55,7 @@ void compute_orbital_separation_and_angles(
         nus_partials[j] = &nus_grad_(i, j);
       }
       orbital.compute_eccentric_orbit(times_(i), ds_(i), nus_(i),
-                                      ds_partials, nus_partials,
-                                      require_gradients);
+                                      ds_partials, nus_partials);
     }
   }
 }
@@ -72,15 +73,27 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> fs_grad,
   bool require_gradients) {
 
-//  // Unpack python arrays.
-//  auto times_ = times.unchecked<1>();
-//  auto ds_ = ds.mutable_unchecked<1>();
-//  auto nus_ = nus.mutable_unchecked<1>();
-//  auto ds_grad_ = ds_grad.mutable_unchecked<2>();
-//  auto nus_grad_ = nus_grad.mutable_unchecked<2>();
-//
-//    Fluxes flux(ld_law, us, rs, ds, nus, fs,
-//                ds_grad, nus_grad, fs_grad, require_gradients);
+  // Unpack python arrays.
+  auto ds_ = ds.unchecked<1>();
+  auto nus_ = nus.unchecked<1>();
+  auto ds_grad_ = ds_grad.unchecked<2>();
+  auto nus_grad_ = nus_grad.unchecked<2>();
+
+  auto fs_ = fs.mutable_unchecked<1>();
+  auto fs_grad_ = fs_grad.mutable_unchecked<2>();
+
+  int n_positions = ds_.shape(0);
+  int n_partials = fs_grad_.shape(1);
+  double* fs_partials[n_partials];
+
+  // Compute transit light curve.
+  Fluxes flux(ld_law, us, rs, require_gradients);
+  for (int i = 0; i < n_positions; i++) {
+    for (int j = 0; j < n_partials; j++) {
+      fs_partials[j] = &fs_grad_(i, j);
+    }
+//    flux.transit_light_curve();
+  }
 
 }
 

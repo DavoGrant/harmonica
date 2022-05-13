@@ -1,6 +1,5 @@
 #include <cmath>
 #include <tuple>
-#include <iostream>
 
 #include "trajectories.hpp"
 #include "kepler.hpp"
@@ -8,7 +7,8 @@
 
 
 OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
-                                     double inc, double ecc, double omega) {
+                                     double inc, double ecc, double omega,
+                                     bool require_gradients) {
 
   // Orbital parameters.
   _t0 = t0;
@@ -24,13 +24,13 @@ OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
     _sin_omega = std::sin(omega);
     _cos_omega = std::cos(omega);
   }
+  _require_gradients = require_gradients;
 }
 
 
 void OrbitTrajectories::compute_circular_orbit(
   const double &time, double &d, double &nu,
-  double* dd_dz[], double* dnu_dz[],
-  bool require_gradients) {
+  double* dd_dz[], double* dnu_dz[]) {
 
   // Compute time of periastron.
   const double tp = _t0 - fractions::pi_d_2 / _n;
@@ -58,7 +58,7 @@ void OrbitTrajectories::compute_circular_orbit(
   nu = std::atan2(y, x) - psi;
 
   // Optionally compute derivatives.
-  if (require_gradients == true) {
+  if (_require_gradients == true) {
 
     // Compute d partial derivatives: first branches of the tree.
     const double dd_dx = x / d;
@@ -104,8 +104,7 @@ void OrbitTrajectories::compute_circular_orbit(
 
 void OrbitTrajectories::compute_eccentric_orbit(
   const double &time, double &d, double &nu,
-  double* dd_dz[], double* dnu_dz[],
-  bool require_gradients) {
+  double* dd_dz[], double* dnu_dz[]) {
 
   // Compute time of periastron.
   const double some = std::sqrt(1. - _ecc);
@@ -144,7 +143,7 @@ void OrbitTrajectories::compute_eccentric_orbit(
   nu = std::atan2(y, x) - psi;
 
   // Optionally compute derivatives.
-  if (require_gradients == true) {
+  if (_require_gradients == true) {
 
       // Compute d partial derivatives: first branches of the tree.
       const double dd_dx = x / d;

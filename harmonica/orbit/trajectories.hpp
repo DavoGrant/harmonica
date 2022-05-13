@@ -21,6 +21,7 @@ class OrbitTrajectories {
     double _omega;
     double _sin_omega;
     double _cos_omega;
+    bool _require_gradients;
 
   public:
 
@@ -33,9 +34,11 @@ class OrbitTrajectories {
      * @param inc orbital inclination [radians].
      * @param ecc eccentricity [].
      * @param omega argument of periastron [radians].
+     * @param require_gradients derivatives switch.
      */
     OrbitTrajectories(double t0, double period, double a,
-                      double inc, double ecc, double omega);
+                      double inc, double ecc, double omega,
+                      bool require_gradients);
 
     /**
      * Compute circular orbit trajectories of a planet-star system.
@@ -50,12 +53,10 @@ class OrbitTrajectories {
      * @param nu empty planet velocity-star centre angle [radians].
      * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i}.
      * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i}.
-     * @param require_gradients derivatives switch.
      * @return void.
      */
     void compute_circular_orbit(const double &time, double &d, double &nu,
-                                double* dd_dz[], double* dnu_dz[],
-                                bool require_gradients);
+                                double* dd_dz[], double* dnu_dz[]);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -70,12 +71,10 @@ class OrbitTrajectories {
      * @param nu empty planet velocity-star centre angle [radians].
      * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i, e, w}.
      * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i, e, w}.
-     * @param require_gradients derivatives switch.
      * @return void.
      */
     void compute_eccentric_orbit(const double &time, double &d, double &nu,
-                                 double* dd_dz[], double* dnu_dz[],
-                                 bool require_gradients);
+                                 double* dd_dz[], double* dnu_dz[]);
 
 };
 
