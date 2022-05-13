@@ -10,6 +10,7 @@
 
 namespace fractions {
 
+  const double one_half = 1. / 2.;
   const double one_third = 1. / 3.;
   const double one_sixth = 1. / 6.;
   const double three_halves = 3. / 2.;

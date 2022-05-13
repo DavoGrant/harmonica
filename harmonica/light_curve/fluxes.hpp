@@ -15,14 +15,14 @@ class Fluxes {
 
   private:
 
-    // Limb darkening parameters.
+    // Limb-darkening parameters.
     double _ld_law;
-    Eigen::Vector<double, Eigen::Dynamic> p;
     double I_0;
+    Eigen::Vector<double, Eigen::Dynamic> p;
 
-    // Transmission string parameters.
+    // Transmission-string parameters.
     int N_c;
-    Eigen::Vector<double, Eigen::Dynamic> c;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
 
     bool _require_gradients;
 
