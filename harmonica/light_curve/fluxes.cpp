@@ -31,7 +31,7 @@ Fluxes::Fluxes(int ld_law,
                                    {0., 1., 2.},
                                    {0., 0., -1.}};
 
-    // Change of basis.
+    // Change to polynomial basis.
     p = B * u;
 
   } else if (_ld_law == 1) {
@@ -46,7 +46,8 @@ Fluxes::Fluxes(int ld_law,
                                    {0., 0., 1., 0., 0.},
                                    {0., 0., 0., 1., 0.},
                                    {0., 0., 0., 0., 1.}};
-    // Change of basis.
+
+    // Change to polynomial basis.
     p = B * u;
   }
 
@@ -60,6 +61,17 @@ Fluxes::Fluxes(int ld_law,
     c(n) = (a_real + b_imag * 1.i) * fractions::one_half;
     c(n_rs - 1 - n) = (a_real - b_imag * 1.i) * fractions::one_half;
   }
+
+  // Pre-compute some of the intersection eqn companion matrix.
+  int companion_matrix_dims = 4 * N_c;
+  C.resize(companion_matrix_dims, companion_matrix_dims);
+  for (int j = 0; j < companion_matrix_dims; j++) {
+    for (int k = 0; k < companion_matrix_dims; k++) {
+      // C_jk private method.
+      // and h_j pre-compute func. ie. just final col first summations indep of d, nu.
+      // later have an update companion matrix method, that adds dep d, nu terms.
+    }
+  }
 }
 
 
@@ -70,5 +82,6 @@ void Fluxes::transit_light_curve(const double &d, const double &nu, double &f,
     std::cout << I_0 << std::endl;
     std::cout << p << std::endl;
     std::cout << c << std::endl;
+    std::cout << C << std::endl;
 
 }

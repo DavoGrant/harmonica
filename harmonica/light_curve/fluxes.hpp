@@ -24,6 +24,9 @@ class Fluxes {
     int N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
 
+    // Intersection variables.
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C;
+
     bool _require_gradients;
 
   public:
