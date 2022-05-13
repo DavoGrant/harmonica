@@ -1,6 +1,7 @@
 #ifndef FLUXES_HPP
 #define FLUXES_HPP
 
+#include <Eigen/Dense>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -14,9 +15,17 @@ class Fluxes {
 
   private:
 
-    // Some parameters.
-    double _d;
-    double _nu;
+    // Limb darkening parameters.
+    double _ld_law;
+    Eigen::Vector<double, Eigen::Dynamic> u;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> B;
+    Eigen::Vector<double, Eigen::Dynamic> p;
+
+    // Transmission string parameters.
+    int N_c;
+    Eigen::Vector<double, Eigen::Dynamic> c;
+
+    bool _require_gradients;
 
   public:
 
@@ -45,7 +54,7 @@ class Fluxes {
      * @param fs_grad empty array of derivatives dfs/dx x={t0, p, a, i, e, w, us, rs}.
      * @return void.
      */
-    void compute_something();
+    void transit_light_curve();
 
 
 };
