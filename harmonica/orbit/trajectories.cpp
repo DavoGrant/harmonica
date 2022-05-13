@@ -1,5 +1,6 @@
 #include <cmath>
 #include <tuple>
+#include <iostream>
 
 #include "trajectories.hpp"
 #include "kepler.hpp"
@@ -28,8 +29,7 @@ OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
 
 void OrbitTrajectories::compute_circular_orbit(
   const double &time, double &d, double &nu,
-  double &dd_dt0, double &dd_dp, double &dd_da, double &dd_dinc,
-  double &dnu_dt0, double &dnu_dp, double &dnu_da, double &dnu_dinc,
+  double* dd_dz[], double* dnu_dz[],
   bool require_gradients) {
 
   // Compute time of periastron.
@@ -86,27 +86,25 @@ void OrbitTrajectories::compute_circular_orbit(
     const double dpsi_dinc = -_sin_inc * atan_mcsM;
 
     // Compute dd_dt0, dd_dp, dd_da, and dd_dinc via the chain rule.
-    dd_dt0 = dd_dx * dx_dM * dM_dt0 + dd_dy * dy_dM * dM_dt0;
-    dd_dp = dd_dx * dx_dM * dM_dp + dd_dy * dy_dM * dM_dp;
-    dd_da = dd_dx * dx_da + dd_dy * dy_da;
-    dd_dinc = dd_dy * dy_dinc;
+    *dd_dz[0] = dd_dx * dx_dM * dM_dt0 + dd_dy * dy_dM * dM_dt0;
+    *dd_dz[1] = dd_dx * dx_dM * dM_dp + dd_dy * dy_dM * dM_dp;
+    *dd_dz[2] = dd_dx * dx_da + dd_dy * dy_da;
+    *dd_dz[3] = dd_dy * dy_dinc;
 
     // Compute dnu_dt0, dnu_dp, dnu_da, and dnu_dinc via the chain rule.
-    dnu_dt0 = dnu_dx * dx_dM * dM_dt0 + dnu_dy * dy_dM * dM_dt0
-              + dnu_dpsi * dpsi_dM * dM_dt0;
-    dnu_dp = dnu_dx * dx_dM * dM_dp + dnu_dy * dy_dM * dM_dp
-             + dnu_dpsi * dpsi_dM * dM_dp;
-    dnu_da = 0.;
-    dnu_dinc = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
+    *dnu_dz[0] = dnu_dx * dx_dM * dM_dt0 + dnu_dy * dy_dM * dM_dt0
+                 + dnu_dpsi * dpsi_dM * dM_dt0;
+    *dnu_dz[1] = dnu_dx * dx_dM * dM_dp + dnu_dy * dy_dM * dM_dp
+                 + dnu_dpsi * dpsi_dM * dM_dp;
+    *dnu_dz[2] = 0.;
+    *dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
   }
 }
 
 
 void OrbitTrajectories::compute_eccentric_orbit(
   const double &time, double &d, double &nu,
-  double &dd_dt0, double &dd_dp, double &dd_da, double &dd_dinc,
-  double &dd_de, double &dd_domega, double &dnu_dt0, double &dnu_dp,
-  double &dnu_da, double &dnu_dinc, double &dnu_de, double &dnu_domega,
+  double* dd_dz[], double* dnu_dz[],
   bool require_gradients) {
 
   // Compute time of periastron.
@@ -201,29 +199,29 @@ void OrbitTrajectories::compute_eccentric_orbit(
 
       // Compute dd_dt0, dd_dp, dd_da, dd_dinc, dd_de, and dd_dw
       // via the chain rule. Probs autograd next time eh.
-      dd_dt0 = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
-                        + dx_dsinf * dsinf_dM * dM_dt0
-                        + dx_dcosf * dcosf_dM * dM_dt0)
-               + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
-                          + dy_dsinf * dsinf_dM * dM_dt0
-                          + dy_dcosf * dcosf_dM * dM_dt0);
-      dd_dp = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
-                       + dx_dsinf * dsinf_dM * dM_dp
-                       + dx_dcosf * dcosf_dM * dM_dp)
-              + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
-                         + dy_dsinf * dsinf_dM * dM_dp
-                         + dy_dcosf * dcosf_dM * dM_dp);
-      dd_da = dd_dx * dx_dr * dr_da + dd_dy * dy_dr * dr_da;
-      dd_dinc = dd_dy * dy_dinc;
-      dd_de = dd_dx * (dx_dr * (dr_de
-                                + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
-                       + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
-                       + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
-              + dd_dy * (dy_dr * (dr_de
-                                  + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
-                         + dy_dsinf * (dsinf_de + dsinf_dM * dM_de)
-                         + dy_dcosf * (dcosf_de + dcosf_dM * dM_de));
-      dd_domega = dd_dx * (dx_domega + dx_dr * dr_dcosf * dcosf_dM * dM_domega
+      *dd_dz[0] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
+                           + dx_dsinf * dsinf_dM * dM_dt0
+                           + dx_dcosf * dcosf_dM * dM_dt0)
+                  + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
+                             + dy_dsinf * dsinf_dM * dM_dt0
+                             + dy_dcosf * dcosf_dM * dM_dt0);
+      *dd_dz[1] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
+                           + dx_dsinf * dsinf_dM * dM_dp
+                           + dx_dcosf * dcosf_dM * dM_dp)
+                  + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
+                             + dy_dsinf * dsinf_dM * dM_dp
+                             + dy_dcosf * dcosf_dM * dM_dp);
+      *dd_dz[2] = dd_dx * dx_dr * dr_da + dd_dy * dy_dr * dr_da;
+      *dd_dz[3] = dd_dy * dy_dinc;
+      *dd_dz[4] = dd_dx * (dx_dr * (dr_de
+                                    + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                           + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
+                           + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                  + dd_dy * (dy_dr * (dr_de
+                                      + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                             + dy_dsinf * (dsinf_de + dsinf_dM * dM_de)
+                             + dy_dcosf * (dcosf_de + dcosf_dM * dM_de));
+      *dd_dz[5] = dd_dx * (dx_domega + dx_dr * dr_dcosf * dcosf_dM * dM_domega
                            + dx_dsinf * dsinf_dM * dM_domega
                            + dx_dcosf * dcosf_dM * dM_domega)
                   + dd_dy * (dy_domega
@@ -233,36 +231,36 @@ void OrbitTrajectories::compute_eccentric_orbit(
 
       // Compute dnu_dt0, dnu_dp, dnu_da, dnu_dinc, dnu_de, and dnu_dw
       // via the chain rule.
-      dnu_dt0 = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
-                          + dx_dsinf * dsinf_dM * dM_dt0
-                          + dx_dcosf * dcosf_dM * dM_dt0)
-                + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
-                            + dy_dsinf * dsinf_dM * dM_dt0
-                            + dy_dcosf * dcosf_dM * dM_dt0)
-                + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dt0
-                              + dpsi_dcosf * dcosf_dM * dM_dt0);
-      dnu_dp = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
-                         + dx_dsinf * dsinf_dM * dM_dp
-                         + dx_dcosf * dcosf_dM * dM_dp)
-               + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
-                           + dy_dsinf * dsinf_dM * dM_dp
-                           + dy_dcosf * dcosf_dM * dM_dp)
-               + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dp
-                             + dpsi_dcosf * dcosf_dM * dM_dp);
-      dnu_da = dnu_dx * dx_dr * dr_da + dnu_dy * dy_dr * dr_da;
-      dnu_dinc = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
-      dnu_de = dnu_dx * (dx_dr * (dr_de
-                                  + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
-                         + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
-                         + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
-               + dnu_dy * (dy_dr * (dr_de
-                                    + dr_dcosf * (dcosf_de
-                                                  + dcosf_dM * dM_de))
-                           + dy_dsinf * (dsinf_de + dsinf_dM * dM_de)
-                           + dy_dcosf * (dcosf_de + dcosf_dM * dM_de))
-               + dnu_dpsi * (dpsi_dsinf * (dsinf_de + dsinf_dM * dM_de)
-                             + dpsi_dcosf * (dcosf_de + dcosf_dM * dM_de));
-      dnu_domega = dnu_dx * (dx_domega
+      *dnu_dz[0] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
+                             + dx_dsinf * dsinf_dM * dM_dt0
+                             + dx_dcosf * dcosf_dM * dM_dt0)
+                   + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
+                               + dy_dsinf * dsinf_dM * dM_dt0
+                               + dy_dcosf * dcosf_dM * dM_dt0)
+                   + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dt0
+                                 + dpsi_dcosf * dcosf_dM * dM_dt0);
+      *dnu_dz[1] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
+                             + dx_dsinf * dsinf_dM * dM_dp
+                             + dx_dcosf * dcosf_dM * dM_dp)
+                   + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
+                               + dy_dsinf * dsinf_dM * dM_dp
+                               + dy_dcosf * dcosf_dM * dM_dp)
+                   + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dp
+                                 + dpsi_dcosf * dcosf_dM * dM_dp);
+      *dnu_dz[2] = dnu_dx * dx_dr * dr_da + dnu_dy * dy_dr * dr_da;
+      *dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
+      *dnu_dz[4] = dnu_dx * (dx_dr * (dr_de
+                                      + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                             + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
+                             + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                   + dnu_dy * (dy_dr * (dr_de
+                                        + dr_dcosf * (dcosf_de
+                                                      + dcosf_dM * dM_de))
+                               + dy_dsinf * (dsinf_de + dsinf_dM * dM_de)
+                               + dy_dcosf * (dcosf_de + dcosf_dM * dM_de))
+                   + dnu_dpsi * (dpsi_dsinf * (dsinf_de + dsinf_dM * dM_de)
+                                 + dpsi_dcosf * (dcosf_de + dcosf_dM * dM_de));
+      *dnu_dz[5] = dnu_dx * (dx_domega
                              + dx_dr * dr_dcosf * dcosf_dM * dM_domega
                              + dx_dsinf * dsinf_dM * dM_domega
                              + dx_dcosf * dcosf_dM * dM_domega)

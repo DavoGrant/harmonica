@@ -11,6 +11,7 @@ class HarmonicaTransit(object):
     parameterising the planet shape as a Fourier series.
 
     # Todo: update ld stings: quadratic, non-linear.
+    # Todo: update maybe remove params given at init. just in methods?
     # Todo: update doc strings for ndarray? what deos jax need.
     # Todo: gradients.
     # Todo: update doc string for latest api args.
@@ -33,15 +34,12 @@ class HarmonicaTransit(object):
     omega : float
         Argument of periastron [radians]. If ecc is not None or 0.
         then omega must also be given.
+    limb_dark_law : string; `quadratic` or `non-linear`
+        The limb darkening law. TBU.
     u : (N,) array_like
         Limb-darkening coefficients. 1d array of coefficients that
         correspond to the limb darkening law specified by the
         limb_dark_law.
-    limb_dark_law : string; `integers` or `half-integers`
-        The limb darkening law. `integers` corresponds to ``I/I_0 =
-        1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
-        corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
-        where N is the length of u. Default is 'integers'.
     r :  (N,) or (N, M) array_like
         Harmonic limb map coefficients. 1D array of N Fourier
         coefficients that specify the planet radius as a function
@@ -80,7 +78,7 @@ class HarmonicaTransit(object):
 
     def __init__(self, times=None, ds=None, nus=None, t0=None,
                  period=None, a=None, inc=None, ecc=None, omega=None,
-                 u=None, limb_dark_law='integers', r=None,
+                 limb_dark_law='quadratic', u=None, r=None,
                  require_gradients=False, verbose=False):
         self._verbose = verbose
 
@@ -93,8 +91,8 @@ class HarmonicaTransit(object):
         self._omega = omega
 
         # Stellar parameters.
-        self._u = u
         self._limb_dark_mode = limb_dark_law
+        self._u = u
         self._limb_dark_updated = True
 
         # Planet parameters.
@@ -116,9 +114,9 @@ class HarmonicaTransit(object):
 
         self._require_gradients = require_gradients
         n_od = times.shape + (6,)
-        n_lcd = times.shape + (4,)
         self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
         self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+        n_lcd = times.shape + (4,)  # TODO: wont always know this at init.
         self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
 
     def __repr__(self):
@@ -155,22 +153,19 @@ class HarmonicaTransit(object):
         self._omega = omega
         self._orbit_updated = True
 
-    def set_stellar_limb_darkening_parameters(self, u=None,
-                                              limb_dark_law='integers'):
+    def set_stellar_limb_darkening_parameters(self, limb_dark_law='quadratic',
+                                              u=None):
         """
         Set/update stellar limb darkening parameters.
 
         Parameters
         ----------
+        limb_dark_law : string; `quadratic` or `non-linear`
+            The limb darkening law. TBU.
         u :  (N,) array_like
             Limb-darkening coefficients. 1D array of coefficients that
             correspond to the limb darkening law specified by the
             limb_dark_law.
-        limb_dark_law : string; `integers` or `half-integers`
-            The limb darkening law. `integers` corresponds to ``I/I_0 =
-            1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
-            corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
-            where N is the length of u. Default is 'integers'.
 
         """
         self._u = u

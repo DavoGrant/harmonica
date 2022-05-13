@@ -48,16 +48,13 @@ class OrbitTrajectories {
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives dd/dz z={t0, p, a, i}.
-     * @param dnu_dz empty derivatives dnu/dz z={t0, p, a, i}.
+     * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i}.
+     * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i}.
      * @param require_gradients derivatives switch.
      * @return void.
      */
     void compute_circular_orbit(const double &time, double &d, double &nu,
-                                double &dd_dt0, double &dd_dp,
-                                double &dd_da, double &dd_dinc,
-                                double &dnu_dt0, double &dnu_dp,
-                                double &dnu_da, double &dnu_dinc,
+                                double* dd_dz[], double* dnu_dz[],
                                 bool require_gradients);
 
     /**
@@ -71,18 +68,13 @@ class OrbitTrajectories {
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz empty derivatives dnu/dz z={t0, p, a, i, e, w}.
+     * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i, e, w}.
      * @param require_gradients derivatives switch.
      * @return void.
      */
     void compute_eccentric_orbit(const double &time, double &d, double &nu,
-                                 double &dd_dt0, double &dd_dp,
-                                 double &dd_da, double &dd_dinc,
-                                 double &dd_de, double &dd_domega,
-                                 double &dnu_dt0, double &dnu_dp,
-                                 double &dnu_da, double &dnu_dinc,
-                                 double &dnu_de, double &dnu_domega,
+                                 double* dd_dz[], double* dnu_dz[],
                                  bool require_gradients);
 
 };

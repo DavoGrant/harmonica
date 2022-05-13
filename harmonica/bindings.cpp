@@ -1,3 +1,4 @@
+#include <iostream>
 #include <pybind11/pybind11.h>
 
 #include "bindings.hpp"
@@ -24,28 +25,35 @@ void compute_orbital_separation_and_angles(
   auto ds_grad_ = ds_grad.mutable_unchecked<2>();
   auto nus_grad_ = nus_grad.mutable_unchecked<2>();
 
+  int n_times = times_.shape(0);
+  int n_partials = ds_grad_.shape(1);
+  double* ds_partials[n_partials];
+  double* nus_partials[n_partials];
+
   // Compute orbital trajectories.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
   if (ecc == 0.) {
+
     // Circular case.
-    for (py::ssize_t i = 0; i < times_.shape(0); i++) {
+    for (int i = 0; i < n_times; i++) {
+      for (int j = 0; j < n_partials; j++) {
+        ds_partials[j] = &ds_grad_(i, j);
+        nus_partials[j] = &nus_grad_(i, j);
+      }
       orbital.compute_circular_orbit(times_(i), ds_(i), nus_(i),
-                                     ds_grad_(i, 0), ds_grad_(i, 1),
-                                     ds_grad_(i, 2), ds_grad_(i, 3),
-                                     nus_grad_(i, 0), nus_grad_(i, 1),
-                                     nus_grad_(i, 2), nus_grad_(i, 3),
+                                     ds_partials, nus_partials,
                                      require_gradients);
     }
   } else {
+
     // Eccentric case.
-    for (py::ssize_t i = 0; i < times_.shape(0); i++) {
+    for (int i = 0; i < n_times; i++) {
+      for (int j = 0; j < n_partials; j++) {
+        ds_partials[j] = &ds_grad_(i, j);
+        nus_partials[j] = &nus_grad_(i, j);
+      }
       orbital.compute_eccentric_orbit(times_(i), ds_(i), nus_(i),
-                                      ds_grad_(i, 0), ds_grad_(i, 1),
-                                      ds_grad_(i, 2), ds_grad_(i, 3),
-                                      ds_grad_(i, 4), ds_grad_(i, 5),
-                                      nus_grad_(i, 0), nus_grad_(i, 1),
-                                      nus_grad_(i, 2), nus_grad_(i, 3),
-                                      nus_grad_(i, 4), nus_grad_(i, 5),
+                                      ds_partials, nus_partials,
                                       require_gradients);
     }
   }
@@ -53,9 +61,26 @@ void compute_orbital_separation_and_angles(
 
 
 void compute_harmonica_light_curve(
+  int ld_law,
+  py::array_t<double, py::array::c_style> us,
+  py::array_t<double, py::array::c_style> rs,
+  py::array_t<double, py::array::c_style> ds,
+  py::array_t<double, py::array::c_style> nus,
+  py::array_t<double, py::array::c_style> fs,
+  py::array_t<double, py::array::c_style> ds_grad,
+  py::array_t<double, py::array::c_style> nus_grad,
+  py::array_t<double, py::array::c_style> fs_grad,
   bool require_gradients) {
 
-    Fluxes flux(require_gradients);
+//  // Unpack python arrays.
+//  auto times_ = times.unchecked<1>();
+//  auto ds_ = ds.mutable_unchecked<1>();
+//  auto nus_ = nus.mutable_unchecked<1>();
+//  auto ds_grad_ = ds_grad.mutable_unchecked<2>();
+//  auto nus_grad_ = nus_grad.mutable_unchecked<2>();
+//
+//    Fluxes flux(ld_law, us, rs, ds, nus, fs,
+//                ds_grad, nus_grad, fs_grad, require_gradients);
 
 }
 
@@ -77,6 +102,15 @@ PYBIND11_MODULE(bindings, m) {
       py::arg("require_gradients") = false);
 
     m.def("light_curve", &compute_harmonica_light_curve,
+      py::arg("ld_law") = py::none(),
+      py::arg("us") = py::none(),
+      py::arg("rs") = py::none(),
+      py::arg("ds") = py::none(),
+      py::arg("nus") = py::none(),
+      py::arg("fs") = py::none(),
+      py::arg("ds_grad") = py::none(),
+      py::arg("nus_grad") = py::none(),
+      py::arg("fs_grad") = py::none(),
       py::arg("require_gradients") = false);
 
 }
