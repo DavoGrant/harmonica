@@ -18,6 +18,7 @@ class Fluxes {
     // Limb darkening parameters.
     double _ld_law;
     Eigen::Vector<double, Eigen::Dynamic> p;
+    double I_0;
 
     // Transmission string parameters.
     int N_c;
