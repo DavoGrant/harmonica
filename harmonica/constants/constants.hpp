@@ -31,8 +31,10 @@ namespace fractions {
 
 }
 
-namespace limb_darkening {
+namespace tolerance {
 
+  const double unit_circle_lo = 1. - 1.e-7;
+  const double unit_circle_hi = 1. + 1.e-7;
 
 }
 

@@ -25,9 +25,36 @@ class Fluxes {
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
 
     // Intersection variables.
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C;
 
+    // Derivatives switch.
     bool _require_gradients;
+
+    /**
+     * Companion matrix elements for computing the max and min radii of
+     * a transmission string.
+     *
+     * @param j row index, starts at one.
+     * @param k column index, starts at one.
+     * @param shape number of rows=cols of matrix.
+     * @return complex matrix element.
+     */
+    std::complex<double> extrema_companion_matrix_D_jk(int j, int k,
+                                                       const int shape);
+
+    /**
+     * Compute the real roots, as a vector of thetas, from a given companion
+     * matrix. The real roots correspond to angles in the complex plane where
+     * the matrix eigenvalues lie on the unit circle.
+     *
+     * @param companion_matrix the complex-valued companion matrix.
+     * @param shape number of rows=cols of matrix and complex eigenvalues.
+     * @return vector of real roots in theta.
+     */
+    std::vector<double> compute_real_theta_roots(
+      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+        companion_matrix, const int shape);
 
   public:
 
@@ -45,7 +72,7 @@ class Fluxes {
            bool require_gradients);
 
     /**
-     * Name and description.
+     * Compute normalised transit flux.
      *
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
@@ -55,9 +82,9 @@ class Fluxes {
      * @param df_dz empty array of derivatives df/dz z={t0, p, a, i, e, w, us, rs}.
      * @return void.
      */
-    void transit_light_curve(const double &d, const double &nu, double &f,
-                             const double* dd_dz[], const double* dnu_dz[],
-                             double* df_dz[]);
+    void transit_flux(const double &d, const double &nu, double &f,
+                      const double* dd_dz[], const double* dnu_dz[],
+                      double* df_dz[]);
 
 
 };

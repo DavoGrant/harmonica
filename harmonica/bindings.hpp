@@ -42,7 +42,7 @@ void compute_orbital_separation_and_angles(
 
 
 /**
- * Compute normalised transit light curve for a given transmission string,
+ * Compute a normalised transit light curve for a given transmission string,
  * defined by an array of harmonic coefficients rs, and stellar limb
  * darkening law, defined by an array of coefficients us.
  *

@@ -99,8 +99,8 @@ void compute_harmonica_light_curve(
     for (int j = 0; j < n_f_partials; j++) {
       fs_partials[j] = &fs_grad_(i, j);
     }
-    flux.transit_light_curve(ds_(i), nus_(i), fs_(i),
-                             ds_partials, nus_partials, fs_partials);
+    flux.transit_flux(ds_(i), nus_(i), fs_(i),
+                      ds_partials, nus_partials, fs_partials);
   }
 
 }
