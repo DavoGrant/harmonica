@@ -320,11 +320,15 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     // Sort roots in ascending order, -pi < theta <= pi.
     std::sort(theta.begin(), theta.end());
 
+    // Ensure theta vector spans a closed loop, 2pi in total.
+    // Thus, duplicate first intersection + 2pi at the end.
+    theta.push_back(theta[0] + fractions::twopi);
+
     // Characterise theta pairs.
-
+    for (int j = 0; j < theta.size() - 1; j++) {
+      std::cout << std::setprecision(15) << theta[j] << ' ' << theta[j + 1] << std::endl;
+    }
   }
-
-
 }
 
 
