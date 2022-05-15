@@ -1,6 +1,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include <Eigen/Dense>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -57,24 +58,35 @@ Fluxes::Fluxes(int ld_law,
   c.resize(n_rs);
   c(N_c) = rs_(0);
   for (int n = 0; n < N_c; n++) {
-
     double a_real = rs_(n_rs - 2 - 2 * n);
     double b_imag = rs_(n_rs - 1 - 2 * n);
     c(n) = (a_real + b_imag * 1.i) * fractions::one_half;
     c(n_rs - 1 - n) = (a_real - b_imag * 1.i) * fractions::one_half;
-
   }
 
   // Pre-compute max and min planet radii.
-  const int D_shape = 2 * N_c;
-  D.resize(D_shape, D_shape);
-  for (int j = 1; j < D_shape + 1; j++) {
-    for (int k = 1; k < D_shape + 1; k++) {
-      D(j - 1, k - 1) = this->extrema_companion_matrix_D_jk(j, k, D_shape);
+  min_rp = c(N_c).real();
+  max_rp = c(N_c).real();
+  if (N_c != 0) {
+    const int D_shape = 2 * N_c;
+    D.resize(D_shape, D_shape);
+    for (int j = 1; j < D_shape + 1; j++) {
+      for (int k = 1; k < D_shape + 1; k++) {
+        D(j - 1, k - 1) = this->extrema_companion_matrix_D_jk(j, k, D_shape);
+      }
+    }
+    std::vector<double> theta_extrema = this->compute_real_theta_roots(D, D_shape);
+    for (int j = 0; j < theta_extrema.size(); j++) {
+      double _rp = this->rp_theta(theta_extrema[j]);
+      if (_rp < min_rp) {
+        min_rp = _rp;
+      } else if (_rp > max_rp) {
+        max_rp = _rp;
+      }
     }
   }
-  std::vector<double> theta_extrema = this->compute_real_theta_roots(D, D_shape);
-
+  std::cout << min_rp << std::endl;
+  std::cout << max_rp << std::endl;
 
   // Pre-compute intersection eqn companion matrix where terms are
   // independent of d and nu.
@@ -83,11 +95,14 @@ Fluxes::Fluxes(int ld_law,
   for (int j = 1; j < C_shape + 1; j++) {
     for (int k = 1; k < C_shape + 1; k++) {
       C(j - 1, k - 1) = 1. - 2.i;
-      // C_jk private method.
+      // Todo: C_jk private method.
       // and h_j pre-compute func. ie. just final col first summations indep of d, nu.
       // later have an update companion matrix method, that adds dep d, nu terms.
     }
   }
+
+  // Todo: more pre-compute
+  // eg. c conv c.
 }
 
 
@@ -121,12 +136,21 @@ std::vector<double> Fluxes::compute_real_theta_roots(
   std::vector<double> theta;
   for (int j = 0; j < shape; j++) {
     double ev_abs = std::abs(evs(j));
-    if (tolerance::unit_circle_lo < ev_abs && ev_abs <
-                                              tolerance::unit_circle_hi) {
+    if (tolerance::unit_circle_lo < ev_abs
+        && ev_abs < tolerance::unit_circle_hi) {
       theta.push_back(std::arg(evs(j)));
     }
   }
   return theta;
+}
+
+
+double Fluxes::rp_theta(double theta) {
+  std::complex<double> rp = 0.;
+  for (int n = -N_c; n < N_c + 1; n++) {
+    rp += c(n + N_c) * std::exp((1. * n) * 1.i * theta);
+  }
+  return rp.real();
 }
 
 
@@ -137,7 +161,7 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
 //    std::cout << I_0 << std::endl;
 //    std::cout << p << std::endl;
 //    std::cout << c << std::endl;
-    std::cout << D << std::endl;
+//    std::cout << D << std::endl;
 //    std::cout << C << std::endl;
 
 }

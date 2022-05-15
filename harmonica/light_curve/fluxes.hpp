@@ -23,6 +23,8 @@ class Fluxes {
     // Transmission-string parameters.
     int N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
+    double min_rp;
+    double max_rp;
 
     // Intersection variables.
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
@@ -70,6 +72,14 @@ class Fluxes {
            py::array_t<double, py::array::c_style> us,
            py::array_t<double, py::array::c_style> rs,
            bool require_gradients);
+
+    /**
+     * Compute the planet radius at a given theta.
+     *
+     * @param theta angle in the terminator plane from v_orb [radians].
+     * @return rp, the planet radius, is always real.
+     */
+    double rp_theta(double theta);
 
     /**
      * Compute normalised transit flux.
