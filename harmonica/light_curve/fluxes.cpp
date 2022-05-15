@@ -279,9 +279,6 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     theta = {nu - acos_intersect, nu + acos_intersect};
   }
 
-  // Todo: perhaps check even number functionality: mutiplicity etc if
-  // Todo: odd, may reduce to zero.
-
   if (theta.size() == 0) {
     // No roots, check which trivial case this configuration corresponds to.
     double _rp_nu = this->rp_theta(nu);
