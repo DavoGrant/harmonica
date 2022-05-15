@@ -15,12 +15,12 @@ class Fluxes {
 
   private:
 
-    // Limb-darkening parameters.
+    // Limb-darkening variables.
     double _ld_law;
     double I_0;
     Eigen::Vector<double, Eigen::Dynamic> p;
 
-    // Transmission-string parameters.
+    // Transmission-string variables.
     int N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
     double min_rp;
@@ -28,7 +28,10 @@ class Fluxes {
 
     // Intersection variables.
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
+    int C_shape;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C;
+    std::vector<double> theta;
+    std::vector<double> theta_type;
 
     // Derivatives switch.
     bool _require_gradients;
@@ -43,7 +46,7 @@ class Fluxes {
      * @return complex matrix element.
      */
     std::complex<double> extrema_companion_matrix_D_jk(int j, int k,
-                                                       const int shape);
+                                                       int shape);
 
     /**
      * Companion matrix elements for computing the planet-star limb
@@ -56,7 +59,7 @@ class Fluxes {
      * @return complex matrix element.
      */
     std::complex<double> intersection_companion_matrix_C_jk_base(
-      int j, int k, const int shape);
+      int j, int k, int shape);
 
     /**
      * Complex polynomial coefficients for the intersection equation, h_j,
@@ -79,7 +82,20 @@ class Fluxes {
      */
     std::vector<double> compute_real_theta_roots(
       Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-        companion_matrix, const int shape);
+        companion_matrix, int shape);
+
+    /**
+     * Find and characterise the planet-stellar limb intersections vector,
+     * theta, and sort in ascending order, -pi < theta <= pi. Each adjacent
+     * pair of thetas corresponds to a segment of the closed loop piecewise
+     * integral around the overlap region. These pairs are assigned as either
+     * planet=0 or star=1 integral types.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void find_intersections_theta(const double &d, const double &nu);
 
   public:
 
@@ -102,7 +118,7 @@ class Fluxes {
      * @param theta angle in the terminator plane from v_orb [radians].
      * @return rp, the planet radius, is always real.
      */
-    double rp_theta(double theta);
+    double rp_theta(double _theta);
 
     /**
      * Compute normalised transit flux.

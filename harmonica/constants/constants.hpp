@@ -31,6 +31,21 @@ namespace fractions {
 
 }
 
+namespace limb_darkening {
+
+  const int quadratic = 0;
+  const int non_linear = 1;
+
+}
+
+namespace intersections {
+
+  const int planet = 0;
+  const int star = 1;
+  const int beyond = 2;
+
+}
+
 namespace tolerance {
 
   const double unit_circle_lo = 1. - 1.e-7;

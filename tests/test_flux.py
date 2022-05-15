@@ -24,8 +24,8 @@ class TestFlux(unittest.TestCase):
         limb_dark_law = 0
         us = np.array([0.40, 0.29], dtype=np.float64, order='C')
         rs = np.array([0.1, 0.002, 0.001, -0.003, 0.005], dtype=np.float64, order='C')
-        ds = np.ascontiguousarray(np.linspace(2., 0.1, 1), dtype=np.float64)
-        nus = np.ascontiguousarray(np.linspace(0.01, np.pi/2, len(ds)), dtype=np.float64)
+        ds = np.ascontiguousarray([0.89], dtype=np.float64)
+        nus = np.ascontiguousarray([0.1], dtype=np.float64)
         fs = np.empty(ds.shape, dtype=np.float64, order='C')
         n_od = ds.shape + (6,)
         ds_grad = np.empty(n_od, dtype=np.float64, order='C')

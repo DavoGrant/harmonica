@@ -25,7 +25,7 @@ Fluxes::Fluxes(int ld_law,
   _ld_law = ld_law;
   if (_ld_law == 0) {
     // Normalisation.
-    I_0 = 1 / ((1 - us_(0) / 3. - us_(1) / 6.) * M_PI);
+    I_0 = 1 / ((1 - us_(0) / 3. - us_(1) / 6.) * fractions::pi);
 
     // Quadratic limb-darkening law.
     Eigen::Vector<double, 3> u {1, us_(0), us_(1)};
@@ -39,7 +39,7 @@ Fluxes::Fluxes(int ld_law,
   } else if (_ld_law == 1) {
     // Normalisation.
     I_0 = 1 / ((1 - us_(0) / 5. - us_(1) / 3.
-                - 3. * us_(2) / 7. - us_(3) / 2.) * M_PI);
+                - 3. * us_(2) / 7. - us_(3) / 2.) * fractions::pi);
 
     // Non-linear limb-darkening law.
     Eigen::Vector<double, 5> u {1, us_(0), us_(1), us_(2), us_(3)};
@@ -95,7 +95,7 @@ Fluxes::Fluxes(int ld_law,
 
   // Pre-build the intersection eqn companion matrix for the terms that
   // are independent of position, d and nu.
-  const int C_shape = 4 * N_c;
+  C_shape = 4 * N_c;
   C.resize(C_shape, C_shape);
   for (int j = 1; j < C_shape + 1; j++) {
     for (int k = 1; k < C_shape + 1; k++) {
@@ -110,7 +110,7 @@ Fluxes::Fluxes(int ld_law,
 
 
 std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
-                                                           const int shape) {
+                                                           int shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
   std::complex<double> moo_denom = -1. / (1. * N_c * c(shape));
@@ -127,13 +127,14 @@ std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
 
 
 std::complex<double> Fluxes::intersection_companion_matrix_C_jk_base(
-  int j, int k, const int shape) {
+  int j, int k, int shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
   std::complex<double> moo_denom = -1.
     / this->intersection_polynomial_coefficients_h_j_base(shape);
   if (k == shape) {
-    return this->intersection_polynomial_coefficients_h_j_base(j - 1) * moo_denom;
+    return this->intersection_polynomial_coefficients_h_j_base(j - 1)
+           * moo_denom;
   } else {
     if (j == k + 1) {
       return 1.;
@@ -182,9 +183,57 @@ std::complex<double> Fluxes::intersection_polynomial_coefficients_h_j_base(
 }
 
 
+void Fluxes::find_intersections_theta(const double &d, const double &nu) {
+
+  // Check cases where no obvious intersections, avoiding eigenvalue runtime.
+  if (d <= 1.) {
+    // Planet centre inside stellar disc.
+    if (max_rp <= 1. - d) {
+      // Max planet radius would not intersect closest stellar limb.
+      // Overlap region enclosed by entire planet's limb.
+      theta = {-fractions::pi, fractions::pi};
+      theta_type = {intersections::planet};
+      return;
+    } else if (min_rp >= 1. + d) {
+      // Min planet radius beyond furthest stellar limb.
+      // Overlap region enclosed by entire star's limb.
+      theta = {-fractions::pi, fractions::pi};
+      theta_type = {intersections::star};
+      return;
+    }
+  } else {
+    // Planet centre outside stellar disc.
+    if (max_rp <= d - 1.) {
+      // Max planet radius would not intersect closest stellar limb.
+      // Overlap region is zero.
+      theta = {};
+      theta_type = {intersections::beyond};
+      return;
+    } else if (min_rp >= d + 1.) {
+      // Min planet radius beyond furthest stellar limb.
+      // Overlap region enclosed by entire star's limb.
+      theta = {-fractions::pi, fractions::pi};
+      theta_type = {intersections::star};
+      return;
+    }
+  }
+
+
+  // Update intersection companion matrix for current position.
+
+  // Get the intersection companion matrix roots.
+  // this->compute_real_theta_roots
+
+  // If no roots, check which trivial case this positioning corresponds to.
+
+  // Else, sort roots in ascending order, -pi < theta <= pi.
+
+}
+
+
 std::vector<double> Fluxes::compute_real_theta_roots(
   Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-    companion_matrix, const int shape) {
+    companion_matrix, int shape) {
 
   // Solve eigenvalues.
   Eigen::ComplexEigenSolver<Eigen::Matrix<std::complex<double>,
@@ -192,23 +241,23 @@ std::vector<double> Fluxes::compute_real_theta_roots(
   ces.compute(companion_matrix, false);
   Eigen::Vector<std::complex<double>, Eigen::Dynamic> evs = ces.eigenvalues();
 
-  // Select real thetas only: angle to unit circle in complex plane.
-  std::vector<double> theta;
+  // Select real thetas only: angle to point on unit circle in complex plane.
+  std::vector<double> _theta;
   for (int j = 0; j < shape; j++) {
     double ev_abs = std::abs(evs(j));
     if (tolerance::unit_circle_lo < ev_abs
         && ev_abs < tolerance::unit_circle_hi) {
-      theta.push_back(std::arg(evs(j)));
+      _theta.push_back(std::arg(evs(j)));
     }
   }
-  return theta;
+  return _theta;
 }
 
 
-double Fluxes::rp_theta(double theta) {
+double Fluxes::rp_theta(double _theta) {
   std::complex<double> rp = 0.;
   for (int n = -N_c; n < N_c + 1; n++) {
-    rp += c(n + N_c) * std::exp((1. * n) * 1.i * theta);
+    rp += c(n + N_c) * std::exp((1. * n) * 1.i * _theta);
   }
   return rp.real();
 }
@@ -218,10 +267,23 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
                           const double* dd_dz[], const double* dnu_dz[],
                           double* df_dz[]) {
 
+  // Clear attributes that are not rebuilt from scratch.
+  // Ideally no need for this as all methods re-build.
+
+  // Find planet-stellar limb intersections, sorted theta.
+  this->find_intersections_theta(d, nu);
+
+  // Iterate thetas in adjacent pairs.
+  // Iterate s_n terms.
+  // Which way around to nest these..?
+
 //    std::cout << I_0 << std::endl;
 //    std::cout << p << std::endl;
 //    std::cout << c << std::endl;
 //    std::cout << D << std::endl;
-    std::cout << C << std::endl;
+//    std::cout << C << std::endl;
+    std::cout << theta.size() << std::endl;
+    std::cout << theta_type[0] << std::endl;
+    std::cout << theta[0] << std::endl;
 
 }
