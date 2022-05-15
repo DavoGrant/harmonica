@@ -35,15 +35,38 @@ class Fluxes {
 
     /**
      * Companion matrix elements for computing the max and min radii of
-     * a transmission string.
+     * a transmission string, D_jk(c).
      *
-     * @param j row index, starts at one.
-     * @param k column index, starts at one.
+     * @param j row index, 1 <= j <= 2N_c.
+     * @param k column index, 1 <= k <= 2N_c.
      * @param shape number of rows=cols of matrix.
      * @return complex matrix element.
      */
     std::complex<double> extrema_companion_matrix_D_jk(int j, int k,
                                                        const int shape);
+
+    /**
+     * Companion matrix elements for computing the planet-star limb
+     * intersections, C_jk(H), but only for terms that are independent
+     * of the relative position, d and nu.
+     *
+     * @param j row index, 1 <= j <= 4N_c.
+     * @param k column index, 1 <= k <= 4N_c.
+     * @param shape number of rows=cols of matrix.
+     * @return complex matrix element.
+     */
+    std::complex<double> intersection_companion_matrix_C_jk_base(
+      int j, int k, const int shape);
+
+    /**
+     * Complex polynomial coefficients for the intersection equation, h_j,
+     * but only for terms that are independent of the relative position,
+     * d and nu.
+     *
+     * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @return complex polynomial coefficient.
+     */
+    std::complex<double> intersection_polynomial_coefficients_h_j_base(int j);
 
     /**
      * Compute the real roots, as a vector of thetas, from a given companion
