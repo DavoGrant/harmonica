@@ -279,18 +279,50 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     theta = {nu - acos_intersect, nu + acos_intersect};
   }
 
-  // Todo: if multiplicty is two, touching may need special treatment if this removes root, or veen reduces to zero roots.
-  // Todo: perhaps check even number functionality.
+  // Todo: perhaps check even number functionality: mutiplicity etc if
+  // Todo: odd, may reduce to zero.
 
-//  if (theta.size() == 0) {
-//    // No roots, check which trivial case this configuration corresponds to.
-//
-//  } else {
-//    // Sort roots in ascending order, -pi < theta <= pi.
-//
-//    // Characterise theta pairs.
-//
-//  }
+  if (theta.size() == 0) {
+    // No roots, check which trivial case this configuration corresponds to.
+    double _rp_nu = this->rp_theta(nu);
+    if (d <= 1.) {
+      // Planet centre inside stellar disc.
+      if (_rp_nu < 1. + d) {
+        // Planet radius toward stellar centre closer than stellar limb.
+        // Overlap region enclosed by entire planet's limb as no intersects.
+        theta = {-fractions::pi, fractions::pi};
+        theta_type = {intersections::planet};
+        return;
+      } else if (_rp_nu > 1. + d) {
+        // Planet radius toward stellar centre beyond stellar limb.
+        // Overlap region enclosed by entire star's limb as no intersects.
+        theta = {-fractions::pi, fractions::pi};
+        theta_type = {intersections::star};
+        return;
+      }
+    } else {
+      // Planet centre outside stellar disc.
+      if (_rp_nu < 1. + d) {
+        // Planet radius toward stellar centre closer than stellar limb.
+        // Overlap region is zero as no intersects.
+        theta = {};
+        theta_type = {intersections::beyond};
+        return;
+      } else if (_rp_nu > 1. + d) {
+        // Planet radius toward stellar centre beyond stellar limb.
+        // Overlap region enclosed by entire star's limb as no intersects.
+        theta = {-fractions::pi, fractions::pi};
+        theta_type = {intersections::star};
+        return;
+      }
+    }
+  } else {
+    // Sort roots in ascending order, -pi < theta <= pi.
+    std::sort(theta.begin(), theta.end());
+
+    // Characterise theta pairs.
+
+  }
 
 
 }
