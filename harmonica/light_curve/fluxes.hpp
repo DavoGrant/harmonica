@@ -33,6 +33,11 @@ class Fluxes {
     std::vector<double> theta;
     std::vector<double> theta_type;
 
+    // Position variables.
+    double _dd;
+    std::complex<double> _d_expinu;
+    std::complex<double> _d_expminu;
+
     // Derivatives switch.
     bool _require_gradients;
 
@@ -70,6 +75,28 @@ class Fluxes {
      * @return complex polynomial coefficient.
      */
     std::complex<double> intersection_polynomial_coefficients_h_j_base(int j);
+
+    /**
+     * Complex polynomial coefficients for the intersection equation, h_j,
+     * but only update terms based on the relative position, d and nu. All
+     * these values are added to the final column of the companion matrix
+     * that will already have been build using the _base methods.
+     *
+     * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @return complex polynomial coefficient.
+     */
+    std::complex<double> intersection_polynomial_coefficients_h_j_update(
+      int j);
+
+    /**
+     * Complex polynomial coefficient for the intersection equation, but
+     * only the h_4Nc term. Here we return -1/h_4Nc.
+     *
+     * @param j polynomial term exponent, j = 4N_c.
+     * @return complex polynomial coefficient.
+     */
+    std::complex<double> intersection_polynomial_coefficient_moo_denom(
+      int j);
 
     /**
      * Compute the real roots, as a vector of thetas, from a given companion

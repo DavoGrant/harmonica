@@ -1,10 +1,13 @@
 #include <cmath>
 #include <vector>
-#include <iostream>
 #include <algorithm>
 #include <Eigen/Dense>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+
+// TODO: temp debug.
+#include <iomanip>
+#include <iostream>
 
 #include "fluxes.hpp"
 #include "../constants/constants.hpp"
@@ -68,7 +71,6 @@ Fluxes::Fluxes(int ld_law,
   min_rp = c(N_c).real();
   max_rp = c(N_c).real();
   if (N_c != 0) {
-
     // Build the extrema companion matrix.
     const int D_shape = 2 * N_c;
     D.resize(D_shape, D_shape);
@@ -93,14 +95,16 @@ Fluxes::Fluxes(int ld_law,
     }
   }
 
-  // Pre-build the intersection eqn companion matrix for the terms that
-  // are independent of position, d and nu.
-  C_shape = 4 * N_c;
-  C.resize(C_shape, C_shape);
-  for (int j = 1; j < C_shape + 1; j++) {
-    for (int k = 1; k < C_shape + 1; k++) {
-      C(j - 1, k - 1) = this->intersection_companion_matrix_C_jk_base(
-        j, k, C_shape);
+  if (N_c != 0) {
+    // Pre-build the intersection eqn companion matrix for the terms
+    // that are independent of position, d and nu.
+    C_shape = 4 * N_c;
+    C.resize(C_shape, C_shape);
+    for (int j = 1; j < C_shape + 1; j++) {
+      for (int k = 1; k < C_shape + 1; k++) {
+        C(j - 1, k - 1) = this->intersection_companion_matrix_C_jk_base(
+          j, k, C_shape);
+      }
     }
   }
 
@@ -130,11 +134,8 @@ std::complex<double> Fluxes::intersection_companion_matrix_C_jk_base(
   int j, int k, int shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
-  std::complex<double> moo_denom = -1.
-    / this->intersection_polynomial_coefficients_h_j_base(shape);
   if (k == shape) {
-    return this->intersection_polynomial_coefficients_h_j_base(j - 1)
-           * moo_denom;
+    return this->intersection_polynomial_coefficients_h_j_base(j - 1);
   } else {
     if (j == k + 1) {
       return 1.;
@@ -147,39 +148,81 @@ std::complex<double> Fluxes::intersection_companion_matrix_C_jk_base(
 
 std::complex<double> Fluxes::intersection_polynomial_coefficients_h_j_base(
   int j) {
-  std::complex<double> h_j = 0.;
   // NB. verbose on purpose.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
+  std::complex<double> h_j_base = 0.;
   if (0 <= j && j < N_c - 1) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (N_c - 1 <= j && j < N_c + 1) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (N_c + 1 <= j && j < 2 * N_c) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (j == 2 * N_c) {
+    h_j_base -= 1.;
     for (int n = -N_c; n < N_c + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c) - 1.;
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (2 * N_c + 1 <= j && j < 3 * N_c) {
     for (int n = -3 * N_c + j; n < N_c + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (3 * N_c <= j && j < 3 * N_c + 2) {
     for (int n = -3 * N_c + j; n < N_c + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   } else if (3 * N_c + 2 <= j && j < 4 * N_c + 1) {
     for (int n = -3 * N_c + j; n < N_c + 1; n++) {
-      h_j += c(n + N_c) * c(j - n - N_c);
+      h_j_base += c(n + N_c) * c(j - n - N_c);
     }
   }
-  return h_j;
+  return h_j_base;
+}
+
+
+std::complex<double> Fluxes::intersection_polynomial_coefficients_h_j_update(
+  int j) {
+  // NB. c_0 requires c(0 + N_c) as it runs -N_c through N_c.
+  std::complex<double> h_j_update = 0.;
+  if (N_c - 1 <= j && j < N_c + 1) {
+    h_j_update -= _d_expinu * c(j + 1 - N_c);
+  } else if (N_c + 1 <= j && j < 2 * N_c) {
+    h_j_update -= _d_expinu * c(j + 1 - N_c);
+    h_j_update -= _d_expminu * c(j - 1 - N_c);
+  } else if (j == 2 * N_c) {
+    h_j_update -= _d_expinu * c(j + 1 - N_c);
+    h_j_update -= _d_expminu * c(j - 1 - N_c);
+    h_j_update += _dd;
+  } else if (2 * N_c + 1 <= j && j < 3 * N_c) {
+    h_j_update -= _d_expinu * c(j + 1 - N_c);
+    h_j_update -= _d_expminu * c(j - 1 - N_c);
+  } else if (3 * N_c <= j && j < 3 * N_c + 2) {
+    h_j_update -= _d_expminu * c(j - 1 - N_c);
+  }
+  return h_j_update;
+}
+
+
+std::complex<double> Fluxes::intersection_polynomial_coefficient_moo_denom(
+  int j) {
+  // NB. c_0 requires c(0 + N_c) as it runs -N_c through N_c.
+  std::complex<double> h_4Nc = 0.;
+  if (3 * N_c <= j && j < 3 * N_c + 2) {
+    h_4Nc -= _d_expminu * c(j - 1 - N_c);
+    for (int n = -3 * N_c + j; n < N_c + 1; n++) {
+      h_4Nc += c(n + N_c) * c(j - n - N_c);
+    }
+  } else if (3 * N_c + 2 <= j && j < 4 * N_c + 1) {
+    for (int n = -3 * N_c + j; n < N_c + 1; n++) {
+      h_4Nc += c(n + N_c) * c(j - n - N_c);
+    }
+  }
+  return -1. / h_4Nc;
 }
 
 
@@ -218,15 +261,37 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     }
   }
 
+  if (N_c != 0) {
+    // Update intersection companion matrix for current position.
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> _C = C;
+    std::complex<double> moo_denom = intersection_polynomial_coefficient_moo_denom(C_shape);
+    for (int j = 1; j < C_shape + 1; j++) {
+      _C(j - 1, C_shape - 1) += this->intersection_polynomial_coefficients_h_j_update(j - 1);
+      _C(j - 1, C_shape - 1) *= moo_denom;
+    }
 
-  // Update intersection companion matrix for current position.
+    // Get the intersection companion matrix roots.
+    theta = this->compute_real_theta_roots(_C, C_shape);
 
-  // Get the intersection companion matrix roots.
-  // this->compute_real_theta_roots
+  } else {
+    double acos_intersect = std::acos(
+      (c(N_c).real() * c(N_c).real() + _dd - 1.) / (2. * c(N_c).real() * d));
+    theta = {nu - acos_intersect, nu + acos_intersect};
+  }
 
-  // If no roots, check which trivial case this positioning corresponds to.
+  // Todo: if multiplicty is two, touching may need special treatment if this removes root, or veen reduces to zero roots.
+  // Todo: perhaps check even number functionality.
 
-  // Else, sort roots in ascending order, -pi < theta <= pi.
+//  if (theta.size() == 0) {
+//    // No roots, check which trivial case this configuration corresponds to.
+//
+//  } else {
+//    // Sort roots in ascending order, -pi < theta <= pi.
+//
+//    // Characterise theta pairs.
+//
+//  }
+
 
 }
 
@@ -267,23 +332,20 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
                           const double* dd_dz[], const double* dnu_dz[],
                           double* df_dz[]) {
 
-  // Clear attributes that are not rebuilt from scratch.
-  // Ideally no need for this as all methods re-build.
+  // Pre-compute some position specific quantities.
+  _dd = d * d;
+  _d_expinu = d * std::exp(1.i * nu);
+  _d_expminu = d * std::exp(-1.i * nu);
 
   // Find planet-stellar limb intersections, sorted theta.
   this->find_intersections_theta(d, nu);
+  std::cout << std::setprecision(15) << theta.size() << std::endl;
 
   // Iterate thetas in adjacent pairs.
   // Iterate s_n terms.
   // Which way around to nest these..?
 
-//    std::cout << I_0 << std::endl;
-//    std::cout << p << std::endl;
-//    std::cout << c << std::endl;
-//    std::cout << D << std::endl;
-//    std::cout << C << std::endl;
-    std::cout << theta.size() << std::endl;
-    std::cout << theta_type[0] << std::endl;
-    std::cout << theta[0] << std::endl;
+  // Todo: Ensure attributes are reset for new position,
+  // Todo: or copies have been made.
 
 }
