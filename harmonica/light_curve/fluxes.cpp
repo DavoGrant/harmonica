@@ -340,7 +340,7 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     if (max_rp <= d - 1.) {
       // Max planet radius would not intersect closest stellar limb.
       // Overlap region is zero.
-      theta = {};
+      theta = {0., 0.};
       theta_type = {intersections::beyond};
       return;
     } else if (min_rp >= d + 1.) {
@@ -493,15 +493,26 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   std::cout << std::setprecision(15) << theta.size() << std::endl;
   std::cout << std::setprecision(15) << theta_type.size() << std::endl;
 
-  // Todo: more pre-compute per theta pair tho.
-  // eg. cos(theta - nu)
-  // eg. sin(theta - nu)
-
   // Iterate thetas in adjacent pairs.
   // Iterate s_n terms.
   // Which way around to nest these..?
 
-  // Todo: Ensure attributes are reset for new position,
-  // Todo: or copies have been made.
+  // Todo: more pre-compute per theta pair tho.
+  // eg. rp(theta)
+  // eg. drp_dtheta(theta)
+  // eg. cos(theta - nu)
+  // eg. sin(theta - nu)
+  // eg. (theta_j - theta_plus_1) / 2
+  // eg. 1 / (n + 2)
+
+  // Check regime: planet, star, or beyond.
+  // Check ld_law.
+  // Multiply integrals by p.
+
+  // alpha = I_0 * sum.
+  // Flux = 1 - alpha
+
+  // Todo: Ensure attributes are reset for new position eg. theta will otherwise accumulate.
+  // Todo: better still, just auto overwrite when start using.
 
 }
