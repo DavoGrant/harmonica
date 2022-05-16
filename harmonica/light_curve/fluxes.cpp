@@ -72,7 +72,7 @@ Fluxes::Fluxes(int ld_law,
   max_rp = c(N_c).real();
   if (N_c != 0) {
     // Build the extrema companion matrix.
-    const int D_shape = 2 * N_c;
+    int D_shape = 2 * N_c;
     D.resize(D_shape, D_shape);
     for (int j = 1; j < D_shape + 1; j++) {
       for (int k = 1; k < D_shape + 1; k++) {
@@ -113,8 +113,36 @@ Fluxes::Fluxes(int ld_law,
 }
 
 
+double Fluxes::rs_theta(const double &d, double &dcos_thetamnu,
+                        int plus_solution) {
+  if (d <= 1.) {
+    return dcos_thetamnu + std::sqrt(dcos_thetamnu * dcos_thetamnu
+                                     - _dd + 1.);
+  } else {
+    if (plus_solution == 1) {
+      // r_s+ solution.
+      return dcos_thetamnu + std::sqrt(dcos_thetamnu * dcos_thetamnu
+                                       - _dd + 1.);
+    } else {
+      // r_s- solution.
+      return dcos_thetamnu - std::sqrt(dcos_thetamnu * dcos_thetamnu
+                                       - _dd + 1.);
+    }
+  }
+}
+
+
+double Fluxes::drp_dtheta(double &_theta) {
+  std::complex<double> rp = 0.;
+  for (int n = -N_c; n < N_c + 1; n++) {
+    rp += 1.i * (1. * n) * c(n + N_c) * std::exp((1. * n) * 1.i * _theta);
+  }
+  return rp.real();
+}
+
+
 std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
-                                                           int shape) {
+                                                           int &shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
   std::complex<double> moo_denom = -1. / (1. * N_c * c(shape));
@@ -131,7 +159,7 @@ std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
 
 
 std::complex<double> Fluxes::intersection_companion_matrix_C_jk_base(
-  int j, int k, int shape) {
+  int j, int k, int &shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires c(0 + N_c) as it runs -N_c through N_c.
   if (k == shape) {
@@ -226,6 +254,69 @@ std::complex<double> Fluxes::intersection_polynomial_coefficient_moo_denom(
 }
 
 
+std::vector<double> Fluxes::compute_real_theta_roots(
+  Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+    companion_matrix, int &shape) {
+
+  // Solve eigenvalues.
+  Eigen::ComplexEigenSolver<Eigen::Matrix<std::complex<double>,
+    Eigen::Dynamic, Eigen::Dynamic>> ces;
+  ces.compute(companion_matrix, false);
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> evs = ces.eigenvalues();
+
+  // Select real thetas only: angle to point on unit circle in complex plane.
+  std::vector<double> _theta;
+  for (int j = 0; j < shape; j++) {
+    double ev_abs = std::abs(evs(j));
+    if (tolerance::unit_circle_lo < ev_abs
+        && ev_abs < tolerance::unit_circle_hi) {
+      _theta.push_back(std::arg(evs(j)));
+    }
+  }
+  return _theta;
+}
+
+
+void Fluxes::associate_intersections(
+  int j, const double &d, double &dcos_thetamnu, int &T_theta_j) {
+  if (d <= 1.) {
+    // Always T+ when the planet is inside the stellar disc.
+    T_theta_j = intersections::T_plus;
+  } else {
+    // Check residuals of T+ eqn.
+    double T_plus_theta_j_res = std::abs(
+      this->rp_theta(theta[j]) - this->rs_theta(d, dcos_thetamnu, 1));
+
+    if (T_plus_theta_j_res < tolerance::intersect_associate) {
+      T_theta_j = intersections::T_plus;
+    } else {
+      T_theta_j = intersections::T_minus;
+    }
+  }
+}
+
+
+void Fluxes::gradient_intersections(
+  int j, double &dsin_thetamnu, double &dcos_thetamnu,
+  int plus_solution, int &dT_dtheta_theta_j) {
+
+  double grad = this->drp_dtheta(theta[j]) + dsin_thetamnu;
+  double frac_term = (dsin_thetamnu * dcos_thetamnu) / std::sqrt(
+    dcos_thetamnu * dcos_thetamnu - _dd + 1.);
+  if (plus_solution == 1) {
+    grad += frac_term;
+  } else {
+    grad -= frac_term;
+  }
+
+  if (grad > 0.) {
+    dT_dtheta_theta_j = intersections::dT_dtheta_plus;
+  } else {
+    dT_dtheta_theta_j = intersections::dT_dtheta_minus;
+  }
+}
+
+
 void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 
   // Check cases where no obvious intersections, avoiding eigenvalue runtime.
@@ -281,7 +372,8 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 
   if (theta.size() == 0) {
     // No roots, check which trivial case this configuration corresponds to.
-    double _rp_nu = this->rp_theta(nu);
+    double _nu = nu;
+    double _rp_nu = this->rp_theta(_nu);
     if (d <= 1.) {
       // Planet centre inside stellar disc.
       if (_rp_nu < 1. + d) {
@@ -322,37 +414,62 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     theta.push_back(theta[0] + fractions::twopi);
 
     // Characterise theta pairs.
+    int T_theta_j;
+    int T_theta_j_plus_1;
+    int dT_dtheta_theta_j;
+    int dT_dtheta_theta_j_plus_1;
+    double dcos_thetamnu = d * std::cos(theta[0] - nu);
+    double dsin_thetamnu = d * std::sin(theta[0] - nu);
+    this->associate_intersections(0, d, dcos_thetamnu, T_theta_j);
+    this->gradient_intersections(0, dsin_thetamnu, dcos_thetamnu,
+                                 T_theta_j, dT_dtheta_theta_j);
     for (int j = 0; j < theta.size() - 1; j++) {
-      std::cout << std::setprecision(15) << theta[j] << ' ' << theta[j + 1] << std::endl;
+
+      // Associate theta_j and theta_j+1 with T+ or T- intersection eqn.
+      dcos_thetamnu = d * std::cos(theta[j + 1] - nu);
+      this->associate_intersections(j + 1, d, dcos_thetamnu, T_theta_j_plus_1);
+
+      // Compute gradients dT+-(theta_j)/dtheta and dT+-(theta_j+1)/dtheta.
+      dsin_thetamnu = d * std::sin(theta[j + 1] - nu);
+      this->gradient_intersections(j + 1, dsin_thetamnu, dcos_thetamnu,
+                                   T_theta_j_plus_1, dT_dtheta_theta_j_plus_1);
+
+      // Assign enclosing segment.
+      if (T_theta_j == 1 && T_theta_j_plus_1 == 1
+          && dT_dtheta_theta_j == 0 && dT_dtheta_theta_j_plus_1 == 1) {
+        theta_type.push_back(intersections::planet);
+      } else if (T_theta_j == 1 && T_theta_j_plus_1 == 1
+          && dT_dtheta_theta_j == 1 && dT_dtheta_theta_j_plus_1 == 0) {
+        theta_type.push_back(intersections::star);
+      } else if (T_theta_j == 0 && T_theta_j_plus_1 == 0
+          && dT_dtheta_theta_j == 0 && dT_dtheta_theta_j_plus_1 == 1) {
+        theta_type.push_back(intersections::star);
+      } else if (T_theta_j == 0 && T_theta_j_plus_1 == 0
+          && dT_dtheta_theta_j == 1 && dT_dtheta_theta_j_plus_1 == 0) {
+        theta_type.push_back(intersections::planet);
+      } else if (T_theta_j == 1 && T_theta_j_plus_1 == 0
+          && dT_dtheta_theta_j == 0 && dT_dtheta_theta_j_plus_1 == 0) {
+        theta_type.push_back(intersections::planet);
+      } else if (T_theta_j == 1 && T_theta_j_plus_1 == 0
+          && dT_dtheta_theta_j == 1 && dT_dtheta_theta_j_plus_1 == 1) {
+        theta_type.push_back(intersections::star);
+      } else if (T_theta_j == 0 && T_theta_j_plus_1 == 1
+          && dT_dtheta_theta_j == 0 && dT_dtheta_theta_j_plus_1 == 0) {
+        theta_type.push_back(intersections::star);
+      } else if (T_theta_j == 0 && T_theta_j_plus_1 == 1
+          && dT_dtheta_theta_j == 1 && dT_dtheta_theta_j_plus_1 == 1) {
+        theta_type.push_back(intersections::planet);
+      }
+
+      // Cache theta_j_plus_1 associations and gradients for next iteration.
+      T_theta_j = T_theta_j_plus_1;
+      dT_dtheta_theta_j = dT_dtheta_theta_j_plus_1;
     }
   }
 }
 
 
-std::vector<double> Fluxes::compute_real_theta_roots(
-  Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-    companion_matrix, int shape) {
-
-  // Solve eigenvalues.
-  Eigen::ComplexEigenSolver<Eigen::Matrix<std::complex<double>,
-    Eigen::Dynamic, Eigen::Dynamic>> ces;
-  ces.compute(companion_matrix, false);
-  Eigen::Vector<std::complex<double>, Eigen::Dynamic> evs = ces.eigenvalues();
-
-  // Select real thetas only: angle to point on unit circle in complex plane.
-  std::vector<double> _theta;
-  for (int j = 0; j < shape; j++) {
-    double ev_abs = std::abs(evs(j));
-    if (tolerance::unit_circle_lo < ev_abs
-        && ev_abs < tolerance::unit_circle_hi) {
-      _theta.push_back(std::arg(evs(j)));
-    }
-  }
-  return _theta;
-}
-
-
-double Fluxes::rp_theta(double _theta) {
+double Fluxes::rp_theta(double &_theta) {
   std::complex<double> rp = 0.;
   for (int n = -N_c; n < N_c + 1; n++) {
     rp += c(n + N_c) * std::exp((1. * n) * 1.i * _theta);
@@ -372,7 +489,13 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
 
   // Find planet-stellar limb intersections, sorted theta.
   this->find_intersections_theta(d, nu);
+
   std::cout << std::setprecision(15) << theta.size() << std::endl;
+  std::cout << std::setprecision(15) << theta_type.size() << std::endl;
+
+  // Todo: more pre-compute per theta pair tho.
+  // eg. cos(theta - nu)
+  // eg. sin(theta - nu)
 
   // Iterate thetas in adjacent pairs.
   // Iterate s_n terms.

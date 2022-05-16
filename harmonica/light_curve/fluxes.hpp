@@ -31,7 +31,7 @@ class Fluxes {
     int C_shape;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C;
     std::vector<double> theta;
-    std::vector<double> theta_type;
+    std::vector<int> theta_type;
 
     // Position variables.
     double _dd;
@@ -40,6 +40,28 @@ class Fluxes {
 
     // Derivatives switch.
     bool _require_gradients;
+
+    /**
+     * Compute the distance to the stellar limb from the planet centred
+     * coordinate system, for a given d, nu, and theta. Both +- solutions
+     * exist when d > 1, however we only take the + solution inside the
+     * stellar disc, d < 1.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param dcos_thetamnu d*cos(theta - nu) [stellar radii].
+     * @param plus_solution +=1, -=0, if d < 1 ignored.
+     * @return rs, the stellar radius in the planet's frame.
+     */
+    double rs_theta(const double &d, double &dcos_thetamnu,
+                    int plus_solution);
+
+    /**
+     * Compute derivative of the planet radius wrt theta at a given theta.
+     *
+     * @param theta angle in the terminator plane from v_orb [radians].
+     * @return drp_dtheta, the derivative, is always real.
+     */
+    double drp_dtheta(double &_theta);
 
     /**
      * Companion matrix elements for computing the max and min radii of
@@ -51,7 +73,7 @@ class Fluxes {
      * @return complex matrix element.
      */
     std::complex<double> extrema_companion_matrix_D_jk(int j, int k,
-                                                       int shape);
+                                                       int &shape);
 
     /**
      * Companion matrix elements for computing the planet-star limb
@@ -64,7 +86,7 @@ class Fluxes {
      * @return complex matrix element.
      */
     std::complex<double> intersection_companion_matrix_C_jk_base(
-      int j, int k, int shape);
+      int j, int k, int &shape);
 
     /**
      * Complex polynomial coefficients for the intersection equation, h_j,
@@ -74,7 +96,8 @@ class Fluxes {
      * @param j polynomial term exponent, 0 <= j <= 4N_c.
      * @return complex polynomial coefficient.
      */
-    std::complex<double> intersection_polynomial_coefficients_h_j_base(int j);
+    std::complex<double> intersection_polynomial_coefficients_h_j_base(
+      int j);
 
     /**
      * Complex polynomial coefficients for the intersection equation, h_j,
@@ -109,7 +132,35 @@ class Fluxes {
      */
     std::vector<double> compute_real_theta_roots(
       Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-        companion_matrix, int shape);
+        companion_matrix, int &shape);
+
+    /**
+     * Check intersection associations with either the T+ or T- intersection
+     * equation.
+     *
+     * @param j theta index.
+     * @param d planet-star centre separation [stellar radii].
+     * @param dcos_thetamnu d*cos(theta - nu) [stellar radii].
+     * @param T_theta_j empty label, 0=-ve and 1=+ve association.
+     * @return void.
+     */
+    void associate_intersections(int j, const double &d,
+                                 double &dcos_thetamnu, int &T_theta_j);
+
+    /**
+     * Check intersection gradients are dT_dtheta+ or dT_dtheta- at
+     * intersection.
+     *
+     * @param j theta index.
+     * @param dsin_thetamnu d*din(theta - nu) [stellar radii].
+     * @param dcos_thetamnu d*cos(theta - nu) [stellar radii].
+     * @param plus_solution +=1, -=0.
+     * @param dT_dtheta_theta_j empty label, 0=-ve and 1=+ve gradient.
+     * @return void.
+     */
+    void gradient_intersections(int j, double &dsin_thetamnu,
+                                double &dcos_thetamnu, int plus_solution,
+                                int &dT_dtheta_theta_j);
 
     /**
      * Find and characterise the planet-stellar limb intersections vector,
@@ -145,7 +196,7 @@ class Fluxes {
      * @param theta angle in the terminator plane from v_orb [radians].
      * @return rp, the planet radius, is always real.
      */
-    double rp_theta(double _theta);
+    double rp_theta(double &_theta);
 
     /**
      * Compute normalised transit flux.

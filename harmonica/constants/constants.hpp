@@ -14,6 +14,7 @@ namespace fractions {
   const double one_third = 1. / 3.;
   const double one_sixth = 1. / 6.;
   const double three_halves = 3. / 2.;
+
   const double pi = M_PI;
   const double pi_d_12 = M_PI / 12.;
   const double pi_d_6 = M_PI / 6.;
@@ -40,6 +41,12 @@ namespace limb_darkening {
 
 namespace intersections {
 
+  const int T_plus = 1;
+  const int T_minus = 0;
+
+  const int dT_dtheta_plus = 1;
+  const int dT_dtheta_minus = 0;
+
   const int planet = 0;
   const int star = 1;
   const int beyond = 2;
@@ -50,6 +57,8 @@ namespace tolerance {
 
   const double unit_circle_lo = 1. - 1.e-7;
   const double unit_circle_hi = 1. + 1.e-7;
+
+  const double intersect_associate = 1.e-7;
 
 }
 
