@@ -29,7 +29,7 @@ class Fluxes {
     // Intersection variables.
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
     int C_shape;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C;
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C0;
     std::vector<double> theta;
     std::vector<int> theta_type;
 
@@ -122,6 +122,29 @@ class Fluxes {
       int j);
 
     /**
+     * Find and characterise the planet-stellar limb intersections vector,
+     * theta, and sort in ascending order, -pi < theta <= pi. Each adjacent
+     * pair of thetas corresponds to a segment of the closed loop piecewise
+     * integral around the overlap region. These pairs are assigned as either
+     * planet=0, star=1, or beyond=2 (flux=0) integral types.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void find_intersections_theta(const double &d, const double &nu);
+
+    /**
+     * Quick check if there are no obvious intersections based on the planet
+     * position and its max and min radius. This reduces the need to compute
+     * the costly eigenvalues for much of a light curve.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @return bool if there are no obvious intersections.
+     */
+    bool no_obvious_intersections(const double &d);
+
+    /**
      * Compute the real roots, as a vector of thetas, from a given companion
      * matrix. The real roots correspond to angles in the complex plane where
      * the matrix eigenvalues lie on the unit circle.
@@ -133,6 +156,32 @@ class Fluxes {
     std::vector<double> compute_real_theta_roots(
       Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
         companion_matrix, int &shape);
+
+    /**
+     * Check if there are no intersections found which trivial configuration
+     * the system is in. For example, planet completely inside/outside the
+     * the stellar disc, or visa versa. This is only hit when the check for
+     * this->no_obvious_intersections() does not return true owing to the
+     * coarseness of the max/min radius checking. Always true when there are
+     * no intersections found.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return bool if there is a trivial configuration.
+     */
+    bool trivial_configuration(const double &d, const double &nu);
+
+    /**
+     * Characterise the bodies limb that forms a segment of the closed loop
+     * piecewise integral around the overlap region. These pairs are assigned
+     * as either planet=0 or star=1 integral types. NB. the theta vector must
+     * be pre-sorted in ascending order, and span the full two pi.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void characterise_intersection_pairs(const double &d, const double &nu);
 
     /**
      * Check intersection associations with either the T+ or T- intersection
@@ -161,19 +210,6 @@ class Fluxes {
     void gradient_intersections(int j, double &dsin_thetamnu,
                                 double &dcos_thetamnu, int plus_solution,
                                 int &dT_dtheta_theta_j);
-
-    /**
-     * Find and characterise the planet-stellar limb intersections vector,
-     * theta, and sort in ascending order, -pi < theta <= pi. Each adjacent
-     * pair of thetas corresponds to a segment of the closed loop piecewise
-     * integral around the overlap region. These pairs are assigned as either
-     * planet=0 or star=1 integral types.
-     *
-     * @param d planet-star centre separation [stellar radii].
-     * @param nu planet velocity-star centre angle [radians].
-     * @return void.
-     */
-    void find_intersections_theta(const double &d, const double &nu);
 
   public:
 
