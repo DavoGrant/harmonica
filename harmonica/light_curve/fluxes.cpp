@@ -24,10 +24,10 @@ Fluxes::Fluxes(int ld_law,
   // Unpack python arrays.
   auto us_ = us.unchecked<1>();
   auto rs_ = rs.unchecked<1>();
-  int n_rs = rs_.shape(0);  // Always odd.
+  _n_rs = rs_.shape(0);  // Always odd.
 
   _ld_law = ld_law;
-  if (_ld_law == 0) {
+  if (_ld_law == limb_darkening::quadratic) {
     // Normalisation.
     I_0 = 1 / ((1 - us_(0) / 3. - us_(1) / 6.) * fractions::pi);
 
@@ -40,7 +40,7 @@ Fluxes::Fluxes(int ld_law,
     // Change to polynomial basis.
     p = B * u;
 
-  } else if (_ld_law == 1) {
+  } else {
     // Normalisation.
     I_0 = 1 / ((1 - us_(0) / 5. - us_(1) / 3.
                 - 3. * us_(2) / 7. - us_(3) / 2.) * fractions::pi);
@@ -58,14 +58,14 @@ Fluxes::Fluxes(int ld_law,
   }
 
   // Convert cosine, sine to complex Fourier coefficients.
-  N_c = (n_rs - 1) * fractions::one_half;
-  c.resize(n_rs);
+  N_c = (_n_rs - 1) * fractions::one_half;
+  c.resize(_n_rs);
   c(N_c) = rs_(0);
   for (int n = 0; n < N_c; n++) {
-    double a_real = rs_(n_rs - 2 - 2 * n);
-    double b_imag = rs_(n_rs - 1 - 2 * n);
+    double a_real = rs_(_n_rs - 2 - 2 * n);
+    double b_imag = rs_(_n_rs - 1 - 2 * n);
     c(n) = (a_real + b_imag * 1.i) * fractions::one_half;
-    c(n_rs - 1 - n) = (a_real - b_imag * 1.i) * fractions::one_half;
+    c(_n_rs - 1 - n) = (a_real - b_imag * 1.i) * fractions::one_half;
   }
 
   // Pre-compute max and min planet radii.
@@ -109,8 +109,34 @@ Fluxes::Fluxes(int ld_law,
     }
   }
 
-  // Pre-compute some other light curve-specific quantities.
-  c_conv_c = complex_convolve(c, c, n_rs, n_rs);
+  // Pre-compute c (*) c.
+  _c_conv_c = complex_convolve(c, c, _n_rs, _n_rs);
+
+  // Pre-compute Delta element-wise multiply c.
+  _Delta_ew_c = c;
+   for (int n = -N_c; n < N_c + 1; n++) {
+    _Delta_ew_c *= (1. * n) * 1.i;
+  }
+
+  // Pre-compute beta_sin/cos base vectors.
+  _beta_sin0 << -fractions::one_half, 0., -fractions::one_half;
+  _beta_cos0 << fractions::one_half, 0., fractions::one_half;
+
+  // Pre-compute stellar line integral constants.
+  if (_ld_law == limb_darkening::quadratic) {
+    // Limb-darkening terms n=0,1,2.
+    _sp_star = fractions::one_half * p(0)
+               + fractions::one_third * p(1)
+               + fractions::one_quarter * p(2);
+
+  } else {
+    // Limb-darkening terms n=0,1/2,1,3/2,2.
+    _sp_star = fractions::one_half * p(0)
+               + fractions::two_fifths * p(1)
+               + fractions::one_third * p(2)
+               + fractions::two_sevenths * p(3)
+               + fractions::one_quarter * p(4);
+  }
 }
 
 
@@ -522,6 +548,73 @@ Eigen::Vector<std::complex<double>, Eigen::Dynamic> Fluxes::complex_convolve(
 }
 
 
+double Fluxes::sTp_planet(double &_theta_j, double &_theta_j_plus_1,
+                          const double &d, const double &nu) {
+
+  // Build and convolve beta_sin, beta_cos vectors.
+  double sin_nu = std::sin(nu);
+  double cos_nu = std::cos(nu);
+
+  Eigen::Vector<std::complex<double>, 3> beta_sin = _beta_sin0;
+  beta_sin(0) *= sin_nu - cos_nu * 1.i;
+  beta_sin(2) *= sin_nu + cos_nu * 1.i;
+
+  Eigen::Vector<std::complex<double>, 3> beta_cos = _beta_cos0;
+  beta_cos(0) *= cos_nu + sin_nu * 1.i;
+  beta_cos(2) *= cos_nu - sin_nu * 1.i;
+
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    d_beta_cos_conv_c = d * complex_convolve(beta_cos, c, 3, _n_rs);
+
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    d_beta_sin_conv_Delta_ew_c = d * complex_convolve(beta_sin, _Delta_ew_c,
+                                                      3, _n_rs);
+
+  // Limb-darkening constant term n=0.
+
+
+  // Limb-darkening even term n=2.
+
+
+  if (_ld_law == limb_darkening::quadratic) {
+    // Limb-darkening half-integer and odd terms n=1.
+
+  } else {
+    // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2.
+
+  }
+
+  double sTp_planet_j = 0.;
+  std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
+
+  return sTp_planet_j;
+}
+
+
+double Fluxes::sTp_star(double &_theta_j, double &_theta_j_plus_1,
+                        const double &d, const double &nu) {
+
+  // Convert theta_j to phi_j (stellar centred frame).
+  double rp_theta_j = this->rp_theta(_theta_j);
+  double theta_jmnu = _theta_j - nu;
+  double phi_j = std::atan2(
+    -rp_theta_j * std::sin(theta_jmnu),
+    -rp_theta_j * std::cos(theta_jmnu) + d);
+
+  // Convert theta_j_plus_1 to phi_j_plus_1.
+  double rp_theta_j_plus_1 = this->rp_theta(_theta_j_plus_1);
+  double theta_j_plus_1mnu = _theta_j_plus_1 - nu;
+  double phi_j_plus_1 = std::atan2(
+    -rp_theta_j_plus_1 * std::sin(theta_j_plus_1mnu),
+    -rp_theta_j_plus_1 * std::cos(theta_j_plus_1mnu) + d);
+
+  // Compute line integral anticlockwise.
+  double sTp_star_j = _sp_star * (phi_j_plus_1 - phi_j);
+
+  return sTp_star_j;
+}
+
+
 double Fluxes::rp_theta(double &_theta) {
   std::complex<double> rp = 0.;
   for (int n = -N_c; n < N_c + 1; n++) {
@@ -537,34 +630,40 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
 
   // Pre-compute some position-specific quantities.
   _dd = d * d;
+  _omdd = 1. - _dd;
   _d_expinu = d * std::exp(1.i * nu);
   _d_expminu = d * std::exp(-1.i * nu);
 
-  // Find planet-stellar limb intersections, sorted theta.
+  // Find planet-stellar limb intersections.
   this->find_intersections_theta(d, nu);
 
-  std::cout << std::setprecision(15) << theta.size() << std::endl;
-  std::cout << std::setprecision(15) << theta_type.size() << std::endl;
+  // Iterate thetas in adjacent pairs around the enclosed overlap region.
+  double alpha = 0.;
+  for (int j = 0; j < theta_type.size(); j++) {
 
-  // Iterate thetas in adjacent pairs.
-  // Iterate s_n terms.
-  // Which way around to nest these..?
+    if (theta_type[j] == 0) {
+      // Planet limb line segment.
+      alpha += this->sTp_planet(theta[j], theta[j + 1], d, nu);
+
+    } else if (theta_type[j] == 1) {
+      // Stellar limb line segment.
+      alpha += this->sTp_star(theta[j], theta[j + 1], d, nu);
+
+    } else {
+      // Planet is beyond the stellar disc.
+      break;
+    }
+  }
+
+  // Compute transit flux.
+  f = 1. - alpha * I_0;
 
   // Todo: more pre-compute per theta pair tho.
-  // eg. rp(theta)
+  // eg. 1. - d**2
   // eg. drp_dtheta(theta)
-  // eg. cos(theta - nu)
-  // eg. sin(theta - nu)
   // eg. (theta_j - theta_plus_1) / 2
   // eg. 1 / (n + 2)
-
-  // Check regime: planet, star, or beyond.
-  // Check ld_law.
-  // Multiply integrals by p.
-
-  // alpha = I_0 * sum.
-  // Flux = 1 - alpha
-
   // Todo: Ensure updated attributes reset per position in methods.
+  // Todo: remove unused imports.
 
 }

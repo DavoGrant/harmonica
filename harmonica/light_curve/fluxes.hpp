@@ -21,9 +21,9 @@ class Fluxes {
     Eigen::Vector<double, Eigen::Dynamic> p;
 
     // Transmission-string variables.
+    int _n_rs;
     int N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> c_conv_c;
     double min_rp;
     double max_rp;
 
@@ -36,8 +36,16 @@ class Fluxes {
 
     // Position variables.
     double _dd;
+    double _omdd;
     std::complex<double> _d_expinu;
     std::complex<double> _d_expminu;
+
+    // Integral variables.
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
+    Eigen::Vector<std::complex<double>, 3> _beta_sin0;
+    Eigen::Vector<std::complex<double>, 3> _beta_cos0;
+    double _sp_star;
 
     // Derivatives switch.
     bool _require_gradients;
@@ -225,6 +233,34 @@ class Fluxes {
       Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
       Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
       int len_a, int len_b);
+
+    /**
+     * Compute the sum of line integrals sTp along segments of the
+     * planet's limb from theta_j to theta_j_plus_1. The sum is over
+     * each limb darkening component.
+     *
+     * @param _theta_j start of line segment [radians].
+     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return computed sTp_planet line integral.
+     */
+    double sTp_planet(double &_theta_j, double &_theta_j_plus_1,
+                      const double &d, const double &nu);
+
+    /**
+     * Compute the sum of line integrals sTp along segments of the
+     * stellar limb from theta_j to theta_j_plus_1. The sum is over
+     * each limb darkening component.
+     *
+     * @param _theta_j start of line segment [radians].
+     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return computed sTp_star line integral.
+     */
+    double sTp_star(double &_theta_j, double &_theta_j_plus_1,
+                    const double &d, const double &nu);
 
   public:
 
