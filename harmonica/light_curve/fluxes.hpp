@@ -1,7 +1,7 @@
 #ifndef FLUXES_HPP
 #define FLUXES_HPP
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -23,6 +23,7 @@ class Fluxes {
     // Transmission-string variables.
     int N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> c_conv_c;
     double min_rp;
     double max_rp;
 
@@ -210,6 +211,20 @@ class Fluxes {
     void gradient_intersections(int j, double &dsin_thetamnu,
                                 double &dcos_thetamnu, int plus_solution,
                                 int &dT_dtheta_theta_j);
+
+    /**
+     * Convolve two 1d vectors of complex values fully.
+     *
+     * @param a input vector.
+     * @param b other input vector.
+     * @param len_a size of vector a.
+     * @param len_b size of vector b.
+     * @return a (*) b has size a + b - 1.
+     */
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> complex_convolve(
+      Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
+      Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+      int len_a, int len_b);
 
   public:
 

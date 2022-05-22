@@ -1,7 +1,8 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -108,8 +109,8 @@ Fluxes::Fluxes(int ld_law,
     }
   }
 
-  // Todo: more pre-compute
-  // eg. c conv c.
+  // Pre-compute some other light curve-specific quantities.
+  c_conv_c = complex_convolve(c, c, n_rs, n_rs);
 }
 
 
@@ -497,6 +498,27 @@ void Fluxes::gradient_intersections(
   } else {
     dT_dtheta_theta_j = intersections::dT_dtheta_minus;
   }
+}
+
+
+Eigen::Vector<std::complex<double>, Eigen::Dynamic> Fluxes::complex_convolve(
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+  int len_a, int len_b) {
+
+  // Initialise convolved vector of zeroes.
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> conv;
+  conv.resize(len_a + len_b - 1);
+  conv.setZero();
+
+  // Compute convolution.
+  for (int n = 0; n < len_a; n++) {
+    for (int m = 0; m < len_b; m++) {
+      conv(n + m) += a(n) * b(m);
+    }
+  }
+
+  return conv;
 }
 
 
