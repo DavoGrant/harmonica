@@ -65,8 +65,6 @@ namespace tolerance {
 
 }
 
-namespace convolution {}
-
 namespace legendre {}
 
 #endif

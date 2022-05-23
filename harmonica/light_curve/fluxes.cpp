@@ -110,7 +110,8 @@ Fluxes::Fluxes(int ld_law,
   }
 
   // Pre-compute c (*) c.
-  _c_conv_c = complex_convolve(c, c, _n_rs, _n_rs);
+  _len_c_conv_c = 2 * _n_rs - 1;
+  _c_conv_c = complex_convolve(c, c, _n_rs, _n_rs, _len_c_conv_c);
 
   // Pre-compute Delta element-wise multiply c.
   _Delta_ew_c = c;
@@ -119,8 +120,16 @@ Fluxes::Fluxes(int ld_law,
   }
 
   // Pre-compute beta_sin/cos base vectors.
+  _len_beta_conv_c = 3 + _n_rs - 1;
   _beta_sin0 << -fractions::one_half, 0., -fractions::one_half;
   _beta_cos0 << fractions::one_half, 0., fractions::one_half;
+
+  // Pre-compute conv sizes.
+  _len_q_rhs = std::max(_len_c_conv_c, _len_beta_conv_c);
+  _mid_q_lhs = (_len_q_rhs - 1) / 2;
+  _len_q = 2 * _len_q_rhs - 1;
+  N_q0 = (_len_q_rhs - 1) / 2;
+  N_q2 = (_len_q - 1) / 2;
 
   // Pre-compute stellar line integral constants.
   if (_ld_law == limb_darkening::quadratic) {
@@ -530,11 +539,11 @@ void Fluxes::gradient_intersections(
 Eigen::Vector<std::complex<double>, Eigen::Dynamic> Fluxes::complex_convolve(
   Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
   Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
-  int len_a, int len_b) {
+  int len_a, int len_b, int len_c) {
 
   // Initialise convolved vector of zeroes.
   Eigen::Vector<std::complex<double>, Eigen::Dynamic> conv;
-  conv.resize(len_a + len_b - 1);
+  conv.resize(len_c);
   conv.setZero();
 
   // Compute convolution.
@@ -545,6 +554,37 @@ Eigen::Vector<std::complex<double>, Eigen::Dynamic> Fluxes::complex_convolve(
   }
 
   return conv;
+}
+
+
+Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+Fluxes::complex_ca_vector_addition(
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+  int len_a, int len_b) {
+
+  // Initialise summed vector.
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic> ca_sum;
+
+  // Compute centre-aligned addition.
+  if (len_a > len_b) {
+    ca_sum = a;
+    int half_diff = (len_a - len_b) * fractions::one_half;
+    for (int n = 0; n < len_b; n++) {
+      ca_sum(n + half_diff) += b(n);
+    }
+  } else if (len_b > len_a) {
+    ca_sum = b;
+    int half_diff = (len_b - len_a) * fractions::one_half;
+    for (int n = 0; n < len_a; n++) {
+      ca_sum(n + half_diff) += a(n);
+    }
+  } else {
+    // Equal length, already centre aligned.
+    ca_sum = a + b;
+  }
+
+  return ca_sum;
 }
 
 
@@ -564,27 +604,79 @@ double Fluxes::sTp_planet(double &_theta_j, double &_theta_j_plus_1,
   beta_cos(2) *= cos_nu - sin_nu * 1.i;
 
   Eigen::Vector<std::complex<double>, Eigen::Dynamic>
-    d_beta_cos_conv_c = d * complex_convolve(beta_cos, c, 3, _n_rs);
+    d_beta_cos_conv_c = d * complex_convolve(
+      beta_cos, c, 3, _n_rs, _len_beta_conv_c);
 
   Eigen::Vector<std::complex<double>, Eigen::Dynamic>
-    d_beta_sin_conv_Delta_ew_c = d * complex_convolve(beta_sin, _Delta_ew_c,
-                                                      3, _n_rs);
+    d_beta_sin_conv_Delta_ew_c = d * complex_convolve(
+      beta_sin, _Delta_ew_c, 3, _n_rs, _len_beta_conv_c);
+
+  // Generate q rhs, equivalent to q for n=0.
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    q_rhs = complex_ca_vector_addition(
+      _c_conv_c, -(d_beta_cos_conv_c + d_beta_sin_conv_Delta_ew_c),
+      _len_c_conv_c, _len_beta_conv_c);
+
+  // Generate q lhs.
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    q_lhs = complex_ca_vector_addition(
+      -_c_conv_c, 2. * d_beta_cos_conv_c,
+      _len_c_conv_c, _len_beta_conv_c);
+  q_lhs(_mid_q_lhs) += _omdd;
+  q_lhs(_mid_q_lhs) += 1.;
+
+  // Generate q for n=2.
+  Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    q = complex_convolve(q_lhs, q_rhs, _len_q_rhs, _len_q_rhs, _len_q);
 
   // Limb-darkening constant term n=0.
+  double s0Tp_planet;
+  std::complex<double> s0_planet = 0.;
+  for (int m = -N_q0; m < N_q0 + 1; m++) {
+    if (m == 0) {
+      s0_planet += q_rhs(m + N_q0) * (_theta_j_plus_1 - _theta_j);
+    } else {
+      s0_planet += q_rhs(m + N_q0) / (1.i * (1. * m))
+                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1))
+                      - std::exp((1. * m) * 1.i * _theta_j);
+    }
+  }
+  s0Tp_planet = fractions::one_half * s0_planet.real() * p(0);
+
+      _sp_star = fractions::one_half * p(0)
+               + fractions::one_third * p(1)
+               + fractions::one_quarter * p(2);
 
 
   // Limb-darkening even term n=2.
+  double s2Tp_planet;
+  std::complex<double> s2_planet = 0.;
+  for (int m = -N_q2; m < N_q2 + 1; m++) {
+    if (m == 0) {
+      s2_planet += q(m + N_q2) * (_theta_j_plus_1 - _theta_j);
+    } else {
+      s2_planet += q(m + N_q2) / (1.i * (1. * m))
+                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1))
+                      - std::exp((1. * m) * 1.i * _theta_j);
+    }
+  }
 
-
+  double s1Tp_planet;
   if (_ld_law == limb_darkening::quadratic) {
+    s2Tp_planet = fractions::one_quarter * s2_planet.real() * p(2);
+
     // Limb-darkening half-integer and odd terms n=1.
+    s1Tp_planet = 0.;
 
   } else {
+    s2Tp_planet = fractions::one_quarter * s2_planet.real() * p(4);
+
     // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2.
+    s1Tp_planet = 0.;
 
   }
 
-  double sTp_planet_j = 0.;
+  double sTp_planet_j = s0Tp_planet + s1Tp_planet + s2Tp_planet;
   std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
 
   return sTp_planet_j;
@@ -664,6 +756,8 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   // eg. (theta_j - theta_plus_1) / 2
   // eg. 1 / (n + 2)
   // Todo: Ensure updated attributes reset per position in methods.
+  // Todo: pass eigen by reference.
+  // Todo: check for int division.
   // Todo: remove unused imports.
 
 }

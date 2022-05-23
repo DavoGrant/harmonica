@@ -34,17 +34,22 @@ class Fluxes {
     std::vector<double> theta;
     std::vector<int> theta_type;
 
-    // Position variables.
+    // Position and integral variables.
     double _dd;
     double _omdd;
     std::complex<double> _d_expinu;
     std::complex<double> _d_expminu;
-
-    // Integral variables.
+    int _len_c_conv_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
+    int _len_beta_conv_c;
     Eigen::Vector<std::complex<double>, 3> _beta_sin0;
     Eigen::Vector<std::complex<double>, 3> _beta_cos0;
+    int _len_q_rhs;
+    int _mid_q_lhs;
+    int _len_q;
+    int N_q0;
+    int N_q2;
     double _sp_star;
 
     // Derivatives switch.
@@ -227,9 +232,25 @@ class Fluxes {
      * @param b other input vector.
      * @param len_a size of vector a.
      * @param len_b size of vector b.
-     * @return a (*) b has size a + b - 1.
+     * @param len_c size of the output vector c.
+     * @return c = a (*) b with size len_a + len_b - 1.
      */
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> complex_convolve(
+      Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
+      Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+      int len_a, int len_b, int len_c);
+
+    /**
+     * Add two 1d vectors of complex values centre-aligned.
+     *
+     * @param a input vector.
+     * @param b other input vector.
+     * @param len_a size of vector a.
+     * @param len_b size of vector b.
+     * @return a + b with size max(len_a, len_b).
+     */
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    complex_ca_vector_addition(
       Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
       Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
       int len_a, int len_b);
