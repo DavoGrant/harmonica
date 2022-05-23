@@ -680,11 +680,10 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
   if (_ld_law == limb_darkening::quadratic) {
     // Limb-darkening half-integer and odd terms n=1, using
     // Gauss-legendre quad.
-    for (int k = 0; k < 10; k++) {
+    for (int k = 0; k < _N_l; k++) {
 
       // Rescale legendre root.
-      double t_k = half_theta_range * (legendre::roots_ten[k] + 1.)
-                   + _theta_j;
+      double t_k = half_theta_range * (_l_roots[k] + 1.) + _theta_j;
 
       // Evaluate integrand at t_k.
       double rp_tk = this->rp_theta(t_k);
@@ -696,18 +695,17 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
       double zp_tk = std::sqrt(zp_tks);
       double zeta = (1. - zp_tks * zp_tk) / (3. * (1. - zp_tks));
       double eta = rp_tks - d_rp_costkmnu - d_drpdtheta_sintkmnu;
-      s1_planet += zeta * eta * legendre::weights_ten[k];
+      s1_planet += zeta * eta * _l_weights[k];
     }
     s1Tp_planet = half_theta_range * s1_planet * p(1);
 
   } else {
     // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2, using
     // Gauss-legendre quad.
-    for (int k = 0; k < 10; k++) {
+    for (int k = 0; k < _N_l; k++) {
 
       // Rescale legendre root.
-      double t_k = half_theta_range * (legendre::roots_ten[k] + 1.)
-                   + _theta_j;
+      double t_k = half_theta_range * (_l_roots[k] + 1.) + _theta_j;
 
       // Evaluate integrand at t_k.
       double rp_tk = this->rp_theta(t_k);
@@ -724,11 +722,19 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
       double zeta_n32 = p(3) * (1. - std::pow(zp_tk, fractions::seven_halves))
                         / (fractions::seven_halves * omzp_tks);
       double eta = rp_tks - d_rp_costkmnu - d_drpdtheta_sintkmnu;
-      s1_planet += (zeta_n12 + zeta_n11 + zeta_n32) * eta
-                   * legendre::weights_ten[k];
+      s1_planet += (zeta_n12 + zeta_n11 + zeta_n32) * eta * _l_weights[k];
     }
-    s1Tp_planet = half_theta_range * s1_planet * p(1);
+    s1Tp_planet = half_theta_range * s1_planet;
   }
+}
+
+
+void Fluxes::select_legendre_order(const double &d) {
+
+  _N_l = 10;
+  _l_roots = legendre::roots_ten;
+  _l_weights = legendre::weights_ten;
+
 }
 
 
@@ -777,6 +783,9 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
 
   // Find planet-stellar limb intersections.
   this->find_intersections_theta(d, nu);
+
+  // Set legendre order.
+  this->select_legendre_order(d);
 
   // Iterate thetas in adjacent pairs around the enclosed overlap region.
   double alpha = 0.;

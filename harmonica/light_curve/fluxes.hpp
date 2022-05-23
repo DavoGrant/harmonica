@@ -53,6 +53,9 @@ class Fluxes {
     double s0Tp_planet;
     double s1Tp_planet;
     double s2Tp_planet;
+    int _N_l;
+    const double *_l_roots;
+    const double *_l_weights;
     double _sp_star;
 
     // Derivatives switch.
@@ -299,6 +302,16 @@ class Fluxes {
      */
     void numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
                              const double &d, const double &nu);
+
+    /**
+     * Select the order of legendre polynomial to use in numerical
+     * evaluation of an integral. Order n integrates polynomial
+     * integrands of order 2n - 1 exactly.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @return void.
+     */
+    void select_legendre_order(const double &d);
 
     /**
      * Compute the sum of line integrals sTp along segments of the
