@@ -17,6 +17,8 @@ namespace fractions {
   const double one_quarter = 1. / 4.;
   const double one_sixth = 1. / 6.;
   const double three_halves = 3. / 2.;
+  const double five_halves = 5. / 2.;
+  const double seven_halves = 7. / 2.;
 
   const double pi = M_PI;
   const double pi_d_12 = M_PI / 12.;
@@ -60,11 +62,23 @@ namespace tolerance {
 
   const double unit_circle_lo = 1. - 1.e-7;
   const double unit_circle_hi = 1. + 1.e-7;
-
   const double intersect_associate = 1.e-7;
 
 }
 
-namespace legendre {}
+namespace legendre {
+
+  const double roots_ten[10] = {
+    -0.9739065285171717, -0.8650633666889844, -0.6794095682990244,
+    -0.4333953941292472, -0.14887433898163116, 0.14887433898163116,
+    0.4333953941292472, 0.6794095682990244, 0.8650633666889844,
+    0.9739065285171717};
+  const double weights_ten[10] = {
+    0.06667134430868715, 0.14945134915058056, 0.21908636251598224,
+    0.26926671930999674, 0.2955242247147533, 0.2955242247147533,
+    0.26926671930999674, 0.21908636251598224, 0.14945134915058056,
+    0.06667134430868715};
+
+}
 
 #endif

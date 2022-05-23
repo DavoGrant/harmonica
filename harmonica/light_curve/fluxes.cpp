@@ -29,7 +29,7 @@ Fluxes::Fluxes(int ld_law,
   _ld_law = ld_law;
   if (_ld_law == limb_darkening::quadratic) {
     // Normalisation.
-    I_0 = 1 / ((1 - us_(0) / 3. - us_(1) / 6.) * fractions::pi);
+    I_0 = 1. / ((1. - us_(0) / 3. - us_(1) / 6.) * fractions::pi);
 
     // Quadratic limb-darkening law.
     Eigen::Vector<double, 3> u {1, us_(0), us_(1)};
@@ -42,7 +42,7 @@ Fluxes::Fluxes(int ld_law,
 
   } else {
     // Normalisation.
-    I_0 = 1 / ((1 - us_(0) / 5. - us_(1) / 3.
+    I_0 = 1. / ((1. - us_(0) / 5. - us_(1) / 3.
                 - 3. * us_(2) / 7. - us_(3) / 2.) * fractions::pi);
 
     // Non-linear limb-darkening law.
@@ -116,7 +116,7 @@ Fluxes::Fluxes(int ld_law,
   // Pre-compute Delta element-wise multiply c.
   _Delta_ew_c = c;
    for (int n = -N_c; n < N_c + 1; n++) {
-    _Delta_ew_c *= (1. * n) * 1.i;
+    _Delta_ew_c(n + N_c) *= (1. * n) * 1.i;
   }
 
   // Pre-compute beta_sin/cos base vectors.
@@ -334,7 +334,6 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 
   // Characterise theta pairs.
   this->characterise_intersection_pairs(d, nu);
-
 }
 
 
@@ -552,7 +551,6 @@ Eigen::Vector<std::complex<double>, Eigen::Dynamic> Fluxes::complex_convolve(
       conv(n + m) += a(n) * b(m);
     }
   }
-
   return conv;
 }
 
@@ -583,7 +581,6 @@ Fluxes::complex_ca_vector_addition(
     // Equal length, already centre aligned.
     ca_sum = a + b;
   }
-
   return ca_sum;
 }
 
@@ -591,6 +588,21 @@ Fluxes::complex_ca_vector_addition(
 double Fluxes::sTp_planet(double &_theta_j, double &_theta_j_plus_1,
                           const double &d, const double &nu) {
 
+  // Compute the closed-form even terms.
+  this->analytic_even_terms(_theta_j, _theta_j_plus_1, d, nu);
+
+  // Compute the numerical odd and half-integer terms.
+  this->numerical_odd_terms(_theta_j, _theta_j_plus_1, d, nu);
+
+  // Evaluate line integral anticlockwise.
+  double sTp_planet_j = s0Tp_planet + s1Tp_planet + s2Tp_planet;
+
+  return sTp_planet_j;
+}
+
+
+void Fluxes::analytic_even_terms(double &_theta_j, double &_theta_j_plus_1,
+                                 const double &d, const double &nu) {
   // Build and convolve beta_sin, beta_cos vectors.
   double sin_nu = std::sin(nu);
   double cos_nu = std::cos(nu);
@@ -629,57 +641,94 @@ double Fluxes::sTp_planet(double &_theta_j, double &_theta_j_plus_1,
   Eigen::Vector<std::complex<double>, Eigen::Dynamic>
     q = complex_convolve(q_lhs, q_rhs, _len_q_rhs, _len_q_rhs, _len_q);
 
-  // Limb-darkening constant term n=0.
-  double s0Tp_planet;
+  // Limb-darkening constant term n=0, analytic line integral.
   std::complex<double> s0_planet = 0.;
   for (int m = -N_q0; m < N_q0 + 1; m++) {
     if (m == 0) {
       s0_planet += q_rhs(m + N_q0) * (_theta_j_plus_1 - _theta_j);
     } else {
       s0_planet += q_rhs(m + N_q0) / (1.i * (1. * m))
-                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1))
-                      - std::exp((1. * m) * 1.i * _theta_j);
+                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1)
+                      - std::exp((1. * m) * 1.i * _theta_j));
     }
   }
   s0Tp_planet = fractions::one_half * s0_planet.real() * p(0);
 
-      _sp_star = fractions::one_half * p(0)
-               + fractions::one_third * p(1)
-               + fractions::one_quarter * p(2);
-
-
-  // Limb-darkening even term n=2.
-  double s2Tp_planet;
+  // Limb-darkening even term n=2, analytic line integral.
   std::complex<double> s2_planet = 0.;
   for (int m = -N_q2; m < N_q2 + 1; m++) {
     if (m == 0) {
       s2_planet += q(m + N_q2) * (_theta_j_plus_1 - _theta_j);
     } else {
       s2_planet += q(m + N_q2) / (1.i * (1. * m))
-                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1))
-                      - std::exp((1. * m) * 1.i * _theta_j);
+                   * (std::exp((1. * m) * 1.i * _theta_j_plus_1)
+                      - std::exp((1. * m) * 1.i * _theta_j));
     }
   }
-
-  double s1Tp_planet;
   if (_ld_law == limb_darkening::quadratic) {
     s2Tp_planet = fractions::one_quarter * s2_planet.real() * p(2);
-
-    // Limb-darkening half-integer and odd terms n=1.
-    s1Tp_planet = 0.;
-
   } else {
     s2Tp_planet = fractions::one_quarter * s2_planet.real() * p(4);
-
-    // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2.
-    s1Tp_planet = 0.;
-
   }
+}
 
-  double sTp_planet_j = s0Tp_planet + s1Tp_planet + s2Tp_planet;
-  std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
 
-  return sTp_planet_j;
+void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
+                                 const double &d, const double &nu) {
+  double s1_planet = 0.;
+  double half_theta_range = (_theta_j_plus_1 - _theta_j) / 2.;
+  if (_ld_law == limb_darkening::quadratic) {
+    // Limb-darkening half-integer and odd terms n=1, using
+    // Gauss-legendre quad.
+    for (int k = 0; k < 10; k++) {
+
+      // Rescale legendre root.
+      double t_k = half_theta_range * (legendre::roots_ten[k] + 1.)
+                   + _theta_j;
+
+      // Evaluate integrand at t_k.
+      double rp_tk = this->rp_theta(t_k);
+      double rp_tks = rp_tk * rp_tk;
+      double d_rp_costkmnu = d * rp_tk * std::cos(t_k - nu);
+      double d_drpdtheta_sintkmnu = d * this->drp_dtheta(t_k)
+                                    * std::sin(t_k - nu);
+      double zp_tks = _omdd - rp_tks + 2. * d_rp_costkmnu;
+      double zp_tk = std::sqrt(zp_tks);
+      double zeta = (1. - zp_tks * zp_tk) / (3. * (1. - zp_tks));
+      double eta = rp_tks - d_rp_costkmnu - d_drpdtheta_sintkmnu;
+      s1_planet += zeta * eta * legendre::weights_ten[k];
+    }
+    s1Tp_planet = half_theta_range * s1_planet * p(1);
+
+  } else {
+    // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2, using
+    // Gauss-legendre quad.
+    for (int k = 0; k < 10; k++) {
+
+      // Rescale legendre root.
+      double t_k = half_theta_range * (legendre::roots_ten[k] + 1.)
+                   + _theta_j;
+
+      // Evaluate integrand at t_k.
+      double rp_tk = this->rp_theta(t_k);
+      double rp_tks = rp_tk * rp_tk;
+      double d_rp_costkmnu = d * rp_tk * std::cos(t_k - nu);
+      double d_drpdtheta_sintkmnu = d * this->drp_dtheta(t_k)
+                                    * std::sin(t_k - nu);
+      double zp_tks = _omdd - rp_tks + 2. * d_rp_costkmnu;
+      double zp_tk = std::sqrt(zp_tks);
+      double omzp_tks = 1 - zp_tks;
+      double zeta_n12 = p(1) * (1. - std::pow(zp_tk, fractions::five_halves))
+                        / (fractions::five_halves * omzp_tks);
+      double zeta_n11 = p(2) * (1. - zp_tks * zp_tk) / (3. * omzp_tks);
+      double zeta_n32 = p(3) * (1. - std::pow(zp_tk, fractions::seven_halves))
+                        / (fractions::seven_halves * omzp_tks);
+      double eta = rp_tks - d_rp_costkmnu - d_drpdtheta_sintkmnu;
+      s1_planet += (zeta_n12 + zeta_n11 + zeta_n32) * eta
+                   * legendre::weights_ten[k];
+    }
+    s1Tp_planet = half_theta_range * s1_planet * p(1);
+  }
 }
 
 
@@ -700,7 +749,7 @@ double Fluxes::sTp_star(double &_theta_j, double &_theta_j_plus_1,
     -rp_theta_j_plus_1 * std::sin(theta_j_plus_1mnu),
     -rp_theta_j_plus_1 * std::cos(theta_j_plus_1mnu) + d);
 
-  // Compute line integral anticlockwise.
+  // Evaluate line integral anticlockwise.
   double sTp_star_j = _sp_star * (phi_j_plus_1 - phi_j);
 
   return sTp_star_j;
@@ -749,15 +798,4 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
 
   // Compute transit flux.
   f = 1. - alpha * I_0;
-
-  // Todo: more pre-compute per theta pair tho.
-  // eg. 1. - d**2
-  // eg. drp_dtheta(theta)
-  // eg. (theta_j - theta_plus_1) / 2
-  // eg. 1 / (n + 2)
-  // Todo: Ensure updated attributes reset per position in methods.
-  // Todo: pass eigen by reference.
-  // Todo: check for int division.
-  // Todo: remove unused imports.
-
 }

@@ -28,8 +28,8 @@ class Fluxes {
     double max_rp;
 
     // Intersection variables.
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
     int C_shape;
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C0;
     std::vector<double> theta;
     std::vector<int> theta_type;
@@ -40,16 +40,19 @@ class Fluxes {
     std::complex<double> _d_expinu;
     std::complex<double> _d_expminu;
     int _len_c_conv_c;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
     int _len_beta_conv_c;
-    Eigen::Vector<std::complex<double>, 3> _beta_sin0;
-    Eigen::Vector<std::complex<double>, 3> _beta_cos0;
     int _len_q_rhs;
     int _mid_q_lhs;
     int _len_q;
     int N_q0;
     int N_q2;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
+    Eigen::Vector<std::complex<double>, 3> _beta_sin0;
+    Eigen::Vector<std::complex<double>, 3> _beta_cos0;
+    double s0Tp_planet;
+    double s1Tp_planet;
+    double s2Tp_planet;
     double _sp_star;
 
     // Derivatives switch.
@@ -268,6 +271,34 @@ class Fluxes {
      */
     double sTp_planet(double &_theta_j, double &_theta_j_plus_1,
                       const double &d, const double &nu);
+
+    /**
+     * Compute the even terms in the planet limb's line integral.
+     * These terms are closed form and rely on a succession of
+     * convolutions before the integral is evaluated.
+     *
+     * @param _theta_j start of line segment [radians].
+     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void analytic_even_terms(double &_theta_j, double &_theta_j_plus_1,
+                             const double &d, const double &nu);
+
+    /**
+     * Compute the odd and half-integer terms in the planet limb's
+     * line integral. These terms do not have an obvious closed form
+     * solution and therefore Gauss-legendre quadrature is employed.
+     *
+     * @param _theta_j start of line segment [radians].
+     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
+                             const double &d, const double &nu);
 
     /**
      * Compute the sum of line integrals sTp along segments of the
