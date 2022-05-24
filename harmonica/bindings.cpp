@@ -71,7 +71,7 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> ds_grad,
   py::array_t<double, py::array::c_style> nus_grad,
   py::array_t<double, py::array::c_style> fs_grad,
-  bool require_gradients) {
+  int n_l, bool require_gradients) {
 
   // Unpack python arrays.
   auto ds_ = ds.unchecked<1>();
@@ -90,7 +90,7 @@ void compute_harmonica_light_curve(
   double* fs_partials[n_f_partials];
 
   // Compute transit light curve.
-  Fluxes flux(ld_law, us, rs, require_gradients);
+  Fluxes flux(ld_law, us, rs, n_l, require_gradients);
   for (int i = 0; i < n_positions; i++) {
     for (int j = 0; j < n_dnu_partials; j++) {
       ds_partials[j] = &ds_grad_(i, j);
@@ -132,6 +132,7 @@ PYBIND11_MODULE(bindings, m) {
       py::arg("ds_grad") = py::none(),
       py::arg("nus_grad") = py::none(),
       py::arg("fs_grad") = py::none(),
+      py::arg("n_l") = py::none(),
       py::arg("require_gradients") = false);
 
 }

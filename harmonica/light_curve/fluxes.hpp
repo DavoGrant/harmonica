@@ -160,9 +160,10 @@ class Fluxes {
      * the costly eigenvalues for much of a light curve.
      *
      * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
      * @return bool if there are no obvious intersections.
      */
-    bool no_obvious_intersections(const double &d);
+    bool no_obvious_intersections(const double &d, const double &nu);
 
     /**
      * Compute the real roots, as a vector of thetas, from a given companion
@@ -335,12 +336,13 @@ class Fluxes {
      * @param ld_law limb darkening law, 0=quadratic, 1=non-linear.
      * @param us array of stellar limb darkening coefficients [].
      * @param rs array of planet radius harmonic coefficients [stellar radii].
+     * @param n_l order of legendre polynomials for Gauss-legendre quad.
      * @param require_gradients derivatives switch.
      */
     Fluxes(int ld_law,
            py::array_t<double, py::array::c_style> us,
            py::array_t<double, py::array::c_style> rs,
-           bool require_gradients);
+           int n_l, bool require_gradients);
 
     /**
      * Compute the planet radius at a given theta.

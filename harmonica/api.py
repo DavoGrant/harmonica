@@ -47,9 +47,10 @@ class HarmonicaTransit(object):
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None,
+    def __init__(self, times=None, ds=None, nus=None, n_l=20,
                  require_gradients=False, verbose=False):
         self._verbose = verbose
+        self._n_l = n_l
 
         # Orbital parameters.
         self._t0 = None
@@ -187,7 +188,7 @@ class HarmonicaTransit(object):
         bindings.light_curve(0, self._u, self._r,
                              self.ds, self.nus, self.lc,
                              self.ds_grad, self.nus_grad, self.lc_grad,
-                             require_gradients=False)
+                             self._n_l, require_gradients=False)
 
         return self.lc
 

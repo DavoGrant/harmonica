@@ -55,6 +55,7 @@ void compute_orbital_separation_and_angles(
  * @param ds_grad (empty) array of derivatives dd/dx x={t0, p, a, i, e, w}.
  * @param nus_grad (empty) array of derivatives dnu/dx x={t0, p, a, i, e, w}.
  * @param fs_grad empty array of derivatives dfs/dx x={t0, p, a, i, e, w, us, rs}.
+ * @param n_l order of legendre polynomials for Gauss-legendre quad.
  * @param require_gradients derivatives switch.
  * @return void.
  */
@@ -68,7 +69,7 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> ds_grad,
   py::array_t<double, py::array::c_style> nus_grad,
   py::array_t<double, py::array::c_style> fs_grad,
-  bool require_gradients);
+  int n_l, bool require_gradients);
 
 
 #endif

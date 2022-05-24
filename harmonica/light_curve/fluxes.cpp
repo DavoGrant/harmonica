@@ -19,12 +19,15 @@ using namespace std::complex_literals;
 Fluxes::Fluxes(int ld_law,
                py::array_t<double, py::array::c_style> us,
                py::array_t<double, py::array::c_style> rs,
-               bool require_gradients) {
+               int n_l, bool require_gradients) {
 
   // Unpack python arrays.
   auto us_ = us.unchecked<1>();
   auto rs_ = rs.unchecked<1>();
   _n_rs = rs_.shape(0);  // Always odd.
+
+  // Set Gauss-legendre order.
+  _N_l = n_l;
 
   _ld_law = ld_law;
   if (_ld_law == limb_darkening::quadratic) {
@@ -296,7 +299,7 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
   theta_type = {};
 
   // Check cases where no obvious intersections, avoiding eigenvalue runtime.
-  if (this->no_obvious_intersections(d)) { return; }
+  if (this->no_obvious_intersections(d, nu)) { return; }
 
   if (N_c != 0) {
     // Update intersection companion matrix for current position.
@@ -337,7 +340,7 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 }
 
 
-bool Fluxes::no_obvious_intersections(const double &d) {
+bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
 
   bool noi = false;
   if (d <= 1.) {
@@ -345,7 +348,7 @@ bool Fluxes::no_obvious_intersections(const double &d) {
     if (max_rp <= 1. - d) {
       // Max planet radius would not intersect closest stellar limb.
       // Overlap region enclosed by entire planet's limb.
-      theta = {-fractions::pi, fractions::pi};
+      theta = {nu - fractions::pi, nu + fractions::pi};
       theta_type = {intersections::planet};
       noi = true;
     } else if (min_rp >= 1. + d) {
@@ -408,7 +411,7 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
     if (_rp_nu < 1. + d) {
       // Planet radius toward stellar centre closer than stellar limb.
       // Overlap region enclosed by entire planet's limb as no intersects.
-      theta = {-fractions::pi, fractions::pi};
+      theta = {nu - fractions::pi, nu + fractions::pi};
       theta_type = {intersections::planet};
       tc = true;
     } else if (_rp_nu > 1. + d) {
@@ -730,11 +733,16 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
 
 
 void Fluxes::select_legendre_order(const double &d) {
-
-  _N_l = 10;
-  _l_roots = legendre::roots_ten;
-  _l_weights = legendre::weights_ten;
-
+  if (_N_l == 10) {
+    _l_roots = legendre::roots_ten;
+    _l_weights = legendre::weights_ten;
+  } else if (_N_l == 20) {
+    _l_roots = legendre::roots_twenty;
+    _l_weights = legendre::weights_twenty;
+  } else if (_N_l == 100) {
+    _l_roots = legendre::roots_hundred;
+    _l_weights = legendre::weights_hundred;
+  }
 }
 
 
