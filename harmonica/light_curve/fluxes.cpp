@@ -741,17 +741,17 @@ void Fluxes::select_legendre_order(const double &d) {
   } else {
     double outer_radii = max_rp + d;
     if (outer_radii >= 0.99) {
-      _N_l = 500;
-      _l_roots = legendre::roots_five_hundred;
-      _l_weights = legendre::weights_five_hundred;
+      _N_l = 200;
+      _l_roots = legendre::roots_two_hundred;
+      _l_weights = legendre::weights_two_hundred;
     } else if (outer_radii >= 0.79) {
       _N_l = 50;
       _l_roots = legendre::roots_fifty;
       _l_weights = legendre::weights_fifty;
     } else {
-      _N_l = 10;
-      _l_roots = legendre::roots_ten;
-      _l_weights = legendre::weights_ten;
+      _N_l = 20;
+      _l_roots = legendre::roots_twenty;
+      _l_weights = legendre::weights_twenty;
     }
   }
 }

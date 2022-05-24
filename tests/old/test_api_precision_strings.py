@@ -26,6 +26,6 @@ ht.set_stellar_limb_darkening(us, limb_dark_law='quadratic')
 ht.set_planet_transmission_string(rs)
 fs_mp = ht.get_precision_estimate()
 
-plt.plot(ts, fs - fs_mp, lw=1.5, c='#000000')
+plt.plot(ht.ds, fs - fs_mp, lw=1.5, c='#000000')
 plt.tight_layout()
 plt.show()

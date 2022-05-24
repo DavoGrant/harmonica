@@ -1,7 +1,7 @@
 from scipy.special import roots_legendre
 
 
-N_l = 500
+N_l = 200
 roots, weights = roots_legendre(N_l)
 print('Roots.')
 for i in range(N_l):

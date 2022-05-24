@@ -48,7 +48,7 @@ class HarmonicaTransit(object):
     """
 
     def __init__(self, times=None, ds=None, nus=None,
-                 require_gradients=False, verbose=False):
+                 require_gradients=False):
         # Orbital parameters.
         self._t0 = None
         self._period = None
