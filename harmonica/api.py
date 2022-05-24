@@ -47,11 +47,8 @@ class HarmonicaTransit(object):
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None, n_l=20,
+    def __init__(self, times=None, ds=None, nus=None,
                  require_gradients=False, verbose=False):
-        self._verbose = verbose
-        self._n_l = n_l
-
         # Orbital parameters.
         self._t0 = None
         self._period = None
@@ -61,8 +58,8 @@ class HarmonicaTransit(object):
         self._omega = None
 
         # Stellar parameters.
-        self._limb_dark_mode = None
         self._u = None
+        self._ld_mode = None
 
         # Planet parameters.
         self._r = None
@@ -92,7 +89,7 @@ class HarmonicaTransit(object):
             self._require_gradients)
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
-                  ecc=None, omega=None):
+                  ecc=0., omega=0.):
         """
         Set/update orbital parameters.
 
@@ -137,9 +134,9 @@ class HarmonicaTransit(object):
         """
         self._u = u
         if limb_dark_law == 'quadratic':
-            self._limb_dark_mode = 0
+            self._ld_mode = 0
         else:
-            self._limb_dark_mode = 1
+            self._ld_mode = 1
 
     def set_planet_transmission_string(self, r=None):
         """
@@ -185,10 +182,11 @@ class HarmonicaTransit(object):
             self._orbit_updated = False
 
         # Get light curve.
-        bindings.light_curve(0, self._u, self._r,
+        bindings.light_curve(self._ld_mode, self._u, self._r,
                              self.ds, self.nus, self.lc,
                              self.ds_grad, self.nus_grad, self.lc_grad,
-                             self._n_l, require_gradients=False)
+                             precision_check=False,
+                             require_gradients=self._require_gradients)
 
         return self.lc
 
@@ -224,4 +222,20 @@ class HarmonicaTransit(object):
             Description of return object.
 
         """
-        return
+        # Get orbit (if parameters updated).
+        if self._orbit_updated:
+            bindings.orbit(self._t0, self._period, self._a,
+                           self._inc, self._ecc, self._omega,
+                           self.times, self.ds, self.nus,
+                           self.ds_grad, self.nus_grad,
+                           require_gradients=self._require_gradients)
+            self._orbit_updated = False
+
+        # Get light curve.
+        bindings.light_curve(self._ld_mode, self._u, self._r,
+                             self.ds, self.nus, self.lc,
+                             self.ds_grad, self.nus_grad, self.lc_grad,
+                             precision_check=True,
+                             require_gradients=self._require_gradients)
+
+        return self.lc

@@ -7,12 +7,12 @@ from harmonica import HarmonicaTransit
 
 # Harmonica transit light curve.
 s = time.time()
-ts = np.linspace(4.5, 5.5, 50)
+ts = np.linspace(4.5, 5.5, 100)
 ht = HarmonicaTransit(times=ts, n_l=100, require_gradients=False)
 ht.set_orbit(t0=5., period=10., a=7., inc=88. * np.pi / 180.,
              ecc=0., omega=0. * np.pi / 180)
 ht.set_stellar_limb_darkening(np.array([0.40, 0.29]), limb_dark_law='quadratic')
-ht.set_planet_transmission_string(np.array([0.1, -0.001, 0.001]))
+ht.set_planet_transmission_string(np.array([0.1, 0.001, 0.001, 0.001, 0.001]))
 fs = ht.get_transit_light_curve()
 print((time.time() - s) / 1)
 
@@ -50,8 +50,8 @@ for d, nu in zip(ht.ds, ht.nus):
     # noinspection PyTupleAssignmentBalance
     delta, abserr = nquad(
         numerical_delta, [bounds_r_prime, bounds_theta],
-        args=([0.1, -0.001], [0.001], d, nu),
-        opts={'limit': 100, 'epsabs': 1e-10, 'epsrel': 1e-10})
+        args=([0.1, 0.001, 0.001], [0.001, 0.001], d, nu),
+        opts={'limit': 500, 'epsabs': 1e-15, 'epsrel': 1e-15})
     print(delta, abserr)
     fs_numerical.append(1. - delta)
     fs_numerical_err.append(abserr)
@@ -59,8 +59,8 @@ for d, nu in zip(ht.ds, ht.nus):
 fs_numerical = np.array(fs_numerical)
 fs_numerical_err = np.array(fs_numerical_err)
 
-plt.plot(ts, (fs - fs_numerical) * 1e6, lw=1.5, c='#000000')
-plt.plot(ts, fs_numerical_err * 1e6, lw=1.5, c='#ba7a12')
-plt.plot(ts, -fs_numerical_err * 1e6, lw=1.5, c='#ba7a12')
+plt.plot(ts, fs - fs_numerical, lw=1.5, c='#000000')
+plt.plot(ts, fs_numerical_err, lw=1.5, c='#ba7a12')
+plt.plot(ts, -fs_numerical_err, lw=1.5, c='#ba7a12')
 plt.tight_layout()
 plt.show()

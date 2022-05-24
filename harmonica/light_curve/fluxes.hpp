@@ -58,7 +58,8 @@ class Fluxes {
     const double *_l_weights;
     double _sp_star;
 
-    // Derivatives switch.
+    // Switches.
+    bool _precision_check;
     bool _require_gradients;
 
     /**
@@ -336,13 +337,13 @@ class Fluxes {
      * @param ld_law limb darkening law, 0=quadratic, 1=non-linear.
      * @param us array of stellar limb darkening coefficients [].
      * @param rs array of planet radius harmonic coefficients [stellar radii].
-     * @param n_l order of legendre polynomials for Gauss-legendre quad.
+     * @param precision_check precision switch, compute at ~double-precision.
      * @param require_gradients derivatives switch.
      */
     Fluxes(int ld_law,
            py::array_t<double, py::array::c_style> us,
            py::array_t<double, py::array::c_style> rs,
-           int n_l, bool require_gradients);
+           bool precision_check, bool require_gradients);
 
     /**
      * Compute the planet radius at a given theta.

@@ -19,15 +19,16 @@ using namespace std::complex_literals;
 Fluxes::Fluxes(int ld_law,
                py::array_t<double, py::array::c_style> us,
                py::array_t<double, py::array::c_style> rs,
-               int n_l, bool require_gradients) {
+               bool precision_check, bool require_gradients) {
+
+  // Set switches.
+  _precision_check = precision_check;
+  _require_gradients = require_gradients;
 
   // Unpack python arrays.
   auto us_ = us.unchecked<1>();
   auto rs_ = rs.unchecked<1>();
   _n_rs = rs_.shape(0);  // Always odd.
-
-  // Set Gauss-legendre order.
-  _N_l = n_l;
 
   _ld_law = ld_law;
   if (_ld_law == limb_darkening::quadratic) {
@@ -733,15 +734,25 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
 
 
 void Fluxes::select_legendre_order(const double &d) {
-  if (_N_l == 10) {
-    _l_roots = legendre::roots_ten;
-    _l_weights = legendre::weights_ten;
-  } else if (_N_l == 20) {
-    _l_roots = legendre::roots_twenty;
-    _l_weights = legendre::weights_twenty;
-  } else if (_N_l == 100) {
-    _l_roots = legendre::roots_hundred;
-    _l_weights = legendre::weights_hundred;
+  if (_precision_check) {
+    _N_l = 500;
+    _l_roots = legendre::roots_five_hundred;
+    _l_weights = legendre::weights_five_hundred;
+  } else {
+    double outer_radii = max_rp + d;
+    if (outer_radii >= 0.99) {
+      _N_l = 500;
+      _l_roots = legendre::roots_five_hundred;
+      _l_weights = legendre::weights_five_hundred;
+    } else if (outer_radii >= 0.79) {
+      _N_l = 50;
+      _l_roots = legendre::roots_fifty;
+      _l_weights = legendre::weights_fifty;
+    } else {
+      _N_l = 10;
+      _l_roots = legendre::roots_ten;
+      _l_weights = legendre::weights_ten;
+    }
   }
 }
 

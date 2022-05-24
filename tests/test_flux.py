@@ -18,10 +18,11 @@ class TestFlux(unittest.TestCase):
 
         #  std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
         # Todo: dynamic gausslegendre precision, select arary in init.
-        # Todo: pass eigen by reference?
+        # Todo: check non linear.
         # Todo: check for int division.
         # Todo: remove unused imports.
-        # Todo: test egde cases, eg circle, d=0 a=1, rp>1 etc.
+        # Todo: test egde cases, eg circle, near limb, d=0 a=1, rp>1 etc.
+        # Todo: test 01, 02, 03, 0fast.
 
     def test_flux_data_structures(self):
         """ Test flux data structures. """
