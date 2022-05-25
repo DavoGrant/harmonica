@@ -10,9 +10,10 @@ class HarmonicaTransit(object):
     Compute light curves for exoplanet transmission strings through
     parameterising the planet shape as a Fourier series.
 
-    # Todo: update all doc strings. what deos jax need.
+    # Todo: update all doc strings. jax data structures too.
     # Todo: finite exposure time?
     # Todo: light travel time?
+    # Todo: variable transmission string?
     # Todo: update readme labels with this repo links?
 
     Parameters
