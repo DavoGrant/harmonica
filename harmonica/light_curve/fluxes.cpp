@@ -19,7 +19,7 @@ using namespace std::complex_literals;
 Fluxes::Fluxes(int ld_law,
                py::array_t<double, py::array::c_style> us,
                py::array_t<double, py::array::c_style> rs,
-               bool precision_check, bool require_gradients) {
+               int precision_check, bool require_gradients) {
 
   // Set switches.
   _precision_check = precision_check;
@@ -356,7 +356,7 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
       // Min planet radius beyond furthest stellar limb.
       // Overlap region enclosed by entire star's limb.
       theta = {-fractions::pi, fractions::pi};
-      theta_type = {intersections::star};
+      theta_type = {intersections::entire_star};
       noi = true;
     }
   } else {
@@ -364,14 +364,14 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
     if (max_rp <= d - 1.) {
       // Max planet radius would not intersect closest stellar limb.
       // Overlap region is zero.
-      theta = {0., 0.};
+      theta = {};
       theta_type = {intersections::beyond};
       noi = true;
     } else if (min_rp >= d + 1.) {
       // Min planet radius beyond furthest stellar limb.
       // Overlap region enclosed by entire star's limb.
       theta = {-fractions::pi, fractions::pi};
-      theta_type = {intersections::star};
+      theta_type = {intersections::entire_star};
       noi = true;
     }
   }
@@ -419,7 +419,7 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
       // Planet radius toward stellar centre beyond stellar limb.
       // Overlap region enclosed by entire star's limb as no intersects.
       theta = {-fractions::pi, fractions::pi};
-      theta_type = {intersections::star};
+      theta_type = {intersections::entire_star};
       tc = true;
     }
   } else {
@@ -434,7 +434,7 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
       // Planet radius toward stellar centre beyond stellar limb.
       // Overlap region enclosed by entire star's limb as no intersects.
       theta = {-fractions::pi, fractions::pi};
-      theta_type = {intersections::star};
+      theta_type = {intersections::entire_star};
       tc = true;
     }
   }
@@ -734,45 +734,69 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
 
 
 void Fluxes::select_legendre_order(const double &d) {
-  if (_precision_check) {
-    _N_l = 500;
-    _l_roots = legendre::roots_five_hundred;
-    _l_weights = legendre::weights_five_hundred;
-  } else {
+  if (_precision_check == 0) {
     double outer_radii = max_rp + d;
     if (outer_radii >= 0.99) {
-      _N_l = 200;
-      _l_roots = legendre::roots_two_hundred;
-      _l_weights = legendre::weights_two_hundred;
-    } else if (outer_radii >= 0.79) {
+      _N_l = 500;
+      _l_roots = legendre::roots_five_hundred;
+      _l_weights = legendre::weights_five_hundred;
+    } else {
       _N_l = 50;
       _l_roots = legendre::roots_fifty;
       _l_weights = legendre::weights_fifty;
-    } else {
-      _N_l = 20;
-      _l_roots = legendre::roots_twenty;
-      _l_weights = legendre::weights_twenty;
     }
+  } else if (_precision_check == 500) {
+    _N_l = 500;
+    _l_roots = legendre::roots_five_hundred;
+    _l_weights = legendre::weights_five_hundred;
+  } else if (_precision_check == 200) {
+    _N_l = 200;
+    _l_roots = legendre::roots_two_hundred;
+    _l_weights = legendre::weights_two_hundred;
+  } else if (_precision_check == 100) {
+    _N_l = 100;
+    _l_roots = legendre::roots_hundred;
+    _l_weights = legendre::weights_hundred;
+  } else if (_precision_check == 50) {
+    _N_l = 50;
+    _l_roots = legendre::roots_fifty;
+    _l_weights = legendre::weights_fifty;
+  } else if (_precision_check == 20) {
+    _N_l = 20;
+    _l_roots = legendre::roots_twenty;
+    _l_weights = legendre::weights_twenty;
+  } else if (_precision_check == 10) {
+    _N_l = 10;
+    _l_roots = legendre::roots_ten;
+    _l_weights = legendre::weights_ten;
   }
 }
 
 
-double Fluxes::sTp_star(double &_theta_j, double &_theta_j_plus_1,
-                        const double &d, const double &nu) {
+double Fluxes::sTp_star(int theta_type_j, double &_theta_j,
+                        double &_theta_j_plus_1, const double &d,
+                        const double &nu) {
+  double phi_j;
+  double phi_j_plus_1;
 
-  // Convert theta_j to phi_j (stellar centred frame).
-  double rp_theta_j = this->rp_theta(_theta_j);
-  double theta_jmnu = _theta_j - nu;
-  double phi_j = std::atan2(
-    -rp_theta_j * std::sin(theta_jmnu),
-    -rp_theta_j * std::cos(theta_jmnu) + d);
+  // Check if entire star -pi to pi.
+  if (theta_type_j == intersections::entire_star) {
+    phi_j = -fractions::pi;
+    phi_j_plus_1 = fractions::pi;
+  } else {
+    // Convert theta_j to phi_j (stellar centred frame).
+    double rp_theta_j = this->rp_theta(_theta_j);
+    double theta_jmnu = _theta_j - nu;
+    phi_j = std::atan2(-rp_theta_j * std::sin(theta_jmnu),
+                       -rp_theta_j * std::cos(theta_jmnu) + d);
 
-  // Convert theta_j_plus_1 to phi_j_plus_1.
-  double rp_theta_j_plus_1 = this->rp_theta(_theta_j_plus_1);
-  double theta_j_plus_1mnu = _theta_j_plus_1 - nu;
-  double phi_j_plus_1 = std::atan2(
-    -rp_theta_j_plus_1 * std::sin(theta_j_plus_1mnu),
-    -rp_theta_j_plus_1 * std::cos(theta_j_plus_1mnu) + d);
+    // Convert theta_j_plus_1 to phi_j_plus_1.
+    double rp_theta_j_plus_1 = this->rp_theta(_theta_j_plus_1);
+    double theta_j_plus_1mnu = _theta_j_plus_1 - nu;
+    phi_j_plus_1 = std::atan2(
+      -rp_theta_j_plus_1 * std::sin(theta_j_plus_1mnu),
+      -rp_theta_j_plus_1 * std::cos(theta_j_plus_1mnu) + d);
+  }
 
   // Evaluate line integral anticlockwise.
   double sTp_star_j = _sp_star * (phi_j_plus_1 - phi_j);
@@ -810,13 +834,14 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   double alpha = 0.;
   for (int j = 0; j < theta_type.size(); j++) {
 
-    if (theta_type[j] == 0) {
+    if (theta_type[j] == intersections::planet) {
       // Planet limb line segment.
       alpha += this->sTp_planet(theta[j], theta[j + 1], d, nu);
 
-    } else if (theta_type[j] == 1) {
+    } else if (theta_type[j] == intersections::star
+               || theta_type[j] == intersections::entire_star) {
       // Stellar limb line segment.
-      alpha += this->sTp_star(theta[j], theta[j + 1], d, nu);
+      alpha += this->sTp_star(theta_type[j], theta[j], theta[j + 1], d, nu);
 
     } else {
       // Planet is beyond the stellar disc.

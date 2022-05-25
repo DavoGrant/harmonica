@@ -186,10 +186,10 @@ class HarmonicaTransit(object):
         bindings.light_curve(self._ld_mode, self._u, self._r,
                              self.ds, self.nus, self.lc,
                              self.ds_grad, self.nus_grad, self.lc_grad,
-                             precision_check=False,
+                             precision_check=0,
                              require_gradients=self._require_gradients)
 
-        return self.lc
+        return np.copy(self.lc)
 
     def get_planet_transmission_string(self):
         """
@@ -208,7 +208,7 @@ class HarmonicaTransit(object):
         """
         return
 
-    def get_precision_estimate(self):
+    def get_precision_estimate(self, N_l):
         """
         Get light curve precision estimates.
 
@@ -236,7 +236,7 @@ class HarmonicaTransit(object):
         bindings.light_curve(self._ld_mode, self._u, self._r,
                              self.ds, self.nus, self.lc,
                              self.ds_grad, self.nus_grad, self.lc_grad,
-                             precision_check=True,
+                             precision_check=N_l,
                              require_gradients=self._require_gradients)
 
-        return self.lc
+        return np.copy(self.lc)

@@ -71,7 +71,7 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> ds_grad,
   py::array_t<double, py::array::c_style> nus_grad,
   py::array_t<double, py::array::c_style> fs_grad,
-  bool precision_check, bool require_gradients) {
+  int precision_check, bool require_gradients) {
 
   // Unpack python arrays.
   auto ds_ = ds.unchecked<1>();
@@ -132,7 +132,7 @@ PYBIND11_MODULE(bindings, m) {
       py::arg("ds_grad") = py::none(),
       py::arg("nus_grad") = py::none(),
       py::arg("fs_grad") = py::none(),
-      py::arg("precision_check") = false,
+      py::arg("precision_check") = 0,
       py::arg("require_gradients") = false);
 
 }

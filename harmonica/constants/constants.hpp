@@ -55,7 +55,8 @@ namespace intersections {
 
   const int planet = 0;
   const int star = 1;
-  const int beyond = 2;
+  const int entire_star = 2;
+  const int beyond = 3;
 
 }
 

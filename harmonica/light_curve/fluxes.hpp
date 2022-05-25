@@ -59,7 +59,7 @@ class Fluxes {
     double _sp_star;
 
     // Switches.
-    bool _precision_check;
+    int _precision_check;
     bool _require_gradients;
 
     /**
@@ -320,14 +320,16 @@ class Fluxes {
      * stellar limb from theta_j to theta_j_plus_1. The sum is over
      * each limb darkening component.
      *
+     * @param theta_type_j type of stellar line segment.
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
-    double sTp_star(double &_theta_j, double &_theta_j_plus_1,
-                    const double &d, const double &nu);
+    double sTp_star(int theta_type_j, double &_theta_j,
+                    double &_theta_j_plus_1, const double &d,
+                    const double &nu);
 
   public:
 
@@ -337,13 +339,13 @@ class Fluxes {
      * @param ld_law limb darkening law, 0=quadratic, 1=non-linear.
      * @param us array of stellar limb darkening coefficients [].
      * @param rs array of planet radius harmonic coefficients [stellar radii].
-     * @param precision_check precision switch, compute at ~double-precision.
+     * @param precision_check precision switch.
      * @param require_gradients derivatives switch.
      */
     Fluxes(int ld_law,
            py::array_t<double, py::array::c_style> us,
            py::array_t<double, py::array::c_style> rs,
-           bool precision_check, bool require_gradients);
+           int precision_check, bool require_gradients);
 
     /**
      * Compute the planet radius at a given theta.

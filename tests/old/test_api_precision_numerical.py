@@ -15,8 +15,8 @@ B = np.array([[1., -1., -1.],
               [0., 0., -1.]])
 ps = np.matmul(B, us)
 I_0 = 1. / ((1. - us[1] / 3. - us[2] / 6.) * np.pi)
-_as = np.array([0.1, 0.001, 0.001])
-_bs = np.array([0.001, 0.001])
+_as = np.array([0.1, -0.005, 0.005])
+_bs = np.array([0.005, -0.005])
 rs = [_as[0]]
 for i in range(1, len(_as)):
     rs.append(_as[i])
@@ -275,10 +275,13 @@ def compute_numerical_flux(_cs, _d, _nu):
         elif intersection_types[j] == 1:
             phi_j = np.arctan2(
                 -r_p(intersections[j]) * np.sin(intersections[j] - _nu),
-                -r_p(intersections[j]) * np.cos(intersections[j] - _nu) + _d)
+                -r_p(intersections[j]) * np.cos(
+                    intersections[j] - _nu) + _d)
             phi_j_plus_1 = np.arctan2(
-                -r_p(intersections[j + 1]) * np.sin(intersections[j + 1] - _nu),
-                -r_p(intersections[j + 1]) * np.cos(intersections[j + 1] - _nu) + _d)
+                -r_p(intersections[j + 1]) * np.sin(
+                    intersections[j + 1] - _nu),
+                -r_p(intersections[j + 1]) * np.cos(
+                    intersections[j + 1] - _nu) + _d)
             s0 = 1. / (0. + 2) * (phi_j_plus_1 - phi_j)
             s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
             s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
@@ -289,14 +292,19 @@ def compute_numerical_flux(_cs, _d, _nu):
     return 1. - alpha, alpha_numerical_err
 
 
-# Harmonica transit light curve.
+# Harmonica transit light curves.
 ht = HarmonicaTransit(times=ts, require_gradients=False)
 ht.set_orbit(t0, period, a, inc)
 ht.set_stellar_limb_darkening(us[1:], limb_dark_law='quadratic')
 ht.set_planet_transmission_string(rs)
-fs = ht.get_precision_estimate()
+fs_500 = ht.get_precision_estimate(N_l=500)
+fs_200 = ht.get_precision_estimate(N_l=200)
+fs_100 = ht.get_precision_estimate(N_l=100)
+fs_50 = ht.get_precision_estimate(N_l=50)
+fs_20 = ht.get_precision_estimate(N_l=20)
+fs = ht.get_precision_estimate(N_l=0)
 
-# Numerical light curve.
+# Numerical double-precision light curve.
 fs_numerical = []
 fs_numerical_err = []
 cs = generate_complex_fourier_coeffs()
@@ -310,10 +318,27 @@ fs_numerical_err = np.array(fs_numerical_err)
 
 fig = plt.figure(figsize=(8, 6))
 ax1 = plt.subplot(1, 1, 1)
-ax1.plot(ht.ds, np.abs(fs - fs_numerical), c='#000000')
-ax1.plot(ht.ds, fs_numerical_err, c='#bc5090')
+
+ax1.plot(ht.ds, np.abs(fs_20 - fs_numerical),
+         c='#ffa600', label='$N_l = 20$')
+ax1.plot(ht.ds, np.abs(fs_50 - fs_numerical),
+         c='#ff6361', label='$N_l = 50$')
+ax1.plot(ht.ds, np.abs(fs_100 - fs_numerical),
+         c='#bc5090', label='$N_l = 100$')
+ax1.plot(ht.ds, np.abs(fs_200 - fs_numerical),
+         c='#58508d', label='$N_l = 200$')
+ax1.plot(ht.ds, np.abs(fs_500 - fs_numerical),
+         c='#003f5c', label='$N_l = 500$')
+# ax1.plot(ht.ds, np.abs(fs - fs_numerical),
+#          c='#000000', label='$N_l = \\rm{auto}$')
+ax1.plot(ht.ds, fs_numerical_err,
+         c='#b0b0b0', label='Numerical error estimate')
+
+ax1.set_ylim(1.e-17, 1.e-7)
 ax1.set_yscale('log')
-ax1.set_xlabel('Time / days')
+ax1.set_xlabel('$d$ / stellar radii')
 ax1.set_ylabel('Error')
+ax1.legend(loc='upper left')
+
 plt.tight_layout()
 plt.show()
