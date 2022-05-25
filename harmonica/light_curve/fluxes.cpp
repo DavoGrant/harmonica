@@ -36,7 +36,7 @@ Fluxes::Fluxes(int ld_law,
     I_0 = 1. / ((1. - us_(0) / 3. - us_(1) / 6.) * fractions::pi);
 
     // Quadratic limb-darkening law.
-    Eigen::Vector<double, 3> u {1, us_(0), us_(1)};
+    Eigen::Vector<double, 3> u {1., us_(0), us_(1)};
     Eigen::Matrix<double, 3, 3> B {{1., -1., -1.},
                                    {0., 1., 2.},
                                    {0., 0., -1.}};
@@ -50,7 +50,7 @@ Fluxes::Fluxes(int ld_law,
                 - 3. * us_(2) / 7. - us_(3) / 2.) * fractions::pi);
 
     // Non-linear limb-darkening law.
-    Eigen::Vector<double, 5> u {1, us_(0), us_(1), us_(2), us_(3)};
+    Eigen::Vector<double, 5> u {1., us_(0), us_(1), us_(2), us_(3)};
     Eigen::Matrix<double, 5, 5> B {{1., -1., -1., -1., -1.},
                                    {0., 1., 0., 0., 0.},
                                    {0., 0., 1., 0., 0.},
