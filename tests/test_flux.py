@@ -17,12 +17,11 @@ class TestFlux(unittest.TestCase):
         self.epsilon = 1.e-8
 
         #  std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
-        # Todo: dynamic gausslegendre precision, select arary in init.
         # Todo: check non linear limb-darkening.
-        # Todo: check for int division.
         # Todo: remove unused imports.
         # Todo: test egde cases, eg circle, near limb, d=0 a=1, rp>1 etc.
         # Todo: test 01, 02, 03, 0fast.
+        # Todo: speed/precision from production pip version.
 
         # Todo: update all doc strings. jax data structures too.
         # Todo: finite exposure time?

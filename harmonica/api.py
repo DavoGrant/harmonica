@@ -43,7 +43,7 @@ class HarmonicaTransit(object):
     """
 
     def __init__(self, times=None, ds=None, nus=None,
-                 require_gradients=False):
+                 require_gradients=False, pnl_c=50, pnl_e=500):
         # Orbital parameters.
         self._t0 = None
         self._period = None
@@ -78,6 +78,10 @@ class HarmonicaTransit(object):
         self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
         n_lcd = self.ds.shape + (6 + 3 + 5,)
         self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
+
+        # Precision: number of legendre roots at centre and edges.
+        self._pnl_c = pnl_c
+        self._pnl_e = pnl_e
 
     def __repr__(self):
         return '<Harmonica transit: require_gradients={}>'.format(
@@ -180,7 +184,7 @@ class HarmonicaTransit(object):
         bindings.light_curve(self._ld_mode, self._u, self._r,
                              self.ds, self.nus, self.lc,
                              self.ds_grad, self.nus_grad, self.lc_grad,
-                             precision_check=0,
+                             self._pnl_c, self._pnl_e,
                              require_gradients=self._require_gradients)
 
         return np.copy(self.lc)
@@ -217,20 +221,4 @@ class HarmonicaTransit(object):
             Description of return object.
 
         """
-        # Get orbit (if parameters updated).
-        if self._orbit_updated:
-            bindings.orbit(self._t0, self._period, self._a,
-                           self._inc, self._ecc, self._omega,
-                           self.times, self.ds, self.nus,
-                           self.ds_grad, self.nus_grad,
-                           require_gradients=self._require_gradients)
-            self._orbit_updated = False
-
-        # Get light curve.
-        bindings.light_curve(self._ld_mode, self._u, self._r,
-                             self.ds, self.nus, self.lc,
-                             self.ds_grad, self.nus_grad, self.lc_grad,
-                             precision_check=N_l,
-                             require_gradients=self._require_gradients)
-
-        return np.copy(self.lc)
+        return

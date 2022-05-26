@@ -6,10 +6,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-// TODO: temp debug.
-#include <iomanip>
-#include <iostream>
-
 #include "fluxes.hpp"
 #include "../constants/constants.hpp"
 
@@ -19,10 +15,11 @@ using namespace std::complex_literals;
 Fluxes::Fluxes(int ld_law,
                py::array_t<double, py::array::c_style> us,
                py::array_t<double, py::array::c_style> rs,
-               int precision_check, bool require_gradients) {
+               int pnl_c, int pnl_e, bool require_gradients) {
 
   // Set switches.
-  _precision_check = precision_check;
+  _precision_nl_centre = pnl_c;
+  _precision_nl_edge = pnl_e;
   _require_gradients = require_gradients;
 
   // Unpack python arrays.
@@ -734,41 +731,47 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
 
 
 void Fluxes::select_legendre_order(const double &d) {
-  if (_precision_check == 0) {
-    double outer_radii = max_rp + d;
-    if (outer_radii >= 0.99) {
-      _N_l = 500;
-      _l_roots = legendre::roots_five_hundred;
-      _l_weights = legendre::weights_five_hundred;
-    } else {
-      _N_l = 50;
-      _l_roots = legendre::roots_fifty;
-      _l_weights = legendre::weights_fifty;
-    }
-  } else if (_precision_check == 500) {
-    _N_l = 500;
-    _l_roots = legendre::roots_five_hundred;
-    _l_weights = legendre::weights_five_hundred;
-  } else if (_precision_check == 200) {
-    _N_l = 200;
-    _l_roots = legendre::roots_two_hundred;
-    _l_weights = legendre::weights_two_hundred;
-  } else if (_precision_check == 100) {
-    _N_l = 100;
-    _l_roots = legendre::roots_hundred;
-    _l_weights = legendre::weights_hundred;
-  } else if (_precision_check == 50) {
+  // Select regime switch: centre or edge.
+  int position_switch;
+  double outer_radii = max_rp + d;
+  if (outer_radii >= 0.99) {
+    position_switch = _precision_nl_edge;
+  } else {
+    position_switch = _precision_nl_centre;
+  }
+
+  // Set precision by number of legendre roots utilised.
+  if (position_switch == 50) {
+    // Default for centre.
     _N_l = 50;
     _l_roots = legendre::roots_fifty;
     _l_weights = legendre::weights_fifty;
-  } else if (_precision_check == 20) {
+  } else if (position_switch == 500) {
+    // Default for edge.
+    _N_l = 500;
+    _l_roots = legendre::roots_five_hundred;
+    _l_weights = legendre::weights_five_hundred;
+  } else if (position_switch == 200) {
+    _N_l = 200;
+    _l_roots = legendre::roots_two_hundred;
+    _l_weights = legendre::weights_two_hundred;
+  } else if (position_switch == 100) {
+    _N_l = 100;
+    _l_roots = legendre::roots_hundred;
+    _l_weights = legendre::weights_hundred;
+  } else if (position_switch == 20) {
     _N_l = 20;
     _l_roots = legendre::roots_twenty;
     _l_weights = legendre::weights_twenty;
-  } else if (_precision_check == 10) {
+  } else if (position_switch == 10) {
     _N_l = 10;
     _l_roots = legendre::roots_ten;
     _l_weights = legendre::weights_ten;
+  } else {
+    // Fallback.
+    _N_l = 500;
+    _l_roots = legendre::roots_five_hundred;
+    _l_weights = legendre::weights_five_hundred;
   }
 }
 
