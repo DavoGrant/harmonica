@@ -16,19 +16,6 @@ class TestFlux(unittest.TestCase):
         # Differential element, epsilon.
         self.epsilon = 1.e-8
 
-        #  std::cout << std::setprecision(15) << sTp_planet_j << std::endl;
-        # Todo: check non linear limb-darkening.
-        # Todo: remove unused imports.
-        # Todo: test egde cases, eg circle, near limb, d=0 a=1, rp>1 etc.
-        # Todo: test 01, 02, 03, 0fast.
-        # Todo: speed/precision from production pip version.
-
-        # Todo: update all doc strings. jax data structures too.
-        # Todo: finite exposure time?
-        # Todo: light travel time?
-        # Todo: variable transmission string?
-        # Todo: update readme labels with this repo links?
-
     def test_flux_data_structures(self):
         """ Test flux data structures. """
         limb_dark_law = 0
