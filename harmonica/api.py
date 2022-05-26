@@ -7,14 +7,8 @@ class HarmonicaTransit(object):
     """
     Harmonica transit class.
 
-    Compute light curves for exoplanet transmission strings through
-    parameterising the planet shape as a Fourier series.
-
-    # Todo: update all doc strings. jax data structures too.
-    # Todo: finite exposure time?
-    # Todo: light travel time?
-    # Todo: variable transmission string?
-    # Todo: update readme labels with this repo links?
+    Compute transit light curves for a given transmission string
+    through parameterising the planet shape as a Fourier series.
 
     Parameters
     ----------
@@ -79,10 +73,10 @@ class HarmonicaTransit(object):
             self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
 
         self._require_gradients = require_gradients
-        n_od = times.shape + (6,)
+        n_od = self.ds.shape + (6,)
         self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
         self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
-        n_lcd = times.shape + (6 + 3 + 5,)
+        n_lcd = self.ds.shape + (6 + 3 + 5,)
         self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
 
     def __repr__(self):
@@ -107,8 +101,8 @@ class HarmonicaTransit(object):
         ecc : float
             Eccentricity [], 0 <= ecc < 1.
         omega : float
-            Argument of periastron [radians]. If ecc is not None or 0.
-            then omega must also be given.
+            Argument of periastron [radians]. If ecc is not 0.
+            then omega must also be specified.
 
         """
         self._t0 = t0
@@ -126,7 +120,7 @@ class HarmonicaTransit(object):
         Parameters
         ----------
         limb_dark_law : string; `quadratic` or `non-linear`
-            The limb darkening law. TBU.
+            The stellar limb darkening law.
         u :  (N,) array_like
             Limb-darkening coefficients. 1D array of coefficients that
             correspond to the limb darkening law specified by the
@@ -146,15 +140,15 @@ class HarmonicaTransit(object):
         Parameters
         ----------
         r :  (N,) or (N, M) array_like
-            Harmonic limb map coefficients. 1D array of N Fourier
+            Transmission string coefficients. 1D array of N Fourier
             coefficients that specify the planet radius as a function
             of angle in the sky-plane. Coefficients correspond to
             ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
             + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
             input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
-            planet shapes, use a 2d array with N Fourier coefficients
-            and M time steps, where M is equal to the number of model
-            evaluation epochs.
+            transmission strings, use a 2D array with N Fourier
+            coefficients and M time steps, where M is equal to the
+            number of model evaluation epochs.
 
         """
         self._r = r
