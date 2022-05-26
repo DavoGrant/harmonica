@@ -7,58 +7,23 @@ class HarmonicaTransit(object):
     """
     Harmonica transit class.
 
-    Compute light curves for exoplanet transmission strings through
-    parameterising the planet shape as a Fourier series.
-
-    # Todo: update doc strings for ndarray or tensors not iterable. must match require gradient.
-    # Todo: gradients.
-    # Todo: update doc string for latest api args.
-    # Todo: finite exposure time?
-    # Todo: light travel time?
-    # Todo: update readme labels with this repo links?
+    Compute transit light curves for a given transmission string
+    through parameterising the planet shape as a Fourier series.
 
     Parameters
     ----------
-    t0 : float
-        Time of transit [days].
-    period : float
-        Orbital period [days].
-    a : float
-        Semi-major axis [stellar radii].
-    inc : float
-        Orbital inclination [radians].
-    ecc : float
-        Eccentricity [], 0 <= ecc < 1.
-    omega : float
-        Argument of periastron [radians]. If ecc is not None or 0.
-        then omega must also be given.
-    u : (N,) array_like
-        Limb-darkening coefficients. 1d array of coefficients that
-        correspond to the limb darkening law specified by the
-        limb_dark_law.
-    limb_dark_law : string; `integers` or `half-integers`
-        The limb darkening law. `integers` corresponds to ``I/I_0 =
-        1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
-        corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
-        where N is the length of u. Default is 'integers'.
-    r :  (N,) or (N, M) array_like
-        Harmonic limb map coefficients. 1D array of N Fourier
-        coefficients that specify the planet radius as a function
-        of angle in the sky-plane. Coefficients correspond to
-        ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
-        + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
-        input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
-        planet shapes, use a 2d array with N Fourier coefficients
-        and M time steps, where M is equal to the number of model
-        evaluation epochs.
+    times : type
+        Description [units].
+    ds : type
+        Description [units].
 
     Methods
     -------
     set_orbit()
     set_stellar_limb_darkening()
-    set_planet_harmonic_limb_map()
+    set_planet_transmission_string()
     get_transit_light_curve()
-    get_planet_harmonic_limb_map()
+    get_planet_transmission_string()
     get_precision_estimate()
 
     Notes
@@ -77,28 +42,22 @@ class HarmonicaTransit(object):
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None, t0=None,
-                 period=None, a=None, inc=None, ecc=None, omega=None,
-                 u=None, limb_dark_law='integers', r=None,
-                 require_gradients=False, verbose=False):
-        self._verbose = verbose
-
+    def __init__(self, times=None, ds=None, nus=None,
+                 require_gradients=False, pnl_c=50, pnl_e=500):
         # Orbital parameters.
-        self._t0 = t0
-        self._period = period
-        self._a = a
-        self._inc = inc
-        self._ecc = ecc
-        self._omega = omega
+        self._t0 = None
+        self._period = None
+        self._a = None
+        self._inc = None
+        self._ecc = None
+        self._omega = None
 
         # Stellar parameters.
-        self._u = u
-        self._limb_dark_mode = limb_dark_law
-        self._limb_dark_updated = True
+        self._u = None
+        self._ld_mode = None
 
         # Planet parameters.
-        self._r = r
-        self._limb_map_updated = True
+        self._r = None
 
         # Evaluation arrays.
         if times is not None:
@@ -114,23 +73,22 @@ class HarmonicaTransit(object):
             self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
 
         self._require_gradients = require_gradients
-        if require_gradients:
-            n_od = times.shape + (6,)
-            n_lcd = times.shape + (4,)
-            self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
-            self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
-            self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
-        else:
-            self.ds_grad = None
-            self.nus_grad = None
-            self.lc_grad = None
+        n_od = self.ds.shape + (6,)
+        self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
+        self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+        n_lcd = self.ds.shape + (6 + 3 + 5,)
+        self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
+
+        # Precision: number of legendre roots at centre and edges.
+        self._pnl_c = pnl_c
+        self._pnl_e = pnl_e
 
     def __repr__(self):
         return '<Harmonica transit: require_gradients={}>'.format(
             self._require_gradients)
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
-                  ecc=None, omega=None):
+                  ecc=0., omega=0.):
         """
         Set/update orbital parameters.
 
@@ -147,8 +105,8 @@ class HarmonicaTransit(object):
         ecc : float
             Eccentricity [], 0 <= ecc < 1.
         omega : float
-            Argument of periastron [radians]. If ecc is not None or 0.
-            then omega must also be given.
+            Argument of periastron [radians]. If ecc is not 0.
+            then omega must also be specified.
 
         """
         self._t0 = t0
@@ -159,47 +117,45 @@ class HarmonicaTransit(object):
         self._omega = omega
         self._orbit_updated = True
 
-    def set_stellar_limb_darkening(self, u=None, limb_dark_law='integers'):
+    def set_stellar_limb_darkening(self, u=None, limb_dark_law='quadratic'):
         """
         Set/update stellar limb darkening parameters.
 
         Parameters
         ----------
+        limb_dark_law : string; `quadratic` or `non-linear`
+            The stellar limb darkening law.
         u :  (N,) array_like
             Limb-darkening coefficients. 1D array of coefficients that
             correspond to the limb darkening law specified by the
             limb_dark_law.
-        limb_dark_law : string; `integers` or `half-integers`
-            The limb darkening law. `integers` corresponds to ``I/I_0 =
-            1 - \sum_{n=1}^N u_n (1 - \mu)^n``, or `half-integers`,
-            corresponds to ``I/I_0 = 1 - \sum_{n=1}^N u_n (1 - \mu^n)``,
-            where N is the length of u. Default is 'integers'.
 
         """
         self._u = u
-        self._limb_dark_mode = limb_dark_law
-        self._limb_dark_updated = True
+        if limb_dark_law == 'quadratic':
+            self._ld_mode = 0
+        else:
+            self._ld_mode = 1
 
-    def set_planet_harmonic_limb_map(self, r=None):
+    def set_planet_transmission_string(self, r=None):
         """
-        Set/update planet harmonic limb map parameters.
+        Set/update planet transmission string parameters.
 
         Parameters
         ----------
         r :  (N,) or (N, M) array_like
-            Harmonic limb map coefficients. 1D array of N Fourier
+            Transmission string coefficients. 1D array of N Fourier
             coefficients that specify the planet radius as a function
             of angle in the sky-plane. Coefficients correspond to
             ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
             + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
             input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
-            planet shapes, use a 2d array with N Fourier coefficients
-            and M time steps, where M is equal to the number of model
-            evaluation epochs.
+            transmission strings, use a 2D array with N Fourier
+            coefficients and M time steps, where M is equal to the
+            number of model evaluation epochs.
 
         """
         self._r = r
-        self._limb_map_updated = True
 
     def get_transit_light_curve(self):
         """
@@ -222,27 +178,20 @@ class HarmonicaTransit(object):
                            self.times, self.ds, self.nus,
                            self.ds_grad, self.nus_grad,
                            require_gradients=self._require_gradients)
-
-        import matplotlib.pyplot as plt
-        plt.plot(self.times, self.ds_grad[:, 0])
-        plt.show()
+            self._orbit_updated = False
 
         # Get light curve.
-        # NB. is odd term gauss-legendre faster as a whole,
-        # or splitting into each term?
+        bindings.light_curve(self._ld_mode, self._u, self._r,
+                             self.ds, self.nus, self.lc,
+                             self.ds_grad, self.nus_grad, self.lc_grad,
+                             self._pnl_c, self._pnl_e,
+                             require_gradients=self._require_gradients)
 
-        # Reset update tracking flags to False. NB. this saves computation
-        # time in subsequent calls to get_transit_light_curve() if some of
-        # the parameters are the same as in the previous call.
-        self._orbit_updated = False
-        self._limb_dark_updated = False
-        self._limb_map_updated = False
-
-        return
+        return np.copy(self.lc)
 
     def get_planet_transmission_string(self):
         """
-        Get harmonic transmission string evaluated at given angles.
+        Get transmission string evaluated at given angles.
 
         Parameters
         ----------
@@ -257,7 +206,7 @@ class HarmonicaTransit(object):
         """
         return
 
-    def get_precision_estimate(self):
+    def get_precision_estimate(self, N_l):
         """
         Get light curve precision estimates.
 

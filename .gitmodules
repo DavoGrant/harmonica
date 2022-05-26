@@ -1,0 +1,8 @@
+[submodule "vendor/pybind11"]
+	path = vendor/pybind11
+	url = https://github.com/pybind/pybind11.git
+	branch = stable
+[submodule "vendor/eigen"]
+	path = vendor/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = 3.4
