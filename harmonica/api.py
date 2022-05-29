@@ -72,7 +72,7 @@ class HarmonicaTransit(object):
             self._orbit_updated = False
             self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
         else:
-            pass
+            return
 
         self._require_gradients = require_gradients
         n_od = self.ds.shape + (6,)

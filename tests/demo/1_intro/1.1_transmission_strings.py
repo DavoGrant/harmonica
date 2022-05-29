@@ -2,7 +2,6 @@
 # Visualisation video.
 # Parameterisation.
 # Using harmonica to create them.
-# Extension: time-dependent transmission strings.
 
 
 import numpy as np
@@ -44,3 +43,4 @@ ax2.legend()
 
 plt.tight_layout()
 plt.show()
+
