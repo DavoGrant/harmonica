@@ -105,6 +105,23 @@ void compute_harmonica_light_curve(
 }
 
 
+void compute_transmission_string(
+  py::array_t<double, py::array::c_style> rs,
+  py::array_t<double, py::array::c_style> thetas,
+  py::array_t<double, py::array::c_style> transmission_string) {
+
+  // Unpack python arrays.
+  auto thetas_ = thetas.mutable_unchecked<1>();
+  auto transmission_string_ = transmission_string.mutable_unchecked<1>();
+
+  // Compute transmission string.
+  Fluxes flux(0, py::array_t<double, py::array::c_style>(2), rs, 0, 0, false);
+  for (int i = 0; i < thetas_.shape(0); i++) {
+    transmission_string_(i) = flux.rp_theta(thetas_(i));
+  }
+}
+
+
 PYBIND11_MODULE(bindings, m) {
 
     m.def("orbit", &compute_orbital_separation_and_angles,
@@ -134,5 +151,10 @@ PYBIND11_MODULE(bindings, m) {
       py::arg("pnl_c") = 50,
       py::arg("pnl_e") = 500,
       py::arg("require_gradients") = false);
+
+    m.def("transmission_string", &compute_transmission_string,
+      py::arg("rs") = py::none(),
+      py::arg("thetas") = py::none(),
+      py::arg("transmission_string") = py::none());
 
 }

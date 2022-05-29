@@ -73,4 +73,20 @@ void compute_harmonica_light_curve(
   int pnl_c, int pnl_e, bool require_gradients);
 
 
+/**
+ * Compute the transmission string defined by an array of harmonic
+ * coefficients, rs, around an array of angles, thetas, in the terminator
+ * plane.
+ *
+ * @param rs array of planet radius harmonic coefficients [stellar radii].
+ * @param thetas array of angles in the terminator plane [radians].
+ * @param transmission_string empty array of planet radii [stellar radii].
+ * @return void.
+ */
+void compute_transmission_string(
+  py::array_t<double, py::array::c_style> rs,
+  py::array_t<double, py::array::c_style> thetas,
+  py::array_t<double, py::array::c_style> transmission_string);
+
+
 #endif

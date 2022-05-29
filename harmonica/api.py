@@ -66,11 +66,13 @@ class HarmonicaTransit(object):
             self.nus = np.empty(times.shape, dtype=np.float64, order='C')
             self._orbit_updated = True
             self.lc = np.empty(times.shape, dtype=np.float64, order='C')
-        else:
+        elif ds is not None and nus is not None:
             self.ds = np.ascontiguousarray(ds, dtype=np.float64)
             self.nus = np.ascontiguousarray(nus, dtype=np.float64)
             self._orbit_updated = False
             self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
+        else:
+            pass
 
         self._require_gradients = require_gradients
         n_od = self.ds.shape + (6,)
@@ -189,7 +191,7 @@ class HarmonicaTransit(object):
 
         return np.copy(self.lc)
 
-    def get_planet_transmission_string(self):
+    def get_planet_transmission_string(self, theta):
         """
         Get transmission string evaluated at given angles.
 
@@ -204,7 +206,9 @@ class HarmonicaTransit(object):
             Description of return object.
 
         """
-        return
+        transmission_string = np.empty(theta.shape, dtype=np.float64, order='C')
+        bindings.transmission_string(self._r, theta, transmission_string)
+        return transmission_string
 
     def get_precision_estimate(self, N_l):
         """

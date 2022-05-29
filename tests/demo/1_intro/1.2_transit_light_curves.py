@@ -1,3 +1,7 @@
+# First light curve: orbit, ld, rs, create.
+# Maybe show some residuals from circular.
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from harmonica import HarmonicaTransit
