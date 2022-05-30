@@ -8,12 +8,12 @@ from harmonica import HarmonicaTransit
 
 # Generate data.
 np.random.seed(1)
-n_obs = 600
+n_obs = 1000
 times = np.linspace(-0.22, 0.22, n_obs)
 us = np.array([0.062, 0.151])
 rs = np.array([0.1, -0.006, 0., 0.003, 0.])
 var_names = ['a_0', 'a_1', 'b_1', 'a_2', 'b_2']
-y_sigma = 20.e-6
+y_sigma = 100.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
 ht = HarmonicaTransit(times, pnl_c=20, pnl_e=20)
@@ -35,7 +35,7 @@ def log_prob(params):
     """ Typical Gaussian likelihood. """
     # Ln prior.
     ln_prior = -0.5 * np.sum((params[0] / 0.05)**2)
-    ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
+    ln_prior += -0.5 * np.sum((params[1:] / 0.05)**2)
 
     # Ln likelihood.
     ht.set_planet_transmission_string(params)
@@ -52,8 +52,8 @@ if __name__ == '__main__':
     coords = np.array([0.1, 0., 0., 0., 0.]) + 1.e-5 * np.random.randn(12, len(rs))
     with multiprocessing.Pool() as pool:
         sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob, pool=pool)
-        state = sampler.run_mcmc(coords, 1000, progress=True)
-    chain = sampler.get_chain(discard=500, flat=True)
+        state = sampler.run_mcmc(coords, 10000, progress=True)
+    chain = sampler.get_chain(discard=5000, flat=True)
 
     # Display sampling metrics.
     emcee_data = az.from_emcee(sampler, var_names)
@@ -90,6 +90,11 @@ if __name__ == '__main__':
     ax2.plot(theta * 180. / np.pi, transmission_string, c='#000000', lw=1.5, label='True transmission string')
     ax1.plot(rs[0] * np.cos(theta), rs[0] * np.sin(theta), lw=1.5, c='#d5d6d2', ls='--')
     ax2.plot(theta * 180. / np.pi, np.ones(theta.shape[0]) * rs[0], c='#d5d6d2', lw=1.5, ls='--', label='Circle')
+
+    ht.set_planet_transmission_string(np.median(chain, axis=0))
+    transmission_string = ht.get_planet_transmission_string(theta)
+    ax2.plot(theta * 180. / np.pi, transmission_string, color='C0', alpha=1.0)
+
     ax2.legend(loc='upper center')
     ax1.set_xlabel('x / stellar radii')
     ax1.set_ylabel('y / stellar radii')
