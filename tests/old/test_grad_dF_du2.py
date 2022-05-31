@@ -12,7 +12,7 @@ def generate_complex_fourier_coeffs(_as, _bs):
 
 
 # Config.
-u2 = 0.3
+u1 = 0.3
 a_s = np.array([0.1, -0.003])
 b_s = np.array([0.003])
 cs = generate_complex_fourier_coeffs(a_s, b_s)
@@ -233,7 +233,7 @@ def line_integral_star(_theta, _cs, _d, _nu, n_val):
     return zeta(z_p(_cs, _theta, _d, _nu), n_val) * eta(_theta, _cs, _d, _nu)
 
 
-def F_func(u1):
+def F_func(u2):
     # Limb darkening.
     us = np.array([1., u1, u2])
     B = np.array([[1., -1., -1.],
@@ -282,7 +282,7 @@ def F_func(u1):
     return 1. - alpha
 
 
-def s_vals(u1):
+def s_vals(u2):
     # Find planet-stellar limb intersections.
     intersections, intersection_types = find_intersections(cs, d, nu)
 
@@ -326,7 +326,7 @@ def s_vals(u1):
     return s0, s1, s2
 
 
-def dF_du1_total(u1):
+def dF_du2_total(u2):
     us = np.array([1., u1, u2])
     B = np.array([[1., -1., -1.],
                   [0., 1., 2.],
@@ -337,12 +337,12 @@ def dF_du1_total(u1):
 
     dF_dalpha = -1.
     dalpha_dI0 = s0 * ps[0] + s1 * ps[1] + s2 * ps[2]
-    dI0_du1 = 1. / (3. * np.pi * (1. - us[1] / 3. - us[2] / 6.)**2)
-    dalpha_du1 = I_0 * (-s0 + s1)
+    dI0_du2 = 1. / (6. * np.pi * (1. - us[1] / 3. - us[2] / 6.)**2)
+    dalpha_du2 = I_0 * (-s0 + 2 * s1 - s2)
 
-    _dF_du1_total = dF_dalpha * dalpha_dI0 * dI0_du1 + dF_dalpha * dalpha_du1
+    _dF_du2_total = dF_dalpha * dalpha_dI0 * dI0_du2 + dF_dalpha * dalpha_du2
 
-    return _dF_du1_total
+    return _dF_du2_total
 
 
 def grad_arrow(x_draw, x, y, grad):
@@ -351,23 +351,23 @@ def grad_arrow(x_draw, x, y, grad):
 
 
 while True:
-    u1_a = np.random.uniform(0.01, 0.5)
-    F_a = F_func(u1_a)
+    u2_a = np.random.uniform(0.01, 0.5)
+    F_a = F_func(u2_a)
 
     delta = 1.e-6
-    u1_b = u1_a + delta
-    F_b = F_func(u1_b)
+    u2_b = u2_a + delta
+    F_b = F_func(u2_b)
 
-    u1_a_grad = dF_du1_total(u1_a)
+    u2_a_grad = dF_du2_total(u2_a)
 
-    plt.scatter(u1_a, F_a, label='$u_1$')
-    plt.scatter(u1_b, F_b, label='$u_1 + \delta$: $\delta={}$'.format(delta))
-    x_arrow = np.linspace(u1_a, u1_b, 2)
-    plt.plot(x_arrow, grad_arrow(x_arrow, u1_a, F_a, u1_a_grad),
-             label='Gradient: $\\frac{dF}{d u_1}$')
+    plt.scatter(u2_a, F_a, label='$u_1$')
+    plt.scatter(u2_b, F_b, label='$u_1 + \delta$: $\delta={}$'.format(delta))
+    x_arrow = np.linspace(u2_a, u2_b, 2)
+    plt.plot(x_arrow, grad_arrow(x_arrow, u2_a, F_a, u2_a_grad),
+             label='Gradient: $\\frac{dF}{d u_2}$')
 
     plt.legend()
-    plt.xlabel('$u_1$')
+    plt.xlabel('$u_2$')
     plt.ylabel('$F$')
     plt.tight_layout()
     plt.show()
