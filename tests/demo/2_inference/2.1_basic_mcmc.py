@@ -18,7 +18,7 @@ y_sigma = 70.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
 ht = HarmonicaTransit(times, pnl_c=20, pnl_e=50)
-ht.set_orbit(t0=0., period=3.735, a=7.025, inc=86.9 * np.pi / 180.)
+ht.set_orbit(t0=0., period=3.735, a=7.025, inc=83.9 * np.pi / 180.)
 ht.set_stellar_limb_darkening(us, limb_dark_law='quadratic')
 ht.set_planet_transmission_string(rs)
 observed_fluxes = ht.get_transit_light_curve() + y_errs
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     print('Using {} cores.'.format(multiprocessing.cpu_count()))
     coords = np.array([0.1, 0., 0., 0., 0.]) \
-             + 1.e-5 * np.random.randn(12, len(rs))
+             + 1.e-5 * np.random.randn(18, len(rs))
     with multiprocessing.Pool() as pool:
         sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1],
                                         log_prob, pool=pool)
