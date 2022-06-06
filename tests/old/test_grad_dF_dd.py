@@ -309,17 +309,16 @@ def F_func(d):
                 line_integral_planet, intersections[j], intersections[j + 1],
                 args=(cs, d, nu, 0),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
-            # s1, s1_err = quad(
-            #     line_integral_planet, intersections[j], intersections[j + 1],
-            #     args=(cs, d, nu, 1),
-            #     epsabs=1.e-15, epsrel=1.e-15, limit=500)
-            s1, s1_err = (1., 0.)
-            # s2, s2_err = quad(
-            #     line_integral_planet, intersections[j], intersections[j + 1],
-            #     args=(cs, d, nu, 2),
-            #     epsabs=1.e-15, epsrel=1.e-15, limit=500)
-            s2, s2_err = (1., 0.)
-            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            s1, s1_err = quad(
+                line_integral_planet, intersections[j], intersections[j + 1],
+                args=(cs, d, nu, 1),
+                epsabs=1.e-15, epsrel=1.e-15, limit=500)
+            s2, s2_err = quad(
+                line_integral_planet, intersections[j], intersections[j + 1],
+                args=(cs, d, nu, 2),
+                epsabs=1.e-15, epsrel=1.e-15, limit=500)
+            # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            alpha += I_0 * s2 * ps[2]
         elif intersection_types[j] == 2 or intersection_types[j] == 3:
             phi_j = np.arctan2(
                 -r_p(intersections[j]) * np.sin(intersections[j] - nu),
@@ -331,11 +330,10 @@ def F_func(d):
                 -r_p(intersections[j + 1]) * np.cos(
                     intersections[j + 1] - nu) + d)
             s0 = 1. / (0. + 2) * (phi_j_plus_1 - phi_j)
-            # s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
-            s1 = 1.
-            # s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
-            s2 = 1.
-            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
+            s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
+            # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            alpha += I_0 * s2 * ps[2]
         else:
             pass
 
@@ -359,7 +357,7 @@ def add_arrays_centre_aligned(aa, bb):
 def ds0_dq0_dq0_dd(d):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
-    N_q = int(2. / 4. * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    N_q_0 = int(2. / 4. * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
     beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
                + np.sin(nu) * np.array([0.5j, 0, -0.5j])
     beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
@@ -373,17 +371,16 @@ def ds0_dq0_dq0_dd(d):
 
     _ds0_dq0_dq0_dd = 0.
     for j in range(len(intersection_types)):
-        # Todo: if type 1 return 0.
         if intersection_types[j] == 0 or intersection_types[j] == 1:
-            N_q_s = np.arange(-N_q, N_q + 1, 1)
+            N_q_s = np.arange(-N_q_0, N_q_0 + 1, 1)
             for m in N_q_s:
                 if m == 0:
                     _ds0_dq0_dq0_dd += (intersections[j + 1] - intersections[j]) \
-                                       * dq0_dd[m + N_q]
+                                       * dq0_dd[m + N_q_0]
                 else:
                     _ds0_dq0_dq0_dd += 1. / (1j * m) * (
                             np.exp(1j * m * intersections[j + 1])
-                            - np.exp(1j * m * intersections[j])) * dq0_dd[m + N_q]
+                            - np.exp(1j * m * intersections[j])) * dq0_dd[m + N_q_0]
         elif intersection_types[j] == 2 or intersection_types[j] == 3:
             pass
         else:
@@ -392,10 +389,60 @@ def ds0_dq0_dq0_dd(d):
     return np.real(_ds0_dq0_dq0_dd)
 
 
+def ds2_dq2_dq2_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    N_q_2 = int(4 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
+               + np.sin(nu) * np.array([0.5j, 0, -0.5j])
+    beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
+               - np.sin(nu) * np.array([0.5, 0, 0.5])
+
+    zero_vec = np.zeros(2 * (N_c * 2 + 1) - 1)
+    Delta_cs = 1j * N_c_s * cs
+
+    q2_lhs = add_arrays_centre_aligned(
+        add_arrays_centre_aligned(
+            np.array([2. - d ** 2]), -np.convolve(cs, cs)),
+        2. * d * np.convolve(beta_cos, cs))
+    dq2_dd_lhs = add_arrays_centre_aligned(
+        add_arrays_centre_aligned(
+            np.array([-2. * d]), zero_vec),
+            2. * np.convolve(beta_cos, cs))
+    q2_rhs = add_arrays_centre_aligned(
+        np.convolve(cs, cs),
+        d * np.convolve(-beta_cos, cs) + d * np.convolve(-beta_sin, Delta_cs))
+    dq2_dd_rhs = add_arrays_centre_aligned(
+        zero_vec,
+        np.convolve(-beta_cos, cs) + np.convolve(-beta_sin, Delta_cs))
+
+    dq2_dd = 1. / 4. * add_arrays_centre_aligned(
+        np.convolve(dq2_dd_lhs, q2_rhs), np.convolve(q2_lhs, dq2_dd_rhs))
+
+    _ds2_dq2_dq2_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0 or intersection_types[j] == 1:
+            N_q_s = np.arange(-N_q_2, N_q_2 + 1, 1)
+            for m in N_q_s:
+                if m == 0:
+                    _ds2_dq2_dq2_dd += (intersections[j + 1] - intersections[j]) \
+                                       * dq2_dd[m + N_q_2]
+                else:
+                    _ds2_dq2_dq2_dd += 1. / (1j * m) * (
+                            np.exp(1j * m * intersections[j + 1])
+                            - np.exp(1j * m * intersections[j])) * dq2_dd[m + N_q_2]
+        elif intersection_types[j] == 2 or intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return np.real(_ds2_dq2_dq2_dd)
+
+
 def ds0_dtheta_j_dtheta_j_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
-    N_q = int(2 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    N_q_0 = int(2 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
     beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
                + np.sin(nu) * np.array([0.5j, 0, -0.5j])
     beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
@@ -409,10 +456,10 @@ def ds0_dtheta_j_dtheta_j_dd(d):
     _ds0_dtheta_j_dtheta_j_dd = 0.
     for j in range(len(intersection_types)):
         if intersection_types[j] == 0:
-            N_q_s = np.arange(-N_q, N_q + 1, 1)
+            N_q_s = np.arange(-N_q_0, N_q_0 + 1, 1)
             _ds0_dtheta_j = 0.
             for m in N_q_s:
-                _ds0_dtheta_j += -q0[m + N_q] * np.exp(1j * m * intersections[j])
+                _ds0_dtheta_j += -q0[m + N_q_0] * np.exp(1j * m * intersections[j])
             _ds0_dtheta_j_dtheta_j_dd += _ds0_dtheta_j * dtheta_dds[j]
         elif intersection_types[j] == 2:
             pass
@@ -426,10 +473,51 @@ def ds0_dtheta_j_dtheta_j_dd(d):
     return np.real(_ds0_dtheta_j_dtheta_j_dd)
 
 
+def ds2_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    N_q_2 = int(4 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
+               + np.sin(nu) * np.array([0.5j, 0, -0.5j])
+    beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
+               - np.sin(nu) * np.array([0.5, 0, 0.5])
+
+    Delta_cs = 1j * N_c_s * cs
+
+    q2_lhs = add_arrays_centre_aligned(
+        add_arrays_centre_aligned(
+            np.array([2. - d ** 2]), -np.convolve(cs, cs)),
+        2. * d * np.convolve(beta_cos, cs))
+    q2_rhs = add_arrays_centre_aligned(
+        np.convolve(cs, cs),
+        d * np.convolve(-beta_cos, cs) + d * np.convolve(-beta_sin, Delta_cs))
+
+    q2 = 1. / 4. * np.convolve(q2_lhs, q2_rhs)
+
+    _ds2_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            N_q_s = np.arange(-N_q_2, N_q_2 + 1, 1)
+            _ds2_dtheta_j = 0.
+            for m in N_q_s:
+                _ds2_dtheta_j += -q2[m + N_q_2] * np.exp(1j * m * intersections[j])
+            _ds2_dtheta_j_dtheta_j_dd += _ds2_dtheta_j * dtheta_dds[j]
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        elif intersection_types[j] == 4:
+            pass
+        else:
+            pass
+
+    return np.real(_ds2_dtheta_j_dtheta_j_dd)
+
+
 def ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
-    N_q = int(2 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    N_q_0 = int(2 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
     beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
                + np.sin(nu) * np.array([0.5j, 0, -0.5j])
     beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
@@ -443,10 +531,10 @@ def ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     _ds0_dtheta_j_dtheta_j_plus_1_dd = 0.
     for j in range(len(intersection_types)):
         if intersection_types[j] == 0:
-            N_q_s = np.arange(-N_q, N_q + 1, 1)
+            N_q_s = np.arange(-N_q_0, N_q_0 + 1, 1)
             _ds0_dtheta_j_plus_1 = 0.
             for m in N_q_s:
-                _ds0_dtheta_j_plus_1 += q0[m + N_q] * np.exp(1j * m * intersections[j + 1])
+                _ds0_dtheta_j_plus_1 += q0[m + N_q_0] * np.exp(1j * m * intersections[j + 1])
             _ds0_dtheta_j_dtheta_j_plus_1_dd += _ds0_dtheta_j_plus_1 * dtheta_dds[j + 1]
         elif intersection_types[j] == 1:
             pass
@@ -458,6 +546,47 @@ def ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             pass
 
     return np.real(_ds0_dtheta_j_dtheta_j_plus_1_dd)
+
+
+def ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    N_q_2 = int(4 / 4 * (max(4 * N_c + 1, 2 * N_c + 3) - 1))
+    beta_cos = np.cos(nu) * np.array([0.5, 0, 0.5]) \
+               + np.sin(nu) * np.array([0.5j, 0, -0.5j])
+    beta_sin = np.cos(nu) * np.array([0.5j, 0, -0.5j]) \
+               - np.sin(nu) * np.array([0.5, 0, 0.5])
+
+    Delta_cs = 1j * N_c_s * cs
+
+    q2_lhs = add_arrays_centre_aligned(
+        add_arrays_centre_aligned(
+            np.array([2. - d ** 2]), -np.convolve(cs, cs)),
+        2. * d * np.convolve(beta_cos, cs))
+    q2_rhs = add_arrays_centre_aligned(
+        np.convolve(cs, cs),
+        d * np.convolve(-beta_cos, cs) + d * np.convolve(-beta_sin, Delta_cs))
+
+    q2 = 1. / 4. * np.convolve(q2_lhs, q2_rhs)
+
+    _ds2_dtheta_j_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            N_q_s = np.arange(-N_q_2, N_q_2 + 1, 1)
+            _ds2_dtheta_j_plus_1 = 0.
+            for m in N_q_s:
+                _ds2_dtheta_j_plus_1 += q2[m + N_q_2] * np.exp(1j * m * intersections[j + 1])
+            _ds2_dtheta_j_dtheta_j_plus_1_dd += _ds2_dtheta_j_plus_1 * dtheta_dds[j + 1]
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return np.real(_ds2_dtheta_j_dtheta_j_plus_1_dd)
 
 
 def ds0_dphi_j_dphi_j_dd(d):
@@ -482,6 +611,30 @@ def ds0_dphi_j_dphi_j_dd(d):
             pass
 
     return _ds0_dphi_j_dphi_j_dd
+
+
+def ds2_dphi_j_dphi_j_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_dphi_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds2_dphi_j = -1. / 4.
+            _dphi_j_dd = (_rp_j * np.sin(intersections[j] - nu)) \
+                         / (d**2 - 2. * d * _rp_j * np.cos(intersections[j] - nu)
+                            + _rp_j**2)
+            _ds2_dphi_j_dphi_j_dd += _ds2_dphi_j * _dphi_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_dphi_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_dd(d):
@@ -509,6 +662,31 @@ def ds0_dphi_j_plus_1_dphi_j_plus_1_dd(d):
     return _ds0_dphi_j_plus_1_dphi_j_plus_1_dd
 
 
+def ds2_dphi_j_plus_1_dphi_j_plus_1_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_plus_1_dphi_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds2_dphi_j_plus_1 = 1. / 4.
+            _dphi_j_plus_1_dd = \
+                (_rp_j_plus_1 * np.sin(intersections[j + 1] - nu)) \
+                / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                   + d**2 + _rp_j_plus_1**2)
+            _ds2_dphi_j_plus_1_dphi_j_plus_1_dd += _ds2_dphi_j_plus_1 * _dphi_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_plus_1_dphi_j_plus_1_dd
+
+
 def ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
@@ -533,6 +711,32 @@ def ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
             pass
 
     return _ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd
+
+
+def ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds2_dphi_j = -1. / 4.
+            _dphi_j_dtheta_j = (_rp_j**2 - d * _rp_j * np.cos(intersections[j] - nu)) \
+                         / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
+                            + d**2 + _rp_j**2)
+            _dtheta_j_dd = dtheta_dds[j]
+            _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd += _ds2_dphi_j * _dphi_j_dtheta_j \
+                                                       * _dtheta_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
@@ -562,6 +766,33 @@ def ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
+def ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds2_dphi_j_plus_1 = 1. / 4.
+            _dphi_j_plus_1_dtheta_j_plus_1 = \
+                (_rp_j_plus_1**2 - d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)) \
+                / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                   + d**2 + _rp_j_plus_1**2)
+            _dtheta_j_plus_1_dd = dtheta_dds[j + 1]
+            _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd += \
+                _ds2_dphi_j_plus_1 * _dphi_j_plus_1_dtheta_j_plus_1 * _dtheta_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
 def ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
@@ -587,6 +818,33 @@ def ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
             pass
 
     return _ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd
+
+
+def ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds2_dphi_j = -1. / 4.
+            _dphi_j_drp = (- d * np.sin(intersections[j] - nu)) \
+                         / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
+                            + d**2 + _rp_j**2)
+            _drp_dtheta_j = drp_dtheta(cs, intersections[j])
+            _dtheta_j_dd = dtheta_dds[j]
+            _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd += \
+                _ds2_dphi_j * _dphi_j_drp * _drp_dtheta_j * _dtheta_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
@@ -617,6 +875,34 @@ def ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d
     return _ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
+def ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds2_dphi_j_plus_1 = 1. / 4.
+            _dphi_j_plus_1_drp = (- d * np.sin(intersections[j + 1] - nu)) \
+                         / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                            + d**2 + _rp_j_plus_1**2)
+            _drp_dtheta_j_plus_1 = drp_dtheta(cs, intersections[j + 1])
+            _dtheta_j_plus_1_dd = dtheta_dds[j + 1]
+            _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd += \
+                _ds2_dphi_j_plus_1 * _dphi_j_plus_1_drp * _drp_dtheta_j_plus_1 \
+                * _dtheta_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
 def dF_dd_total(d):
     us = np.array([1., u1, u2])
     I_0 = 1. / (np.pi * (1. - us[1] / 3. - us[2] / 6.))
@@ -633,7 +919,8 @@ def dF_dd_total(d):
     _ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d)
     _ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
         ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
-    _ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d)
+    _ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
+        ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d)
     _ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
         ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
 
@@ -653,12 +940,32 @@ def dF_dd_total(d):
 
     # S2.
     dalpha_ds2 = -I_0 * u2
-    ds2_dd_total = 0.
+    _ds2_dq2_dq2_dd = ds2_dq2_dq2_dd(d)
+    _ds2_dtheta_j_dtheta_j_dd = ds2_dtheta_j_dtheta_j_dd(d)
+    _ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd = ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds2_dphi_j_dphi_j_dd = ds2_dphi_j_dphi_j_dd(d)
+    _ds2_dphi_j_dphi_j_plus_1_dd = ds2_dphi_j_plus_1_dphi_j_plus_1_dd(d)
+    _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d)
+    _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
+        ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d)
+    _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
 
-    # Todo is gradient real?
-    _dF_dd_total = dF_dalpha * (dalpha_ds0 * ds0_dd_total +
-                                dalpha_ds0 * ds1_dd_total +
-                                dalpha_ds0 * ds2_dd_total)
+    ds2_dd_total = _ds2_dq2_dq2_dd \
+                   + _ds2_dtheta_j_dtheta_j_dd \
+                   + _ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds2_dphi_j_dphi_j_dd \
+                   + _ds2_dphi_j_dphi_j_plus_1_dd \
+                   + _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd \
+                   + _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
+                   + _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+    _dF_dd_total = dF_dalpha * (dalpha_ds0 * 0. +
+                                dalpha_ds1 * 0. +
+                                dalpha_ds2 * ds2_dd_total)
 
     return _dF_dd_total
 
@@ -669,6 +976,11 @@ def grad_arrow(x_draw, x, y, grad):
 
 
 while True:
+    # Todo: s2 terms.
+    # Todo: s1 terms.
+    # Todo: all terms together.
+    # Todo: all terms together.
+    # Todo check gradient real?
     d_a = np.random.uniform(0.85, 1.15)
     F_a = F_func(d_a)
 
@@ -682,7 +994,7 @@ while True:
     plt.scatter(d_b, F_b, label='$u_1 + \delta$: $\delta={}$'.format(delta))
     x_arrow = np.linspace(d_a, d_b, 2)
     plt.plot(x_arrow, grad_arrow(x_arrow, d_a, F_a, d_a_grad),
-             label='Gradient: $\\frac{dF}{d u_1}$')
+             label='Gradient: $\\frac{dF}{dd}$')
 
     plt.legend()
     plt.xlabel('$d$')
