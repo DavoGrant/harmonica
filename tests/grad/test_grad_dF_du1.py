@@ -365,6 +365,7 @@ while True:
     x_arrow = np.linspace(u1_a, u1_b, 2)
     plt.plot(x_arrow, grad_arrow(x_arrow, u1_a, F_a, u1_a_grad),
              label='Gradient: $\\frac{dF}{d u_1}$')
+    print(F_a, F_b, (u1_a_grad * delta + F_a) - F_b)
 
     plt.legend()
     plt.xlabel('$u_1$')
