@@ -322,8 +322,7 @@ def F_func(d):
                 line_integral_planet, intersections[j], intersections[j + 1],
                 args=(cs, d, nu, 2),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
-            # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
-            alpha += I_0 * (s1 * ps[1])
+            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
         elif intersection_types[j] == 2 or intersection_types[j] == 3:
             phi_j = np.arctan2(
                 -r_p(intersections[j]) * np.sin(intersections[j] - nu),
@@ -337,8 +336,7 @@ def F_func(d):
             s0 = 1. / (0. + 2) * (phi_j_plus_1 - phi_j)
             s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
             s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
-            # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
-            alpha += I_0 * (s1 * ps[1])
+            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
         else:
             pass
 
@@ -1632,9 +1630,9 @@ def dF_dd_total(d):
                    + _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
                    + _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
-    _dF_dd_total = dF_dalpha * (dalpha_ds0 * 0. +
+    _dF_dd_total = dF_dalpha * (dalpha_ds0 * ds0_dd_total +
                                 dalpha_ds1 * ds1_dd_total +
-                                dalpha_ds2 * 0.)
+                                dalpha_ds2 * ds2_dd_total)
 
     return _dF_dd_total
 
@@ -1645,10 +1643,7 @@ def grad_arrow(x_draw, x, y, grad):
 
 
 while True:
-    # Todo: s1 terms.
-    # Todo: all terms together.
-    # Todo check gradient real?
-    d_a = np.random.uniform(0.99, 1.01)
+    d_a = np.random.uniform(0.85, 1.15)
     F_a = F_func(d_a)
 
     delta = 1.e-6
