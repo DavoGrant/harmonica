@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
+from scipy.special import roots_legendre
 
 
 def generate_complex_fourier_coeffs(_as, _bs):
@@ -20,6 +21,7 @@ cs = generate_complex_fourier_coeffs(a_s, b_s)
 N_c = int((len(cs) - 1) / 2)
 N_c_s = np.arange(-N_c, N_c + 1, 1)
 nu = 0.1
+N_l = 100
 epsilon = 1.e-7
 
 
@@ -267,6 +269,13 @@ def drp_dtheta(_cs, _theta):
     return np.real(_drp_dtheta)
 
 
+def d2rp_dtheta2(_cs, _theta):
+    _d2rp_dtheta2 = 0.
+    for k, n, in enumerate(N_c_s):
+        _d2rp_dtheta2 += (1j * n)**2 * _cs[k] * np.exp(1j * n * _theta)
+    return np.real(_d2rp_dtheta2)
+
+
 def z_p(_cs, _theta, _d, _nu):
     return (1. - _d**2 - r_p(_theta)**2 + 2 * _d * r_p(_theta)
             * np.cos(_theta - _nu))**0.5
@@ -282,10 +291,6 @@ def eta(_theta, _cs, _d, _nu):
 
 
 def line_integral_planet(_theta, _cs, _d, _nu, n_val):
-    return zeta(z_p(_cs, _theta, _d, _nu), n_val) * eta(_theta, _cs, _d, _nu)
-
-
-def line_integral_star(_theta, _cs, _d, _nu, n_val):
     return zeta(z_p(_cs, _theta, _d, _nu), n_val) * eta(_theta, _cs, _d, _nu)
 
 
@@ -318,7 +323,7 @@ def F_func(d):
                 args=(cs, d, nu, 2),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
             # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
-            alpha += I_0 * s2 * ps[2]
+            alpha += I_0 * (s1 * ps[1])
         elif intersection_types[j] == 2 or intersection_types[j] == 3:
             phi_j = np.arctan2(
                 -r_p(intersections[j]) * np.sin(intersections[j] - nu),
@@ -333,7 +338,7 @@ def F_func(d):
             s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
             s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
             # alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
-            alpha += I_0 * s2 * ps[2]
+            alpha += I_0 * (s1 * ps[1])
         else:
             pass
 
@@ -514,6 +519,33 @@ def ds2_dtheta_j_dtheta_j_dd(d):
     return np.real(_ds2_dtheta_j_dtheta_j_dd)
 
 
+def ds1_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            _ds1_dtheta_j = 0.
+            for k in range(N_l):
+                _ds1_dtheta_j += -0.5 * zeta(z_p(cs, t[k], d, nu), 1) \
+                                 * eta(t[k], cs, d, nu) * weights[k]
+
+            _ds1_dtheta_j_dtheta_j_dd += _ds1_dtheta_j * dtheta_dds[j]
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        elif intersection_types[j] == 4:
+            pass
+        else:
+            pass
+
+    return np.real(_ds1_dtheta_j_dtheta_j_dd)
+
+
 def ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
@@ -589,6 +621,34 @@ def ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return np.real(_ds2_dtheta_j_dtheta_j_plus_1_dd)
 
 
+def ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            _ds1_dtheta_j_plus_1 = 0.
+            for k in range(N_l):
+                _ds1_dtheta_j_plus_1 += 0.5 * zeta(z_p(cs, t[k], d, nu), 1) \
+                                        * eta(t[k], cs, d, nu) * weights[k]
+
+            _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd += _ds1_dtheta_j_plus_1 \
+                                                       * dtheta_dds[j + 1]
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        elif intersection_types[j] == 4:
+            pass
+        else:
+            pass
+
+    return np.real(_ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd)
+
+
 def ds0_dphi_j_dphi_j_dd(d):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
@@ -635,6 +695,30 @@ def ds2_dphi_j_dphi_j_dd(d):
             pass
 
     return _ds2_dphi_j_dphi_j_dd
+
+
+def ds1_dphi_j_dphi_j_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_dphi_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds1_dphi_j = -1. / 3.
+            _dphi_j_dd = (_rp_j * np.sin(intersections[j] - nu)) \
+                         / (d**2 - 2. * d * _rp_j * np.cos(intersections[j] - nu)
+                            + _rp_j**2)
+            _ds1_dphi_j_dphi_j_dd += _ds1_dphi_j * _dphi_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_dphi_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_dd(d):
@@ -687,6 +771,31 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_dd(d):
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_dd
 
 
+def ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds1_dphi_j_plus_1 = 1. / 3.
+            _dphi_j_plus_1_dd = \
+                (_rp_j_plus_1 * np.sin(intersections[j + 1] - nu)) \
+                / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                   + d**2 + _rp_j_plus_1**2)
+            _ds1_dphi_j_plus_1_dphi_j_plus_1_dd += _ds1_dphi_j_plus_1 * _dphi_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_plus_1_dphi_j_plus_1_dd
+
+
 def ds0_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
@@ -737,6 +846,32 @@ def ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
             pass
 
     return _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd
+
+
+def ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds1_dphi_j = -1. / 3.
+            _dphi_j_dtheta_j = (_rp_j**2 - d * _rp_j * np.cos(intersections[j] - nu)) \
+                         / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
+                            + d**2 + _rp_j**2)
+            _dtheta_j_dd = dtheta_dds[j]
+            _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd += _ds1_dphi_j * _dphi_j_dtheta_j \
+                                                       * _dtheta_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
@@ -793,6 +928,33 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
+def ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds1_dphi_j_plus_1 = 1. / 3.
+            _dphi_j_plus_1_dtheta_j_plus_1 = \
+                (_rp_j_plus_1**2 - d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)) \
+                / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                   + d**2 + _rp_j_plus_1**2)
+            _dtheta_j_plus_1_dd = dtheta_dds[j + 1]
+            _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd += \
+                _ds1_dphi_j_plus_1 * _dphi_j_plus_1_dtheta_j_plus_1 * _dtheta_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
 def ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
@@ -845,6 +1007,33 @@ def ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
             pass
 
     return _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd
+
+
+def ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j = r_p(intersections[j])
+            _ds1_dphi_j = -1. / 3.
+            _dphi_j_drp = (- d * np.sin(intersections[j] - nu)) \
+                         / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
+                            + d**2 + _rp_j**2)
+            _drp_dtheta_j = drp_dtheta(cs, intersections[j])
+            _dtheta_j_dd = dtheta_dds[j]
+            _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd += \
+                _ds1_dphi_j * _dphi_j_drp * _drp_dtheta_j * _dtheta_j_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd
 
 
 def ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
@@ -903,6 +1092,431 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
+def ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            pass
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            _rp_j_plus_1 = r_p(intersections[j + 1])
+            _ds1_dphi_j_plus_1 = 1. / 3.
+            _dphi_j_plus_1_drp = (- d * np.sin(intersections[j + 1] - nu)) \
+                         / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
+                            + d**2 + _rp_j_plus_1**2)
+            _drp_dtheta_j_plus_1 = drp_dtheta(cs, intersections[j + 1])
+            _dtheta_j_plus_1_dd = dtheta_dds[j + 1]
+            _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd += \
+                _ds1_dphi_j_plus_1 * _dphi_j_plus_1_drp * _drp_dtheta_j_plus_1 \
+                * _dtheta_j_plus_1_dd
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
+                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _dz_dr = (d * np.cos(t[k] - nu) - r_p(t[k])) / z_p(cs, t[k], d, nu)
+                _dr_dt = drp_dtheta(cs, t[k])
+                _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
+
+                chain_j += _ds1_dzeta * _dzeta_dz * _dz_dr * _dr_dt \
+                           * _dt_dtheta_j * dtheta_dds[j]
+
+            chain_j *= half_theta_range
+            _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd += chain_j
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd
+
+
+def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j_plus_1 = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
+                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _dz_dr = (d * np.cos(t[k] - nu) - r_p(t[k])) / z_p(cs, t[k], d, nu)
+                _dr_dt = drp_dtheta(cs, t[k])
+                _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
+
+                chain_j_plus_1 += _ds1_dzeta * _dzeta_dz * _dz_dr * _dr_dt \
+                                  * _dt_dtheta_j_plus_1 * dtheta_dds[j + 1]
+
+            chain_j_plus_1 *= half_theta_range
+            _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd += chain_j_plus_1
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
+                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _dz_dt = (-d * r_p(t[k]) * np.sin(t[k] - nu)) / z_p(cs, t[k], d, nu)
+                _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
+
+                chain_j += _ds1_dzeta * _dzeta_dz * _dz_dt \
+                           * _dt_dtheta_j * dtheta_dds[j]
+
+            chain_j *= half_theta_range
+            _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd += chain_j
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd
+
+
+def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j_plus_1 = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
+                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _dz_dt = (-d * r_p(t[k]) * np.sin(t[k] - nu)) / z_p(cs, t[k], d, nu)
+                _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
+
+                chain_j_plus_1 += _ds1_dzeta * _dzeta_dz * _dz_dt \
+                                  * _dt_dtheta_j_plus_1 * dtheta_dds[j + 1]
+
+            chain_j_plus_1 *= half_theta_range
+            _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd += chain_j_plus_1
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_dzeta_dzeta_dz_dz_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds1_dzeta_dzeta_dz_dz_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0 or intersection_types[j] == 1:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
+                _dzeta_dz = (1. / 3) - (1. / (3. * (z_p(cs, t[k], d, nu) + 1)**2))
+                _dz_dd = (-d + r_p(t[k]) * np.cos(t[k] - nu)) / z_p(cs, t[k], d, nu)
+                chain_j += _ds1_dzeta * _dzeta_dz * _dz_dd
+            chain_j *= half_theta_range
+            _ds1_dzeta_dzeta_dz_dz_dd += chain_j
+
+        elif intersection_types[j] == 2 or intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_dzeta_dzeta_dz_dz_dd
+
+
+def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_dr = 2. * r_p(t[k]) - d * np.cos(t[k] - nu)
+                _dr_dt = drp_dtheta(cs, t[k])
+                _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
+
+                chain_j += _ds1_deta * _deta_dr * _dr_dt \
+                           * _dt_dtheta_j * dtheta_dds[j]
+
+            chain_j *= half_theta_range
+            _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd += chain_j
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd
+
+
+def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j_plus_1 = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_dr = 2. * r_p(t[k]) - d * np.cos(t[k] - nu)
+                _dr_dt = drp_dtheta(cs, t[k])
+                _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
+
+                chain_j_plus_1 += _ds1_deta * _deta_dr * _dr_dt \
+                                  * _dt_dtheta_j_plus_1 * dtheta_dds[j + 1]
+
+            chain_j_plus_1 *= half_theta_range
+            _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd += chain_j_plus_1
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_drdash = -d * np.sin(t[k] - nu)
+                _drdash_dt = d2rp_dtheta2(cs, t[k])
+                _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
+
+                chain_j += _ds1_deta * _deta_drdash * _drdash_dt \
+                           * _dt_dtheta_j * dtheta_dds[j]
+
+            chain_j *= half_theta_range
+            _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd += chain_j
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd
+
+
+def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j_plus_1 = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_drdash = -d * np.sin(t[k] - nu)
+                _drdash_dt = d2rp_dtheta2(cs, t[k])
+                _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
+
+                chain_j_plus_1 += _ds1_deta * _deta_drdash * _drdash_dt \
+                                  * _dt_dtheta_j_plus_1 * dtheta_dds[j + 1]
+
+            chain_j_plus_1 *= half_theta_range
+            _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd += chain_j_plus_1
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_dt = d * np.sin(t[k] - nu) * r_p(t[k]) \
+                           - d * np.cos(t[k] - nu) * drp_dtheta(cs, t[k])
+                _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
+
+                chain_j += _ds1_deta * _deta_dt * _dt_dtheta_j * dtheta_dds[j]
+
+            chain_j *= half_theta_range
+            _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd += chain_j
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd
+
+
+def ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+    intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0:
+            chain_j_plus_1 = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_dt = d * np.sin(t[k] - nu) * r_p(t[k]) \
+                           - d * np.cos(t[k] - nu) * drp_dtheta(cs, t[k])
+                _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
+
+                chain_j_plus_1 += _ds1_deta * _deta_dt * _dt_dtheta_j_plus_1 \
+                                  * dtheta_dds[j + 1]
+
+            chain_j_plus_1 *= half_theta_range
+            _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd += chain_j_plus_1
+
+        elif intersection_types[j] == 1:
+            pass
+        elif intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
+
+def ds1_deta_deta_dd(d):
+    intersections, intersection_types, _ = find_intersections(cs, d, nu)
+
+    _ds1_deta_deta_dd = 0.
+    for j in range(len(intersection_types)):
+        if intersection_types[j] == 0 or intersection_types[j] == 1:
+            chain_j = 0.
+            half_theta_range = (intersections[j + 1] - intersections[j]) / 2.
+            roots, weights = roots_legendre(N_l)
+            t = half_theta_range * (roots + 1.) + intersections[j]
+            for k in range(N_l):
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _deta_dd = -np.cos(t[k] - nu) * r_p(t[k]) \
+                           - np.sin(t[k] - nu) * drp_dtheta(cs, t[k])
+
+                chain_j += _ds1_deta * _deta_dd
+
+            chain_j *= half_theta_range
+            _ds1_deta_deta_dd += chain_j
+
+        elif intersection_types[j] == 1 or intersection_types[j] == 2:
+            pass
+        elif intersection_types[j] == 3:
+            pass
+        else:
+            pass
+
+    return _ds1_deta_deta_dd
+
+
 def dF_dd_total(d):
     us = np.array([1., u1, u2])
     I_0 = 1. / (np.pi * (1. - us[1] / 3. - us[2] / 6.))
@@ -936,7 +1550,62 @@ def dF_dd_total(d):
 
     # S1.
     dalpha_ds1 = I_0 * (u1 + 2. * u2)
-    ds1_dd_total = 0.
+    _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d)
+    _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d)
+    _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_dzeta_dzeta_dz_dz_dd = \
+        ds1_dzeta_dzeta_dz_dz_dd(d)
+    _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d)
+    _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d)
+    _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d)
+    _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_deta_deta_dd = ds1_deta_deta_dd(d)
+    _ds1_dtheta_j_dtheta_j_dd = ds1_dtheta_j_dtheta_j_dd(d)
+    _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_dphi_j_dphi_j_dd = ds1_dphi_j_dphi_j_dd(d)
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_dd = ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d)
+    _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d)
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+    _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
+        ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d)
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+
+    ds1_dd_total = _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                   + _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd \
+                   + _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_dzeta_dzeta_dz_dz_dd \
+                   + _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                   + _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd \
+                   + _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd \
+                   + _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_deta_deta_dd \
+                   + _ds1_dtheta_j_dtheta_j_dd \
+                   + _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_dphi_j_dphi_j_dd \
+                   + _ds1_dphi_j_plus_1_dphi_j_plus_1_dd \
+                   + _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd \
+                   + _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                   + _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
+                   + _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
     # S2.
     dalpha_ds2 = -I_0 * u2
@@ -964,8 +1633,8 @@ def dF_dd_total(d):
                    + _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
     _dF_dd_total = dF_dalpha * (dalpha_ds0 * 0. +
-                                dalpha_ds1 * 0. +
-                                dalpha_ds2 * ds2_dd_total)
+                                dalpha_ds1 * ds1_dd_total +
+                                dalpha_ds2 * 0.)
 
     return _dF_dd_total
 
@@ -976,12 +1645,10 @@ def grad_arrow(x_draw, x, y, grad):
 
 
 while True:
-    # Todo: s2 terms.
     # Todo: s1 terms.
     # Todo: all terms together.
-    # Todo: all terms together.
     # Todo check gradient real?
-    d_a = np.random.uniform(0.85, 1.15)
+    d_a = np.random.uniform(0.99, 1.01)
     F_a = F_func(d_a)
 
     delta = 1.e-6
@@ -995,6 +1662,7 @@ while True:
     x_arrow = np.linspace(d_a, d_b, 2)
     plt.plot(x_arrow, grad_arrow(x_arrow, d_a, F_a, d_a_grad),
              label='Gradient: $\\frac{dF}{dd}$')
+    print(F_a, F_b, (d_a_grad * delta + F_a) - F_b)
 
     plt.legend()
     plt.xlabel('$d$')
