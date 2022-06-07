@@ -360,8 +360,8 @@ while True:
 
     u2_a_grad = dF_du2_total(u2_a)
 
-    plt.scatter(u2_a, F_a, label='$u_1$')
-    plt.scatter(u2_b, F_b, label='$u_1 + \delta$: $\delta={}$'.format(delta))
+    plt.scatter(u2_a, F_a, label='$u_2$')
+    plt.scatter(u2_b, F_b, label='$u_2 + \delta$: $\delta={}$'.format(delta))
     x_arrow = np.linspace(u2_a, u2_b, 2)
     plt.plot(x_arrow, grad_arrow(x_arrow, u2_a, F_a, u2_a_grad),
              label='Gradient: $\\frac{dF}{d u_2}$')
