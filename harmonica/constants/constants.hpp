@@ -54,9 +54,10 @@ namespace intersections {
   const int dT_dtheta_minus = 0;
 
   const int planet = 0;
-  const int star = 1;
-  const int entire_star = 2;
-  const int beyond = 3;
+  const int entire_planet = 1;
+  const int star = 2;
+  const int entire_star = 3;
+  const int beyond = 4;
 
 }
 

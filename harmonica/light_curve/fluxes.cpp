@@ -347,7 +347,7 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
       // Max planet radius would not intersect closest stellar limb.
       // Overlap region enclosed by entire planet's limb.
       theta = {nu - fractions::pi, nu + fractions::pi};
-      theta_type = {intersections::planet};
+      theta_type = {intersections::entire_planet};
       noi = true;
     } else if (min_rp >= 1. + d) {
       // Min planet radius beyond furthest stellar limb.
@@ -410,7 +410,7 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
       // Planet radius toward stellar centre closer than stellar limb.
       // Overlap region enclosed by entire planet's limb as no intersects.
       theta = {nu - fractions::pi, nu + fractions::pi};
-      theta_type = {intersections::planet};
+      theta_type = {intersections::entire_planet};
       tc = true;
     } else if (_rp_nu > 1. + d) {
       // Planet radius toward stellar centre beyond stellar limb.
@@ -838,7 +838,8 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   for (int j = 0; j < theta_type.size(); j++) {
 
     // Todo: add types for whole star and whole planet, info required for derivatives dtheta=0.
-    if (theta_type[j] == intersections::planet) {
+    if (theta_type[j] == intersections::planet
+        || theta_type[j] == intersections::entire_planet) {
       // Planet limb line segment.
       alpha += this->sTp_planet(theta[j], theta[j + 1], d, nu);
 
