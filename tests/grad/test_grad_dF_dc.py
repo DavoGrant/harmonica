@@ -13,7 +13,7 @@ def generate_complex_fourier_coeffs(_as, _bs):
 
 
 # Config.
-np.random.seed(1)
+np.random.seed(123)
 u1 = 0.4
 u2 = 0.3
 N_c = None

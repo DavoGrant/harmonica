@@ -837,7 +837,6 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   double alpha = 0.;
   for (int j = 0; j < theta_type.size(); j++) {
 
-    // Todo: add types for whole star and whole planet, info required for derivatives dtheta=0.
     if (theta_type[j] == intersections::planet
         || theta_type[j] == intersections::entire_planet) {
       // Planet limb line segment.
