@@ -34,3 +34,31 @@ class TestFlux(unittest.TestCase):
                              ds_grad, nus_grad, fs_grad,
                              require_gradients=False)
 
+    def test_get_flux_derivatives_working(self):
+        """ Test bla. """
+        times = np.linspace(4.5, 5.5, 3)
+        limb_dark_law = 0
+        us = np.array([0.40, 0.29], dtype=np.float64, order='C')
+        rs = np.array([0.1, 0.002, 0.001, -0.003, 0.004], dtype=np.float64, order='C')
+
+        ds = np.empty(times.shape, dtype=np.float64, order='C')
+        nus = np.empty(times.shape, dtype=np.float64, order='C')
+        fs = np.empty(times.shape, dtype=np.float64, order='C')
+
+        n_od = ds.shape + (6,)
+        ds_grad = np.empty(n_od, dtype=np.float64, order='C')
+        nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+        n_lcd = ds.shape + (6 + len(us) + len(rs),)
+        fs_grad = np.ones(n_lcd, dtype=np.float64)
+
+        bindings.orbit(5., 10., 7., 88. / 180. * np.pi, 0.05, 0.,
+                       times, ds, nus,
+                       ds_grad, nus_grad, require_gradients=True)
+
+        bindings.light_curve(limb_dark_law, us, rs, ds, nus, fs,
+                             ds_grad, nus_grad, fs_grad,
+                             require_gradients=True)
+
+        print(fs)
+        print(fs_grad)
+

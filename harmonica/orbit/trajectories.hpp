@@ -51,8 +51,8 @@ class OrbitTrajectories {
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i}.
-     * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i}.
+     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i}.
+     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i}.
      * @return void.
      */
     void compute_circular_orbit(const double &time, double &d, double &nu,
@@ -69,8 +69,8 @@ class OrbitTrajectories {
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty array of derivatives dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz empty array of derivatives dnu/dz z={t0, p, a, i, e, w}.
+     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i, e, w}.
      * @return void.
      */
     void compute_eccentric_orbit(const double &time, double &d, double &nu,

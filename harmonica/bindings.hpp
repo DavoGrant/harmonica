@@ -25,8 +25,8 @@ namespace py = pybind11;
  * @param times array of model evaluation times [days].
  * @param ds empty array of planet-star centre separations [stellar radii].
  * @param nus empty array of planet velocity-star centre angles [radians].
- * @param ds_grad empty array of derivatives dd/dx x={t0, p, a, i, e, w}.
- * @param nus_grad empty array of derivatives dnu/dx x={t0, p, a, i, e, w}.
+ * @param ds_grad empty derivatives array dd/dz z={t0, p, a, i, e, w}.
+ * @param nus_grad empty derivatives array dnu/dz z={t0, p, a, i, e, w}.
  * @param require_gradients derivatives switch.
  * @return void.
  */
@@ -52,9 +52,10 @@ void compute_orbital_separation_and_angles(
  * @param ds array of planet-star centre separations [stellar radii].
  * @param nus array of planet velocity-star centre angles [radians].
  * @param fs empty array of normalised light curve fluxes [].
- * @param ds_grad (empty) array of derivatives dd/dx x={t0, p, a, i, e, w}.
- * @param nus_grad (empty) array of derivatives dnu/dx x={t0, p, a, i, e, w}.
- * @param fs_grad empty array of derivatives dfs/dx x={t0, p, a, i, e, w, us, rs}.
+ * @param ds_grad (empty) derivatives array dd/dz z={t0, p, a, i, e, w}.
+ * @param nus_grad (empty) derivatives array dnu/dz z={t0, p, a, i, e, w}.
+ * @param fs_grad empty derivatives array dfs/dy y={t0, p, a, i, e, w,
+                                                    {us}, {rs}}.
  * @param pnl_c N_l precision for planet inside stellar disc.
  * @param pnl_e N_l precision for planet intersecting stellar disc.
  * @param require_gradients derivatives switch.

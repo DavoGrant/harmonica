@@ -17,6 +17,7 @@ class Fluxes {
 
     // Limb-darkening variables.
     double _ld_law;
+    double I_0_bts;
     double I_0;
     Eigen::Vector<double, Eigen::Dynamic> p;
 
@@ -50,18 +51,37 @@ class Fluxes {
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
     Eigen::Vector<std::complex<double>, 3> _beta_sin0;
     Eigen::Vector<std::complex<double>, 3> _beta_cos0;
-    double s0Tp_planet;
-    double s1Tp_planet;
-    double s2Tp_planet;
+    double s0;
+    double s1;
+    double s2;
+    double s12;
+    double s32;
+    double alpha;
     int _N_l;
     const double *_l_roots;
     const double *_l_weights;
-    double _sp_star;
 
     // Switches.
     int _precision_nl_centre;
     int _precision_nl_edge;
     bool _require_gradients;
+
+    // Derivative variables.
+    double df_dalpha;
+    double dI0_du1;
+    double dI0_du2;
+    double dI0_du3;
+    double dI0_du4;
+
+    /**
+     * Compute some position-specific quantities at start of each
+     * new flux calculation.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @param nu planet velocity-star centre angle [radians].
+     * @return void.
+     */
+    void pre_compute_psq(const double &d, const double &nu);
 
     /**
      * Compute the distance to the stellar limb from the planet centred
@@ -265,9 +285,8 @@ class Fluxes {
       int len_a, int len_b);
 
     /**
-     * Compute the sum of line integrals sTp along segments of the
-     * planet's limb from theta_j to theta_j_plus_1. The sum is over
-     * each limb darkening component.
+     * Compute the line integrals s_n along segments of the
+     * planet's limb from theta_j to theta_j_plus_1 anticlockwise.
      *
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
@@ -275,8 +294,8 @@ class Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_planet line integral.
      */
-    double sTp_planet(double &_theta_j, double &_theta_j_plus_1,
-                      const double &d, const double &nu);
+    void s_planet(double &_theta_j, double &_theta_j_plus_1,
+                  const double &d, const double &nu);
 
     /**
      * Compute the even terms in the planet limb's line integral.
@@ -317,9 +336,8 @@ class Fluxes {
     void select_legendre_order(const double &d);
 
     /**
-     * Compute the sum of line integrals sTp along segments of the
-     * stellar limb from theta_j to theta_j_plus_1. The sum is over
-     * each limb darkening component.
+     * Compute the line integrals s_n along segments of the
+     * star's limb from theta_j to theta_j_plus_1 anticlockwise.
      *
      * @param theta_type_j type of stellar line segment.
      * @param _theta_j start of line segment [radians].
@@ -328,9 +346,22 @@ class Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
-    double sTp_star(int theta_type_j, double &_theta_j,
-                    double &_theta_j_plus_1, const double &d,
-                    const double &nu);
+    void s_star(int theta_type_j, double &_theta_j,
+                double &_theta_j_plus_1, const double &d,
+                const double &nu);
+
+    /**
+     * Compute model derivatives: the flux with respect to the model
+     * input parameters d, nu, {us}, and {rs}.
+     *
+     * @param dd_dz derivatives array dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz derivatives array dnu/dz z={t0, p, a, i, e, w}.
+     * @param df_dz empty derivatives array df/dy y={t0, p, a, i, e, w,
+                                                     {us}, {rs}}.
+     * @return void.
+     */
+    void f_derivatives(const double* dd_dz[], const double* dnu_dz[],
+                       double* df_dz[]);
 
   public:
 
@@ -363,9 +394,10 @@ class Fluxes {
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @param f empty normalised light curve flux [].
-     * @param dd_dz array of derivatives dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz array of derivatives dnu/dz z={t0, p, a, i, e, w}.
-     * @param df_dz empty array of derivatives df/dz z={t0, p, a, i, e, w, us, rs}.
+     * @param dd_dz derivatives array dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz derivatives array dnu/dz z={t0, p, a, i, e, w}.
+     * @param df_dz empty derivatives array df/dy y={t0, p, a, i, e, w,
+                                                     {us}, {rs}}.
      * @return void.
      */
     void transit_flux(const double &d, const double &nu, double &f,
