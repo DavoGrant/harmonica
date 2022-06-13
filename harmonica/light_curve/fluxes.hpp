@@ -17,61 +17,47 @@ class Fluxes {
 
     // Limb-darkening variables.
     double _ld_law;
-    double I_0_bts;
-    double I_0;
+    double I_0, I_0_bts;
     Eigen::Vector<double, Eigen::Dynamic> p;
 
     // Transmission-string variables.
-    int _n_rs;
-    int N_c;
+    int _n_rs, N_c;
     Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
-    double min_rp;
-    double max_rp;
+    double min_rp, max_rp;
 
     // Intersection variables.
     int C_shape;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> C0;
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D, C0;
     std::vector<double> theta;
     std::vector<int> theta_type;
 
     // Position and integral variables.
-    double _dd;
-    double _omdd;
-    std::complex<double> _d_expinu;
-    std::complex<double> _d_expminu;
-    int _len_c_conv_c;
-    int _len_beta_conv_c;
-    int _len_q_rhs;
-    int _mid_q_lhs;
-    int _len_q;
-    int N_q0;
-    int N_q2;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _Delta_ew_c;
-    Eigen::Vector<std::complex<double>, 3> _beta_sin0;
-    Eigen::Vector<std::complex<double>, 3> _beta_cos0;
-    double s0;
-    double s1;
-    double s2;
-    double s12;
-    double s32;
-    double alpha;
+    double _dd, _omdd;
+    std::complex<double> _d_expinu, _d_expminu;
+    int _len_c_conv_c, _len_beta_conv_c, _len_q_rhs, _mid_q_lhs, _len_q;
+    int N_q0, N_q2;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c,
+                                                        _Delta_ew_c;
+    Eigen::Vector<std::complex<double>, 3> _beta_sin0, _beta_cos0;
+    double alpha, s0, s12, s1, s32, s2;
     int _N_l;
     const double *_l_roots;
     const double *_l_weights;
 
     // Switches.
-    int _precision_nl_centre;
-    int _precision_nl_edge;
+    int _precision_nl_centre, _precision_nl_edge;
     bool _require_gradients;
 
     // Derivative variables.
     double df_dalpha;
-    double dI0_du1;
-    double dI0_du2;
-    double dI0_du3;
-    double dI0_du4;
+    double dI0_du1, dI0_du2, dI0_du3, dI0_du4;
+    double dalpha_ds0, dalpha_ds12, dalpha_ds1, dalpha_ds32, dalpha_ds2;
+    double ds0_dd, ds12_dd, ds1_dd, ds32_dd, ds2_dd;
+    double ds0_dnu, ds12_dnu, ds1_dnu, ds32_dnu, ds2_dnu;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+      df_dcs, ds0_dcs, ds12_dcs, ds1_dcs, ds32_dcs, ds2_dcs;
+    std::complex<double> dc0_da0, dcplus_dan, dcminus_dan,
+                         dcplus_dbn, dcminus_dbn;
 
     /**
      * Compute some position-specific quantities at start of each

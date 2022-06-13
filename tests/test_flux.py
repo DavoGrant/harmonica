@@ -55,10 +55,9 @@ class TestFlux(unittest.TestCase):
                        times, ds, nus,
                        ds_grad, nus_grad, require_gradients=True)
 
+        print(fs_grad)
         bindings.light_curve(limb_dark_law, us, rs, ds, nus, fs,
-                             ds_grad, nus_grad, fs_grad,
+                             ds_grad, nus_grad, fs_grad, 50, 500,
                              require_gradients=True)
-
-        print(fs)
         print(fs_grad)
 

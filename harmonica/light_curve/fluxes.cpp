@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include <iostream>
 #include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -142,13 +143,43 @@ Fluxes::Fluxes(int ld_law,
     if (_ld_law == limb_darkening::quadratic) {
       dI0_du1 = 1. / (fractions::threepi * I_0_bts);
       dI0_du2 = 1. / (fractions::sixpi * I_0_bts);
+
+      dalpha_ds0 = I_0 * (1. - us_(0) - us_(1));
+      dalpha_ds1 = I_0 * (us_(0) + 2. * us_(1));
+      dalpha_ds2 = -I_0 * us_(1);
+
     } else {
       dI0_du1 = 1. / (fractions::fivepi * I_0_bts);
       dI0_du2 = 1. / (fractions::threepi * I_0_bts);
       dI0_du3 = 1. / (fractions::sevenpi_d_3 * I_0_bts);
       dI0_du4 = 1. / (fractions::twopi * I_0_bts);
+
+      dalpha_ds0 = I_0 * (1. - us_(0) - us_(1) - us_(2) - us_(3));
+      dalpha_ds12 = I_0 * us_(0);
+      dalpha_ds1 = I_0 * us_(1);
+      dalpha_ds32 = I_0 * us_(2);
+      dalpha_ds2 = I_0 * us_(3);
     }
 
+    df_dcs.resize(_n_rs);
+    ds0_dcs.resize(_n_rs);
+    ds12_dcs.resize(_n_rs);
+    ds1_dcs.resize(_n_rs);
+    ds32_dcs.resize(_n_rs);
+    ds2_dcs.resize(_n_rs);
+
+    // todo: temp set zero.
+    ds0_dcs.setZero();
+    ds12_dcs.setZero();
+    ds1_dcs.setZero();
+    ds32_dcs.setZero();
+    ds2_dcs.setZero();
+
+    dc0_da0 = 1.;
+    dcplus_dan = 1. / 2.;
+    dcminus_dan = 1. / 2.;
+    dcplus_dbn = -1.i / 2.;
+    dcminus_dbn = 1.i / 2.;
   }
 }
 
@@ -673,6 +704,17 @@ void Fluxes::analytic_even_terms(double &_theta_j, double &_theta_j_plus_1,
     }
   }
   s2 += fractions::one_quarter * s2_planet.real();
+
+  if (_require_gradients == true) {
+    ds0_dd = 0.;
+    ds2_dd = 0.;
+
+    ds0_dnu = 0.;
+    ds2_dnu = 0.;
+
+//    ds0_dcs.setZero();
+//    ds2_dcs.setZero();
+  }
 }
 
 
@@ -701,6 +743,12 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
       s1_planet += zeta * eta * _l_weights[k];
     }
     s1 += half_theta_range * s1_planet;
+
+    if (_require_gradients == true) {
+      ds1_dd = 0.;
+      ds1_dnu = 0.;
+//      ds1_dcs.setZero();
+    }
 
   } else {
     // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2, using
@@ -736,6 +784,20 @@ void Fluxes::numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
     s12 += half_theta_range * s12_planet;
     s1 += half_theta_range * s22_planet;
     s32 += half_theta_range * s32_planet;
+
+    if (_require_gradients == true) {
+      ds12_dd = 0.;
+      ds1_dd = 0.;
+      ds32_dd = 0.;
+
+      ds12_dnu = 0.;
+      ds1_dnu = 0.;
+      ds32_dnu = 0.;
+
+//      ds12_dcs.setZero();
+//      ds1_dcs.setZero();
+//      ds32_dcs.setZero();
+    }
   }
 }
 
@@ -836,29 +898,77 @@ void Fluxes::f_derivatives(const double* dd_dz[], const double* dnu_dz[],
   double dalpha_dI0 = alpha;
   if (_ld_law == limb_darkening::quadratic) {
 
-    double dalpha_du1 = I_0 * (s1 - s0);
-    double dalpha_du2 = I_0 * (2. * s1 - s0 - s2);
+    // df_dt0, df_dp, df_da, df_di, df_de, df_dw.
+    double df_dd = df_dalpha * (dalpha_ds0 * ds0_dd + dalpha_ds1 * ds1_dd
+                                + dalpha_ds2 * ds2_dd);
+    double df_dnu = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds1 * ds1_dnu
+                                 + dalpha_ds2 * ds2_dnu);
+    *df_dz[0] = df_dd * *dd_dz[0] + df_dnu * *dnu_dz[0];
+    *df_dz[1] = df_dd * *dd_dz[1] + df_dnu * *dnu_dz[1];
+    *df_dz[2] = df_dd * *dd_dz[2] + df_dnu * *dnu_dz[2];
+    *df_dz[3] = df_dd * *dd_dz[3] + df_dnu * *dnu_dz[3];
+    *df_dz[4] = df_dd * *dd_dz[4] + df_dnu * *dnu_dz[4];
+    *df_dz[5] = df_dd * *dd_dz[5] + df_dnu * *dnu_dz[5];
 
     // df_du1, df_du2.
+    double dalpha_du1 = I_0 * (s1 - s0);
+    double dalpha_du2 = I_0 * (2. * s1 - s0 - s2);
     *df_dz[6] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
     *df_dz[7] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
 
+    // df_drs.
+    df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds1 * ds1_dcs
+                          + dalpha_ds2 * ds2_dcs);
+    for (int n = 0; n < N_c + 1; n++) {
+      if (n == 0){
+        *df_dz[8] = (df_dcs(N_c) * dc0_da0).real();
+      } else {
+        *df_dz[7 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+                             + df_dcs(-n + N_c) * dcminus_dan).real();
+        *df_dz[8 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+                             + df_dcs(-n + N_c) * dcminus_dbn).real();
+      }
+    }
   } else {
 
+    // df_dt0, df_dp, df_da, df_di, df_de, df_dw.
+    double df_dd = df_dalpha * (
+      dalpha_ds0 * ds0_dd + dalpha_ds12 * ds12_dd + dalpha_ds1 * ds1_dd
+      + dalpha_ds32 * ds32_dd + dalpha_ds2 * ds2_dd);
+    double df_dnu = df_dalpha * (
+      dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu + dalpha_ds1 * ds1_dnu
+      + dalpha_ds32 * ds32_dnu + dalpha_ds2 * ds2_dnu);
+    *df_dz[0] = df_dd * *dd_dz[0] + df_dnu * *dnu_dz[0];
+    *df_dz[1] = df_dd * *dd_dz[1] + df_dnu * *dnu_dz[1];
+    *df_dz[2] = df_dd * *dd_dz[2] + df_dnu * *dnu_dz[2];
+    *df_dz[3] = df_dd * *dd_dz[3] + df_dnu * *dnu_dz[3];
+    *df_dz[4] = df_dd * *dd_dz[4] + df_dnu * *dnu_dz[4];
+    *df_dz[5] = df_dd * *dd_dz[5] + df_dnu * *dnu_dz[5];
+
+    // df_du1, df_du2, df_du3, df_du4.
     double dalpha_du1 = I_0 * (s1 - s0);
     double dalpha_du2 = I_0 * (s12 - s0);
     double dalpha_du3 = I_0 * (s1 - s0);
     double dalpha_du4 = I_0 * (s32 - s0);
-
-    // df_du1, df_du2, df_du3, df_du4.
     *df_dz[6] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
     *df_dz[7] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
     *df_dz[8] = df_dalpha * (dalpha_dI0 * dI0_du3 + dalpha_du3);
     *df_dz[9] = df_dalpha * (dalpha_dI0 * dI0_du4 + dalpha_du4);
-  }
 
-  // todo: move indep terms to constructor for pre-computation:
-  // todo: combine with dd_dz and dnu_dz.
+    // df_drs.
+    df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds1 * ds1_dcs
+                          + dalpha_ds2 * ds2_dcs);
+    for (int n = 0; n < N_c + 1; n++) {
+      if (n == 0){
+        *df_dz[10] = (df_dcs(N_c) * dc0_da0).real();
+      } else {
+        *df_dz[9 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+                             + df_dcs(-n + N_c) * dcminus_dan).real();
+        *df_dz[10 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+                              + df_dcs(-n + N_c) * dcminus_dbn).real();
+      }
+    }
+  }
 }
 
 
