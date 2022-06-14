@@ -36,7 +36,7 @@ class TestFlux(unittest.TestCase):
 
     def test_get_flux_derivatives_working(self):
         """ Test bla. """
-        times = np.linspace(4.5, 5.5, 3)
+        times = np.linspace(4.57, 5, 3)
         limb_dark_law = 0
         us = np.array([0.40, 0.29], dtype=np.float64, order='C')
         rs = np.array([0.1, 0.002, 0.001, -0.003, 0.004], dtype=np.float64, order='C')
@@ -55,7 +55,6 @@ class TestFlux(unittest.TestCase):
                        times, ds, nus,
                        ds_grad, nus_grad, require_gradients=True)
 
-        print(fs_grad)
         bindings.light_curve(limb_dark_law, us, rs, ds, nus, fs,
                              ds_grad, nus_grad, fs_grad, 50, 500,
                              require_gradients=True)

@@ -27,17 +27,18 @@ class Fluxes {
 
     // Intersection variables.
     int C_shape;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> D, C0;
-    std::vector<double> theta;
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+      D, C0, dC_dd;
+    std::vector<double> theta, dthetas_dd;
     std::vector<int> theta_type;
 
     // Position and integral variables.
-    double _dd, _omdd;
-    std::complex<double> _d_expinu, _d_expminu;
+    double _td, _dd, _omdd;
+    std::complex<double> _expinu, _expminu, _d_expinu, _d_expminu;
     int _len_c_conv_c, _len_beta_conv_c, _len_q_rhs, _mid_q_lhs, _len_q;
     int N_q0, N_q2;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> _c_conv_c,
-                                                        _Delta_ew_c;
+    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+      _c_conv_c, _Delta_ew_c, _zeroes_c_conv_c;
     Eigen::Vector<std::complex<double>, 3> _beta_sin0, _beta_cos0;
     double alpha, s0, s12, s1, s32, s2;
     int _N_l;
@@ -90,6 +91,15 @@ class Fluxes {
      * @return drp_dtheta, the derivative, is always real.
      */
     double drp_dtheta(double &_theta);
+
+    /**
+     * Compute second derivative of the planet radius wrt theta at a
+     * given theta.
+     *
+     * @param theta angle in the terminator plane from v_orb [radians].
+     * @return d2rp_dtheta2, the derivative, is always real.
+     */
+    double d2rp_dtheta2(double &_theta);
 
     /**
      * Companion matrix elements for computing the max and min radii of
@@ -150,6 +160,23 @@ class Fluxes {
       int j);
 
     /**
+     * Complex polynomial coefficients for the intersection equation, h_j.
+     *
+     * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @return complex polynomial coefficient.
+     */
+    std::complex<double> h_j(int j);
+
+    /**
+     * Derivative of the complex polynomial coefficients for the
+     * intersection equation with respect to d, dh_j_dd.
+     *
+     * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @return complex dh_j_dd coefficient.
+     */
+    std::complex<double> dh_j_dd(int j);
+
+    /**
      * Find and characterise the planet-stellar limb intersections vector,
      * theta, and sort in ascending order, -pi < theta <= pi. Each adjacent
      * pair of thetas corresponds to a segment of the closed loop piecewise
@@ -180,11 +207,12 @@ class Fluxes {
      *
      * @param companion_matrix the complex-valued companion matrix.
      * @param shape number of rows=cols of matrix and complex eigenvalues.
+     * @param require_eigenvectors derivatives switch.
      * @return vector of real roots in theta.
      */
     std::vector<double> compute_real_theta_roots(
       Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-        companion_matrix, int &shape);
+        companion_matrix, int &shape, bool require_eigenvectors);
 
     /**
      * Check if there are no intersections found which trivial configuration
@@ -274,57 +302,57 @@ class Fluxes {
      * Compute the line integrals s_n along segments of the
      * planet's limb from theta_j to theta_j_plus_1 anticlockwise.
      *
+     * @param _j index of theta vecto
+     * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_planet line integral.
      */
-    void s_planet(double &_theta_j, double &_theta_j_plus_1,
-                  const double &d, const double &nu);
+    void s_planet(int _j, int theta_type_j, double &_theta_j,
+                  double &_theta_j_plus_1, const double &d,
+                  const double &nu);
 
     /**
      * Compute the even terms in the planet limb's line integral.
      * These terms are closed form and rely on a succession of
      * convolutions before the integral is evaluated.
      *
+     * @param _j index of theta vector.
+     * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    void analytic_even_terms(double &_theta_j, double &_theta_j_plus_1,
-                             const double &d, const double &nu);
+    void analytic_even_terms(int _j, int theta_type_j, double &_theta_j,
+                             double &_theta_j_plus_1, const double &d,
+                             const double &nu);
 
     /**
      * Compute the odd and half-integer terms in the planet limb's
      * line integral. These terms do not have an obvious closed form
      * solution and therefore Gauss-legendre quadrature is employed.
      *
+     * @param _j index of theta vecto
+     * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    void numerical_odd_terms(double &_theta_j, double &_theta_j_plus_1,
-                             const double &d, const double &nu);
-
-    /**
-     * Select the order of legendre polynomial to use in numerical
-     * evaluation of an integral. Order n integrates polynomial
-     * integrands of order 2n - 1 exactly.
-     *
-     * @param d planet-star centre separation [stellar radii].
-     * @return void.
-     */
-    void select_legendre_order(const double &d);
+    void numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
+                             double &_theta_j_plus_1, const double &d,
+                             const double &nu);
 
     /**
      * Compute the line integrals s_n along segments of the
      * star's limb from theta_j to theta_j_plus_1 anticlockwise.
      *
+     * @param _j index of theta vecto
      * @param theta_type_j type of stellar line segment.
      * @param _theta_j start of line segment [radians].
      * @param _theta_j_plus_1 end of line segment [radians].
@@ -332,7 +360,7 @@ class Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
-    void s_star(int theta_type_j, double &_theta_j,
+    void s_star(int _j, int theta_type_j, double &_theta_j,
                 double &_theta_j_plus_1, const double &d,
                 const double &nu);
 
@@ -348,6 +376,25 @@ class Fluxes {
      */
     void f_derivatives(const double* dd_dz[], const double* dnu_dz[],
                        double* df_dz[]);
+
+    /**
+     * Select the order of legendre polynomial to use in numerical
+     * evaluation of an integral. Order n integrates polynomial
+     * integrands of order 2n - 1 exactly.
+     *
+     * @param d planet-star centre separation [stellar radii].
+     * @return void.
+     */
+    void select_legendre_order(const double &d);
+
+    /**
+     * Reset all intersections, integrals, and derivative quantities,
+     * which are summed within the j-loop, to zero. Run when the position
+     * is new.
+     *
+     * @return void.
+     */
+    void reset_intersections_integrals_and_derivatives();
 
   public:
 
