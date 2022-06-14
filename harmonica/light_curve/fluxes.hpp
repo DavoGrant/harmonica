@@ -28,8 +28,8 @@ class Fluxes {
     // Intersection variables.
     int C_shape;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-      D, C0, dC_dd;
-    std::vector<double> theta, dthetas_dd;
+      D, C0;
+    std::vector<double> theta;
     std::vector<int> theta_type;
 
     // Position and integral variables.
@@ -59,6 +59,9 @@ class Fluxes {
       df_dcs, ds0_dcs, ds12_dcs, ds1_dcs, ds32_dcs, ds2_dcs;
     std::complex<double> dc0_da0, dcplus_dan, dcminus_dan,
                          dcplus_dbn, dcminus_dbn;
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+      dC_dd, dC_dnu;
+    std::vector<double> dthetas_dd, dthetas_dnu;
 
     /**
      * Compute some position-specific quantities at start of each
@@ -175,6 +178,15 @@ class Fluxes {
      * @return complex dh_j_dd coefficient.
      */
     std::complex<double> dh_j_dd(int j);
+
+    /**
+     * Derivative of the complex polynomial coefficients for the
+     * intersection equation with respect to nu, dh_j_dnu.
+     *
+     * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @return complex dh_j_dnu coefficient.
+     */
+    std::complex<double> dh_j_dnu(int j);
 
     /**
      * Find and characterise the planet-stellar limb intersections vector,
