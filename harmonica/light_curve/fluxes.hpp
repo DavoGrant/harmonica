@@ -40,6 +40,7 @@ class Fluxes {
     Eigen::Vector<std::complex<double>, Eigen::Dynamic>
       _c_conv_c, _Delta_ew_c, _zeroes_c_conv_c;
     Eigen::Vector<std::complex<double>, 3> _beta_sin0, _beta_cos0;
+    Eigen::Vector<Eigen::Vector<std::complex<double>, Eigen::Dynamic>, Eigen::Dynamic> els;
     double alpha, s0, s12, s1, s32, s2;
     int _N_l;
     const double *_l_roots;
