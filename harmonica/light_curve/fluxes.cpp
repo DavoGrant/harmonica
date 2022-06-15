@@ -596,7 +596,6 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     // No roots, check which trivial case this configuration corresponds to.
     if (this->trivial_configuration(d, nu)) { return; }
   }
-
   if (_require_gradients == false) {
     // Sort thetas in ascending order, -pi < theta <= pi.
     std::sort(theta.begin(), theta.end());
@@ -615,7 +614,10 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
       theta[j] = theta_unsorted[indices[j]];
       dthetas_dd[j] = dthetas_dd_unsorted[indices[j]];
       dthetas_dnu[j] = dthetas_dnu_unsorted[indices[j]];
-      dthetas_dcs[j] = dthetas_dcs_unsorted[indices[j]];
+      for (int n = -N_c; n < N_c + 1; n++) {
+        int npN_c = n + N_c;
+        dthetas_dcs[npN_c][j] = dthetas_dcs_unsorted[npN_c][indices[j]];
+      }
     }
 
     // Duplicate first derivatives at end of vector.
