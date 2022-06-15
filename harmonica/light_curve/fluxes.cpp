@@ -183,6 +183,10 @@ Fluxes::Fluxes(int ld_law,
       dC_dd.setZero();
       dC_dnu.resize(C_shape, C_shape);
       dC_dnu.setZero();
+      for (int n = -N_c; n < N_c + 1; n++) {
+        dC_dcs[n].resize(C_shape, C_shape);
+        dC_dcs[n].setZero();
+      }
     }
   }
 }
@@ -441,6 +445,102 @@ std::complex<double> Fluxes::dh_j_dnu(
 }
 
 
+std::complex<double> Fluxes::dh_j_dcn(
+  int j, int _n) {
+  // NB. c_0 requires c(0 + N_c) as it runs -N_c through N_c.
+  std::complex<double> _dh_j_dcn = 0.;
+  if (0 <= j && j < N_c - 1) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+  } else if (N_c - 1 <= j && j < N_c + 1) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+    if (_n == j + 1 - 2 * N_c) {
+      _h_j -= _d_expinu;
+    }
+  } else if (N_c + 1 <= j && j < 2 * N_c) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+    if (_n == j + 1 - 2 * N_c) {
+      _h_j -= _d_expinu;
+    }
+    if (_n == j - 1 - 2 * N_c) {
+      _h_j -= _d_expminu;
+    }
+  } else if (j == 2 * N_c) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+    if (_n == j + 1 - 2 * N_c) {
+      _h_j -= _d_expinu;
+    }
+    if (_n == j - 1 - 2 * N_c) {
+      _h_j -= _d_expminu;
+    }
+  } else if (2 * N_c + 1 <= j && j < 3 * N_c) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+    if (_n == j + 1 - 2 * N_c) {
+      _h_j -= _d_expinu;
+    }
+    if (_n == j - 1 - 2 * N_c) {
+      _h_j -= _d_expminu;
+    }
+  } else if (3 * N_c <= j && j < 3 * N_c + 2) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+    if (_n == j - 1 - 2 * N_c) {
+      _h_j -= _d_expminu;
+    }
+  } else if (3 * N_c + 2 <= j && j < 4 * N_c + 1) {
+    for (int n = -N_c; n < -N_c + j + 1; n++) {
+      if (_n == n) {
+        _h_j += c(j - n - N_c);
+      }
+      if (_n == j - n - 2 * N_c) {
+        _h_j += c(n + N_c);
+      }
+    }
+  }
+  return _h_j;
+}
+
+
 void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 
   // Check cases where no obvious intersections, avoiding eigenvalue runtime.
@@ -470,9 +570,13 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     if (_require_gradients == true) {
       double dtheta_dacos_arg = 1. / std::sqrt(1. - acos_arg * acos_arg);
       double dacos_arg_dd = (-_c0c0 + _dd - 1.) / (2. * c(N_c).real() * _dd);
+      double dacos_arg_dc0 = (_c0c0 - _dd - 1.) / (2. * _c0c0 * d);
       double dtheta_dd = dtheta_dacos_arg * dacos_arg_dd;
+      double dtheta_c0 = dtheta_dacos_arg * dacos_arg_dc0;
       dthetas_dd = {dtheta_dd, -dtheta_dd};
       dthetas_dnu = {1., 1.};
+      // todo check okay for nested vectors
+      dthetas_dco = {{dtheta_c0, -dtheta_c0}};
     }
   }
 
@@ -490,19 +594,23 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     std::vector<double> theta_unsorted = theta;
     std::vector<double> dthetas_dd_unsorted = dthetas_dd;
     std::vector<double> dthetas_dnu_unsorted = dthetas_dnu;
+    std::vector<std::vector<std::complex<double>>> dthetas_dcs_unsorted = dthetas_dcs;
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(), [&](double A, double B)->bool {
       return theta_unsorted[A] < theta_unsorted[B];
     });
+    // todo check okay for nested vectors
     for (int j = 0; j < theta.size(); j++) {
       theta[j] = theta_unsorted[indices[j]];
       dthetas_dd[j] = dthetas_dd_unsorted[indices[j]];
       dthetas_dnu[j] = dthetas_dnu_unsorted[indices[j]];
+      dthetas_dcs[j] = dthetas_dcs_unsorted[indices[j]];
     }
 
     // Duplicate first derivatives at end of vector.
     dthetas_dd.push_back(dthetas_dd[0]);
     dthetas_dnu.push_back(dthetas_dnu[0]);
+    dthetas_dcs.push_back(dthetas_dcs[0]);
   }
 
   // Ensure theta vector spans a closed loop, 2pi in total.
@@ -551,6 +659,9 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
   if (noi == true && _require_gradients == true) {
     dthetas_dd = {0., 0.};
     dthetas_dnu = {0., 0.};
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dthetas_dcs[n] = {0., 0.};
+    }
   }
   return noi;
 }
@@ -579,7 +690,7 @@ std::vector<double> Fluxes::compute_real_theta_roots(
     }
   } else {
 
-    // dC_dd, dC_dnu.
+    // dC_dd, dC_dnu, dC_dcs.
     std::complex<double> h_4Nc = this->h_j(C_shape);
     std::complex<double> h_4Ncs = h_4Nc * h_4Nc;
     for (int j = 1; j < C_shape + 1; j++) {
@@ -588,6 +699,10 @@ std::vector<double> Fluxes::compute_real_theta_roots(
                                    - this->dh_j_dd(j - 1) * h_4Nc) / h_4Ncs;
       dC_dnu(j - 1, C_shape - 1) = (h_jm1 * this->dh_j_dnu(C_shape)
                                     - this->dh_j_dnu(j - 1) * h_4Nc) / h_4Ncs;
+      for (int n = -N_c; n < N_c + 1; n++) {
+        dC_dcs[n](j - 1, C_shape - 1) = (h_jm1 * this->dh_j_dcs(C_shape, n)
+                                         - this->dh_j_dcd(j - 1, n) * h_4Nc) / h_4Ncs;
+      }
     }
 
     // And use eigenvectors for derivatives.
@@ -599,6 +714,11 @@ std::vector<double> Fluxes::compute_real_theta_roots(
       dlambda_dd_full = e_vecs_inv * dC_dd * e_vecs;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
       dlambda_dnu_full = e_vecs_inv * dC_dnu * e_vecs;
+    std::vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>>
+      dlambda_dcs_full;
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dlambda_dcs_full[n] = e_vecs_inv * dC_dcs[n] * e_vecs;
+    }
 
     // Select real thetas only, and corresponding derivatives.
     for (int j = 0; j < shape; j++) {
@@ -613,6 +733,10 @@ std::vector<double> Fluxes::compute_real_theta_roots(
           (dtheta_dlambda * dlambda_dd_full(j, j)).real());
         dthetas_dnu.push_back(
           (dtheta_dlambda * dlambda_dnu_full(j, j)).real());
+        for (int n = -N_c; n < N_c + 1; n++) {
+          dthetas_dcs[n].push_back(
+            (dtheta_dlambda * dlambda_dcs_full[n](j, j)).real());
+        }
       }
     }
   }
@@ -659,6 +783,9 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
   if (tc == true && _require_gradients == true) {
     dthetas_dd = {0., 0.};
     dthetas_dnu = {0., 0.};
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dthetas_dcs[n] = {0., 0.};
+    }
   }
   return tc;
 }
@@ -1148,10 +1275,47 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
       ds1_dcs.setZero();
     }
   } else {
-    // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2, using
-    // Gauss-legendre quad.
     double s12_planet = 0.;
     double s32_planet = 0.;
+
+    double ds12_eta_dd, ds1_eta_dd, ds32_eta_dd,
+           ds12_theta_j_dd, ds12_theta_j_plus_1_dd, ds1_theta_j_dd,
+           ds1_theta_j_plus_1_dd, ds32_theta_j_dd, ds32_theta_j_plus_1_dd,
+           ds12_eta_dnu, ds1_eta_dnu, ds32_eta_dnu,
+           ds12_theta_j_dnu, ds12_theta_j_plus_1_dnu, ds1_theta_j_dnu,
+           ds1_theta_j_plus_1_dnu, ds32_theta_j_dnu, ds32_theta_j_plus_1_dnu,
+           ds12_eta_r_t_theta_j_dx, ds12_eta_r_t_theta_j_plus_1_dx,
+           ds12_eta_t_theta_j_dx, ds12_eta_t_theta_j_plus_1_dx,
+           ds12_eta_rdash_t_theta_j_dx, ds12_eta_rdash_t_theta_j_plus_1_dx,
+           ds1_eta_r_t_theta_j_dx, ds1_eta_r_t_theta_j_plus_1_dx,
+           ds1_eta_t_theta_j_dx, ds1_eta_t_theta_j_plus_1_dx,
+           ds1_eta_rdash_t_theta_j_dx, ds1_eta_rdash_t_theta_j_plus_1_dx,
+           ds32_eta_r_t_theta_j_dx, ds32_eta_r_t_theta_j_plus_1_dx,
+           ds32_eta_t_theta_j_dx, ds32_eta_t_theta_j_plus_1_dx,
+           ds32_eta_rdash_t_theta_j_dx, ds32_eta_rdash_t_theta_j_plus_1_dx;
+    if (_require_gradients == true) {
+      ds12_eta_dd = 0., ds1_eta_dd = 0., ds32_eta_dd = 0.,
+      ds12_theta_j_dd = 0., ds12_theta_j_plus_1_dd = 0., ds1_theta_j_dd = 0.;
+
+      ds1_theta_j_plus_1_dd = 0., ds32_theta_j_dd = 0., ds32_theta_j_plus_1_dd = 0.,
+      ds12_eta_dnu = 0., ds1_eta_dnu = 0., ds32_eta_dnu = 0.;
+
+      ds12_theta_j_dnu = 0., ds12_theta_j_plus_1_dnu = 0., ds1_theta_j_dnu = 0.,
+      ds1_theta_j_plus_1_dnu = 0., ds32_theta_j_dnu = 0., ds32_theta_j_plus_1_dnu = 0.;
+
+      ds12_eta_r_t_theta_j_dx = 0., ds12_eta_r_t_theta_j_plus_1_dx = 0.,
+      ds12_eta_t_theta_j_dx = 0., ds12_eta_t_theta_j_plus_1_dx = 0.,
+      ds12_eta_rdash_t_theta_j_dx = 0., ds12_eta_rdash_t_theta_j_plus_1_dx = 0.,
+      ds1_eta_r_t_theta_j_dx = 0., ds1_eta_r_t_theta_j_plus_1_dx = 0.,
+      ds1_eta_t_theta_j_dx = 0., ds1_eta_t_theta_j_plus_1_dx = 0.,
+      ds1_eta_rdash_t_theta_j_dx = 0., ds1_eta_rdash_t_theta_j_plus_1_dx = 0.,
+      ds32_eta_r_t_theta_j_dx = 0., ds32_eta_r_t_theta_j_plus_1_dx = 0.,
+      ds32_eta_t_theta_j_dx = 0., ds32_eta_t_theta_j_plus_1_dx = 0.,
+      ds32_eta_rdash_t_theta_j_dx = 0., ds32_eta_rdash_t_theta_j_plus_1_dx = 0.;
+    }
+
+    // Limb-darkening half-integer and odd terms n=1/2, 1, 3/2, using
+    // Gauss-legendre quad.
     for (int k = 0; k < _N_l; k++) {
 
       // Rescale legendre root.
@@ -1179,86 +1343,191 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
       s1_planet += zeta * eta_w;
       s32_planet += zeta32 * eta_w;
 
-//      if (_require_gradients == true) {
-//        // todo: add s12 and s23 terms.
-//
-//        double opzp = 1 + zp_tk;
-//        double ds1_dzeta = eta * _l_weights[k];
-//        double dzeta_dzp = fractions::one_third * (1. - 1. / (opzp * opzp));
-//        double dzp_dd = (rp_tk * costkmnu - d) / zp_tk;
-//        double ds1_deta = zeta * _l_weights[k];
-//        double deta_dd = -rp_tk * costkmnu - drp_dtk * sintkmnu;
-//
-//        ds1_zeta_zp_dd += ds1_dzeta * dzeta_dzp * dzp_dd;
-//        ds1_eta_dd += ds1_deta * deta_dd;
-//
-//        if (theta_type_j == intersections::planet) {
-//
-//          double dtk_dtheta_j = 1. - fractions::one_half * (_l_roots[k] + 1.);
-//          double dtk_dtheta_j_plus_1 = fractions::one_half * (_l_roots[k] + 1.);
-//
-//          double dzp_drp = (d * costkmnu - rp_tk) / zp_tk;
-//          double dzp_dtk = -d * rp_tk * sintkmnu / zp_tk;
-//          double ds1_zeta_dzp = ds1_dzeta * dzeta_dzp;
-//          double ds1_zeta_zp_dtk = ds1_zeta_dzp * dzp_dtk;
-//          double ds1_zeta_zp_r_dtk = ds1_zeta_dzp * dzp_drp * drp_dtk;
-//
-//          ds1_zeta_zp_t_theta_j_dd += ds1_zeta_zp_dtk * dtk_dtheta_j;
-//          ds1_zeta_zp_t_theta_j_plus_1_dd += ds1_zeta_zp_dtk * dtk_dtheta_j_plus_1;
-//          ds1_zeta_zp_r_t_theta_j_dd += ds1_zeta_zp_r_dtk * dtk_dtheta_j;
-//          ds1_zeta_zp_r_t_theta_j_plus_1_dd += ds1_zeta_zp_r_dtk * dtk_dtheta_j_plus_1;
-//
-//          double deta_drp = 2. * rp_tk - d * costkmnu;
-//          double deta_drdash = -d * sintkmnu;
-//          double drdash_dtk = this->d2rp_dtheta2(t_k);
-//          double deta_dtk = d * (rp_tk * sintkmnu - drp_dtk * costkmnu);
-//          double ds1_eta_dtk = ds1_deta * deta_dtk;
-//          double ds1_eta_rp_dtk = ds1_deta * deta_drp * drp_dtk;
-//          double ds1_eta_rdash_dtk = ds1_deta * deta_drdash * drdash_dtk;
-//
-//          ds1_eta_t_theta_j_dd += ds1_eta_dtk * dtk_dtheta_j;
-//          ds1_eta_t_theta_j_plus_1_dd += ds1_eta_dtk * dtk_dtheta_j_plus_1;
-//          ds1_eta_r_t_theta_j_dd += ds1_eta_rp_dtk * dtk_dtheta_j;
-//          ds1_eta_r_t_theta_j_plus_1_dd += ds1_eta_rp_dtk * dtk_dtheta_j_plus_1;
-//          ds1_eta_rdash_t_theta_j_dd += ds1_eta_rdash_dtk * dtk_dtheta_j;
-//          ds1_eta_rdash_t_theta_j_plus_1_dd += ds1_eta_rdash_dtk * dtk_dtheta_j_plus_1;
-//        }
-//      }
+      if (_require_gradients == true) {
+
+        double opzp = 1 + zp_tk;
+        double ds1_dzeta = eta * _l_weights[k];
+        double dzeta_dzp = fractions::one_third * (1. - 1. / (opzp * opzp));
+        double dzp_dd = (rp_tk * costkmnu - d) / zp_tk;
+        double dzp_dnu = d * rp_tk * sintkmnu / zp_tk;
+
+        double ds12_deta = zeta12 * _l_weights[k];
+        double ds1_deta = zeta * _l_weights[k];
+        double ds32_deta = zeta32 * _l_weights[k];
+        double deta_dd = -rp_tk * costkmnu - drp_dtk * sintkmnu;
+        double deta_dnu = -d * rp_tk * sintkmnu + d * drp_dtk * costkmnu;
+
+        ds1_zeta_zp_dd += ds1_dzeta * dzeta_dzp * dzp_dd;
+        ds12_eta_dd += ds12_deta * deta_dd;
+        ds1_eta_dd += ds1_deta * deta_dd;
+        ds32_eta_dd += ds32_deta * deta_dd;
+
+        ds1_zeta_zp_dnu += ds1_dzeta * dzeta_dzp * dzp_dnu;
+        ds12_eta_dnu += ds12_deta * deta_dnu;
+        ds1_eta_dnu += ds1_deta * deta_dnu;
+        ds32_eta_dnu += ds32_deta * deta_dnu;
+
+        if (theta_type_j == intersections::planet) {
+
+          double dtk_dtheta_j = 1. - fractions::one_half * (_l_roots[k] + 1.);
+          double dtk_dtheta_j_plus_1 = fractions::one_half * (_l_roots[k] + 1.);
+
+          double dzp_drp = (d * costkmnu - rp_tk) / zp_tk;
+          double dzp_dtk = -d * rp_tk * sintkmnu / zp_tk;
+          double ds1_zeta_dzp = ds1_dzeta * dzeta_dzp;
+          double ds1_zeta_zp_dtk = ds1_zeta_dzp * dzp_dtk;
+          double ds1_zeta_zp_r_dtk = ds1_zeta_dzp * dzp_drp * drp_dtk;
+
+          ds1_zeta_zp_t_theta_j_dx += ds1_zeta_zp_dtk * dtk_dtheta_j;
+          ds1_zeta_zp_t_theta_j_plus_1_dx += ds1_zeta_zp_dtk * dtk_dtheta_j_plus_1;
+          ds1_zeta_zp_r_t_theta_j_dx += ds1_zeta_zp_r_dtk * dtk_dtheta_j;
+          ds1_zeta_zp_r_t_theta_j_plus_1_dx += ds1_zeta_zp_r_dtk * dtk_dtheta_j_plus_1;
+
+          double deta_drp = 2. * rp_tk - d * costkmnu;
+          double deta_drdash = -d * sintkmnu;
+          double drdash_dtk = this->d2rp_dtheta2(t_k);
+          double deta_dtk = d * (rp_tk * sintkmnu - drp_dtk * costkmnu);
+          double ds12_eta_dtk = ds12_deta * deta_dtk;
+          double ds12_eta_rp_dtk = ds12_deta * deta_drp * drp_dtk;
+          double ds12_eta_rdash_dtk = ds12_deta * deta_drdash * drdash_dtk;
+          double ds1_eta_dtk = ds1_deta * deta_dtk;
+          double ds1_eta_rp_dtk = ds1_deta * deta_drp * drp_dtk;
+          double ds1_eta_rdash_dtk = ds1_deta * deta_drdash * drdash_dtk;
+          double ds32_eta_dtk = ds32_deta * deta_dtk;
+          double ds32_eta_rp_dtk = ds32_deta * deta_drp * drp_dtk;
+          double ds32_eta_rdash_dtk = ds32_deta * deta_drdash * drdash_dtk;
+
+          ds12_eta_t_theta_j_dx += ds12_eta_dtk * dtk_dtheta_j;
+          ds12_eta_t_theta_j_plus_1_dx += ds12_eta_dtk * dtk_dtheta_j_plus_1;
+          ds12_eta_r_t_theta_j_dx += ds12_eta_rp_dtk * dtk_dtheta_j;
+          ds12_eta_r_t_theta_j_plus_1_dx += ds12_eta_rp_dtk * dtk_dtheta_j_plus_1;
+          ds12_eta_rdash_t_theta_j_dx += ds12_eta_rdash_dtk * dtk_dtheta_j;
+          ds12_eta_rdash_t_theta_j_plus_1_dx += ds12_eta_rdash_dtk * dtk_dtheta_j_plus_1;
+          ds1_eta_t_theta_j_dx += ds1_eta_dtk * dtk_dtheta_j;
+          ds1_eta_t_theta_j_plus_1_dx += ds1_eta_dtk * dtk_dtheta_j_plus_1;
+          ds1_eta_r_t_theta_j_dx += ds1_eta_rp_dtk * dtk_dtheta_j;
+          ds1_eta_r_t_theta_j_plus_1_dx += ds1_eta_rp_dtk * dtk_dtheta_j_plus_1;
+          ds1_eta_rdash_t_theta_j_dx += ds1_eta_rdash_dtk * dtk_dtheta_j;
+          ds1_eta_rdash_t_theta_j_plus_1_dx += ds1_eta_rdash_dtk * dtk_dtheta_j_plus_1;
+          ds32_eta_t_theta_j_dx += ds32_eta_dtk * dtk_dtheta_j;
+          ds32_eta_t_theta_j_plus_1_dx += ds32_eta_dtk * dtk_dtheta_j_plus_1;
+          ds32_eta_r_t_theta_j_dx += ds32_eta_rp_dtk * dtk_dtheta_j;
+          ds32_eta_r_t_theta_j_plus_1_dx += ds32_eta_rp_dtk * dtk_dtheta_j_plus_1;
+          ds32_eta_rdash_t_theta_j_dx += ds32_eta_rdash_dtk * dtk_dtheta_j;
+          ds32_eta_rdash_t_theta_j_plus_1_dx += ds32_eta_rdash_dtk * dtk_dtheta_j_plus_1;
+        }
+      }
     }
     s12 += half_theta_range * s12_planet;
     s1 += half_theta_range * s1_planet;
     s32 += half_theta_range * s32_planet;
 
-//    if (_require_gradients == true) {
-//      // todo update consolidate above to _dz (same as above ld=0).
-//
-//      ds1_theta_j_dd += -fractions::one_half * s1_planet * dthetas_dd[_j];
-//      ds1_theta_j_plus_1_dd += fractions::one_half * s1_planet * dthetas_dd[_j + 1];
-//
-//      ds12_dd += 0.;
-//      ds32_dd += 0.;
-//
-//      ds1_dd += ds1_theta_j_dd + ds1_theta_j_plus_1_dd + half_theta_range * (
-//        ds1_zeta_zp_dd + ds1_eta_dd
-//        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dd
-//                            + ds1_zeta_zp_r_t_theta_j_dd
-//                            + ds1_eta_t_theta_j_dd
-//                            + ds1_eta_r_t_theta_j_dd
-//                            + ds1_eta_rdash_t_theta_j_dd)
-//        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dd
-//                                + ds1_zeta_zp_r_t_theta_j_plus_1_dd
-//                                + ds1_eta_t_theta_j_plus_1_dd
-//                                + ds1_eta_r_t_theta_j_plus_1_dd
-//                                + ds1_eta_rdash_t_theta_j_plus_1_dd));
-//
-//      ds12_dnu += 0.;
-//      ds1_dnu += 0.;
-//      ds32_dnu += 0.;
-//
-//      ds12_dcs.setZero();
-//      ds1_dcs.setZero();
-//      ds32_dcs.setZero();
-//    }
+    if (_require_gradients == true) {
+      // todo can we add another condition check to avoid multiplying by zero lots
+      ds12_theta_j_dd += -fractions::one_half * s12_planet * dthetas_dd[_j];
+      ds12_theta_j_plus_1_dd += fractions::one_half * s12_planet
+                                * dthetas_dd[_j + 1];
+      ds1_theta_j_dd += -fractions::one_half * s1_planet * dthetas_dd[_j];
+      ds1_theta_j_plus_1_dd += fractions::one_half * s1_planet
+                               * dthetas_dd[_j + 1];
+      ds32_theta_j_dd += -fractions::one_half * s32_planet * dthetas_dd[_j];
+      ds32_theta_j_plus_1_dd += fractions::one_half * s32_planet
+                                * dthetas_dd[_j + 1];
+
+      ds12_theta_j_dnu += -fractions::one_half * s12_planet * dthetas_dnu[_j];
+      ds12_theta_j_plus_1_dnu += fractions::one_half * s12_planet
+                                 * dthetas_dnu[_j + 1];
+      ds1_theta_j_dnu += -fractions::one_half * s1_planet * dthetas_dnu[_j];
+      ds1_theta_j_plus_1_dnu += fractions::one_half * s1_planet
+                                * dthetas_dnu[_j + 1];
+      ds32_theta_j_dnu += -fractions::one_half * s32_planet * dthetas_dnu[_j];
+      ds32_theta_j_plus_1_dnu += fractions::one_half * s32_planet
+                                 * dthetas_dnu[_j + 1];
+
+      ds12_dd += ds12_theta_j_dd + ds12_theta_j_plus_1_dd
+                + half_theta_range * (
+        ds1_zeta_zp_dd + ds12_eta_dd
+        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds12_eta_t_theta_j_dx
+                            + ds12_eta_r_t_theta_j_dx
+                            + ds12_eta_rdash_t_theta_j_dx)
+        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds12_eta_t_theta_j_plus_1_dx
+                                + ds12_eta_r_t_theta_j_plus_1_dx
+                                + ds12_eta_rdash_t_theta_j_plus_1_dx));
+      ds1_dd += ds1_theta_j_dd + ds1_theta_j_plus_1_dd
+                + half_theta_range * (
+        ds1_zeta_zp_dd + ds1_eta_dd
+        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds1_eta_t_theta_j_dx
+                            + ds1_eta_r_t_theta_j_dx
+                            + ds1_eta_rdash_t_theta_j_dx)
+        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds1_eta_t_theta_j_plus_1_dx
+                                + ds1_eta_r_t_theta_j_plus_1_dx
+                                + ds1_eta_rdash_t_theta_j_plus_1_dx));
+      ds32_dd += ds32_theta_j_dd + ds32_theta_j_plus_1_dd
+                + half_theta_range * (
+        ds1_zeta_zp_dd + ds32_eta_dd
+        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds32_eta_t_theta_j_dx
+                            + ds32_eta_r_t_theta_j_dx
+                            + ds32_eta_rdash_t_theta_j_dx)
+        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds32_eta_t_theta_j_plus_1_dx
+                                + ds32_eta_r_t_theta_j_plus_1_dx
+                                + ds32_eta_rdash_t_theta_j_plus_1_dx));
+
+      ds12_dnu += ds12_theta_j_dnu + ds12_theta_j_plus_1_dnu
+                + half_theta_range * (
+        ds1_zeta_zp_dnu + ds12_eta_dnu
+        + dthetas_dnu[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds12_eta_t_theta_j_dx
+                            + ds12_eta_r_t_theta_j_dx
+                            + ds12_eta_rdash_t_theta_j_dx)
+        + dthetas_dnu[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds12_eta_t_theta_j_plus_1_dx
+                                + ds12_eta_r_t_theta_j_plus_1_dx
+                                + ds12_eta_rdash_t_theta_j_plus_1_dx));
+      ds1_dnu += ds1_theta_j_dnu + ds1_theta_j_plus_1_dnu
+                + half_theta_range * (
+        ds1_zeta_zp_dnu + ds1_eta_dnu
+        + dthetas_dnu[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds1_eta_t_theta_j_dx
+                            + ds1_eta_r_t_theta_j_dx
+                            + ds1_eta_rdash_t_theta_j_dx)
+        + dthetas_dnu[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds1_eta_t_theta_j_plus_1_dx
+                                + ds1_eta_r_t_theta_j_plus_1_dx
+                                + ds1_eta_rdash_t_theta_j_plus_1_dx));
+      ds32_dnu += ds32_theta_j_dnu + ds32_theta_j_plus_1_dnu
+                + half_theta_range * (
+        ds1_zeta_zp_dnu + ds32_eta_dnu
+        + dthetas_dnu[_j] * (ds1_zeta_zp_t_theta_j_dx
+                            + ds1_zeta_zp_r_t_theta_j_dx
+                            + ds32_eta_t_theta_j_dx
+                            + ds32_eta_r_t_theta_j_dx
+                            + ds32_eta_rdash_t_theta_j_dx)
+        + dthetas_dnu[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
+                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+                                + ds32_eta_t_theta_j_plus_1_dx
+                                + ds32_eta_r_t_theta_j_plus_1_dx
+                                + ds32_eta_rdash_t_theta_j_plus_1_dx));
+
+      ds12_dcs.setZero();
+      ds1_dcs.setZero();
+      ds32_dcs.setZero();
+    }
   }
 }
 
@@ -1273,6 +1542,7 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
          dsn_phi_j_dnu, dsn_phi_j_plus_1_dnu,
          dsn_phi_j_theta_j_dx, dsn_phi_j_plus_1_theta_j_plus_1_dx,
          dsn_phi_j_rp_theta_j_dx, dsn_phi_j_plus_1_rp_theta_j_plus_1_dx;
+  std::complex<double> dsn_phi_j_rp_dcs[_n_rs], dsn_phi_j_plus_1_rp_dcs[_n_rs];
   if (_require_gradients == true) {
     dsn_phi_j_dd = 0., dsn_phi_j_plus_1_dd = 0.,
     dsn_phi_j_dnu = 0., dsn_phi_j_plus_1_dnu = 0.,
@@ -1331,6 +1601,13 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
       dsn_phi_j_plus_1_dd = dphi_j_plus_1_dd;
       dsn_phi_j_dnu = dphi_j_dnu;
       dsn_phi_j_plus_1_dnu = dphi_j_plus_1_dnu;
+      for (int n = -N_c; n < N_c + 1; n++) {
+        int npN_c = n + N_c;
+        double drpj_dcn = std::exp((1. * n) * 1.i * _theta_j);
+        double drpjp1_dcn = std::exp((1. * n) * 1.i * _theta_j_plus_1);
+        dsn_phi_j_rp_dcs[npN_c] += dphi_j_drp * drp_dcn;
+        dsn_phi_j_plus_1_rp_dcs[npN_c] += dphi_j_plus_1_drp * drpjp1_dcn;
+      }
 
       dsn_phi_j_theta_j_dx = dphi_j_dtheta_j;
       dsn_phi_j_plus_1_theta_j_plus_1_dx = dphi_j_plus_1_dtheta_j;
@@ -1369,6 +1646,14 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
       - (dsn_phi_j_plus_1_theta_j_plus_1_dx
          + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dnu[_j + 1];
 
+    std::complex<double> dsn_dcs[_n_rs];
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dsn_dcs[n + N_c] = dsn_phi_j_rp_dcs[n] - dsn_phi_j_plus_1_rp_dcs[n]
+        + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dcs[n][_j]
+        - (dsn_phi_j_plus_1_theta_j_plus_1_dx
+           + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dcs[n][_j + 1];
+    }
+
     if (_ld_law == limb_darkening::quadratic) {
 
       ds0_dd += fractions::one_half * dsn_dd;
@@ -1379,9 +1664,12 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
       ds1_dnu += fractions::one_third * dsn_dnu;
       ds2_dnu += fractions::one_quarter * dsn_dnu;
 
-      ds0_dcs.setZero();
-      ds1_dcs.setZero();
-      ds2_dcs.setZero();
+      for (int n = -N_c; n < N_c + 1; n++) {
+        int npN_c = n + N_c;
+        ds0_dcs(npN_c) += fractions::one_half * dsn_dcs[npN_c];
+        ds1_dcs(npN_c) += fractions::one_third * dsn_dcs[npN_c];
+        ds2_dcs(npN_c) += fractions::one_quarter * dsn_dcs[npN_c];
+      }
 
     } else {
 
@@ -1397,11 +1685,14 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
       ds32_dnu += fractions::two_sevenths * dsn_dnu;
       ds2_dnu += fractions::one_quarter * dsn_dnu;
 
-      ds0_dcs.setZero();
-      ds12_dcs.setZero();
-      ds1_dcs.setZero();
-      ds32_dcs.setZero();
-      ds2_dcs.setZero();
+      for (int n = -N_c; n < N_c + 1; n++) {
+        int npN_c = n + N_c;
+        ds0_dcs(npN_c) += fractions::one_half * dsn_dcs[npN_c];
+        ds12_dcs(npN_c) += fractions::two_fifths * dsn_dcs[npN_c];
+        ds1_dcs(npN_c) += fractions::one_third * dsn_dcs[npN_c];
+        ds32_dcs(npN_c) += fractions::two_sevenths * dsn_dcs[npN_c];
+        ds2_dcs(npN_c) += fractions::one_quarter * dsn_dcs[npN_c];
+      }
     }
   }
 }
@@ -1566,6 +1857,9 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
                           double* df_dz[]) {
 
   // Reset and pre-compute some position-specific quantities.
+  // todo can we add another condition check to avoid multiplying by zero derivatives lots
+  // todo: some intermediate derivatives may become = rather than +=
+  // todo: plus_1 to p1 maybe
   this->reset_intersections_integrals_and_derivatives();
   this->select_legendre_order(d);
   this->pre_compute_psq(d, nu);

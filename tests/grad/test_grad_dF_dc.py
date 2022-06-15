@@ -93,46 +93,46 @@ def da_p_values_dcn(p, _cs, _d, _nu, _n):
                 a_p += _cs[(p - n - 2 * N_c) + N_c]
             if _n == p - n - 2 * N_c:
                 a_p += _cs[n + N_c]
-            if _n == p - 2 * N_c + 1:
-                a_p += -d * np.exp(1j * _nu)
+        if _n == p - 2 * N_c + 1:
+            a_p += -d * np.exp(1j * _nu)
     elif N_c + 1 <= p < 2 * N_c:
         for n in range(-N_c, -N_c + p + 1):
             if _n == n:
                 a_p += _cs[(p - n - 2 * N_c) + N_c]
             if _n == p - n - 2 * N_c:
                 a_p += _cs[n + N_c]
-            if _n == p - 2 * N_c + 1:
-                a_p += -d * np.exp(1j * _nu)
-            if _n == p - 2 * N_c - 1:
-                a_p += -d * np.exp(-1j * _nu)
+        if _n == p - 2 * N_c + 1:
+            a_p += -d * np.exp(1j * _nu)
+        if _n == p - 2 * N_c - 1:
+            a_p += -d * np.exp(-1j * _nu)
     elif p == 2 * N_c:
         for n in range(-N_c, N_c + 1):
             if _n == n:
                 a_p += _cs[(p - n - 2 * N_c) + N_c]
             if _n == p - n - 2 * N_c:
                 a_p += _cs[n + N_c]
-            if _n == p - 2 * N_c + 1:
-                a_p += -d * np.exp(1j * _nu)
-            if _n == p - 2 * N_c - 1:
-                a_p += -d * np.exp(-1j * _nu)
+        if _n == p - 2 * N_c + 1:
+            a_p += -d * np.exp(1j * _nu)
+        if _n == p - 2 * N_c - 1:
+            a_p += -d * np.exp(-1j * _nu)
     elif 2 * N_c + 1 <= p < 3 * N_c:
         for n in range(-3 * N_c + p, N_c + 1):
             if _n == n:
                 a_p += _cs[(p - n - 2 * N_c) + N_c]
             if _n == p - n - 2 * N_c:
                 a_p += _cs[n + N_c]
-            if _n == p - 2 * N_c + 1:
-                a_p += -d * np.exp(1j * _nu)
-            if _n == p - 2 * N_c - 1:
-                a_p += -d * np.exp(-1j * _nu)
+        if _n == p - 2 * N_c + 1:
+            a_p += -d * np.exp(1j * _nu)
+        if _n == p - 2 * N_c - 1:
+            a_p += -d * np.exp(-1j * _nu)
     elif 3 * N_c - 0 <= p < 3 * N_c + 2:
         for n in range(-3 * N_c + p, N_c + 1):
             if _n == n:
                 a_p += _cs[(p - n - 2 * N_c) + N_c]
             if _n == p - n - 2 * N_c:
                 a_p += _cs[n + N_c]
-            if _n == p - 2 * N_c - 1:
-                a_p += -d * np.exp(-1j * _nu)
+        if _n == p - 2 * N_c - 1:
+            a_p += -d * np.exp(-1j * _nu)
     elif 3 * N_c + 2 <= p < 4 * N_c + 1:
         for n in range(-3 * N_c + p, N_c + 1):
             if _n == n:
