@@ -177,15 +177,22 @@ Fluxes::Fluxes(int ld_law,
     _zeroes_c_conv_c.resize(_len_c_conv_c);
     _zeroes_c_conv_c.setZero();
 
+    // Pre-build nested vector structure size.
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dthetas_dcs.push_back({});
+    }
+
     if (N_c != 0) {
       // Pre-build the derivatives of intersection eqn companion matrix.
       dC_dd.resize(C_shape, C_shape);
       dC_dd.setZero();
       dC_dnu.resize(C_shape, C_shape);
       dC_dnu.setZero();
+      dC_dcs.resize(_n_rs);
       for (int n = -N_c; n < N_c + 1; n++) {
-        dC_dcs[n].resize(C_shape, C_shape);
-        dC_dcs[n].setZero();
+        int npN_c = n + N_c;
+        dC_dcs(npN_c).resize(C_shape, C_shape);
+        dC_dcs(npN_c).setZero();
       }
     }
   }
@@ -452,92 +459,92 @@ std::complex<double> Fluxes::dh_j_dcn(
   if (0 <= j && j < N_c - 1) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
   } else if (N_c - 1 <= j && j < N_c + 1) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
     if (_n == j + 1 - 2 * N_c) {
-      _h_j -= _d_expinu;
+      _dh_j_dcn -= _d_expinu;
     }
   } else if (N_c + 1 <= j && j < 2 * N_c) {
     for (int n = -N_c; n < -N_c + j + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
     if (_n == j + 1 - 2 * N_c) {
-      _h_j -= _d_expinu;
+      _dh_j_dcn -= _d_expinu;
     }
     if (_n == j - 1 - 2 * N_c) {
-      _h_j -= _d_expminu;
+      _dh_j_dcn -= _d_expminu;
     }
   } else if (j == 2 * N_c) {
-    for (int n = -N_c; n < -N_c + j + 1; n++) {
+    for (int n = -N_c; n < N_c + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
     if (_n == j + 1 - 2 * N_c) {
-      _h_j -= _d_expinu;
+      _dh_j_dcn -= _d_expinu;
     }
     if (_n == j - 1 - 2 * N_c) {
-      _h_j -= _d_expminu;
+      _dh_j_dcn -= _d_expminu;
     }
   } else if (2 * N_c + 1 <= j && j < 3 * N_c) {
-    for (int n = -N_c; n < -N_c + j + 1; n++) {
+    for (int n = -3 * N_c + j; n < N_c + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
     if (_n == j + 1 - 2 * N_c) {
-      _h_j -= _d_expinu;
+      _dh_j_dcn -= _d_expinu;
     }
     if (_n == j - 1 - 2 * N_c) {
-      _h_j -= _d_expminu;
+      _dh_j_dcn -= _d_expminu;
     }
   } else if (3 * N_c <= j && j < 3 * N_c + 2) {
-    for (int n = -N_c; n < -N_c + j + 1; n++) {
+    for (int n = -3 * N_c + j; n < N_c + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
     if (_n == j - 1 - 2 * N_c) {
-      _h_j -= _d_expminu;
+      _dh_j_dcn -= _d_expminu;
     }
   } else if (3 * N_c + 2 <= j && j < 4 * N_c + 1) {
-    for (int n = -N_c; n < -N_c + j + 1; n++) {
+    for (int n = -3 * N_c + j; n < N_c + 1; n++) {
       if (_n == n) {
-        _h_j += c(j - n - N_c);
+        _dh_j_dcn += c(j - n - N_c);
       }
       if (_n == j - n - 2 * N_c) {
-        _h_j += c(n + N_c);
+        _dh_j_dcn += c(n + N_c);
       }
     }
   }
-  return _h_j;
+  return _dh_j_dcn;
 }
 
 
@@ -576,7 +583,7 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
       dthetas_dd = {dtheta_dd, -dtheta_dd};
       dthetas_dnu = {1., 1.};
       // todo check okay for nested vectors
-      dthetas_dco = {{dtheta_c0, -dtheta_c0}};
+      dthetas_dcs = {{dtheta_c0, -dtheta_c0}};
     }
   }
 
@@ -599,7 +606,6 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     std::sort(indices.begin(), indices.end(), [&](double A, double B)->bool {
       return theta_unsorted[A] < theta_unsorted[B];
     });
-    // todo check okay for nested vectors
     for (int j = 0; j < theta.size(); j++) {
       theta[j] = theta_unsorted[indices[j]];
       dthetas_dd[j] = dthetas_dd_unsorted[indices[j]];
@@ -660,7 +666,7 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
     dthetas_dd = {0., 0.};
     dthetas_dnu = {0., 0.};
     for (int n = -N_c; n < N_c + 1; n++) {
-      dthetas_dcs[n] = {0., 0.};
+      dthetas_dcs[n + N_c] = {0., 0.};
     }
   }
   return noi;
@@ -700,8 +706,9 @@ std::vector<double> Fluxes::compute_real_theta_roots(
       dC_dnu(j - 1, C_shape - 1) = (h_jm1 * this->dh_j_dnu(C_shape)
                                     - this->dh_j_dnu(j - 1) * h_4Nc) / h_4Ncs;
       for (int n = -N_c; n < N_c + 1; n++) {
-        dC_dcs[n](j - 1, C_shape - 1) = (h_jm1 * this->dh_j_dcs(C_shape, n)
-                                         - this->dh_j_dcd(j - 1, n) * h_4Nc) / h_4Ncs;
+        dC_dcs(n + N_c)(j - 1, C_shape - 1) = (
+          h_jm1 * this->dh_j_dcn(C_shape, n)
+          - this->dh_j_dcn(j - 1, n) * h_4Nc) / h_4Ncs;
       }
     }
 
@@ -714,10 +721,12 @@ std::vector<double> Fluxes::compute_real_theta_roots(
       dlambda_dd_full = e_vecs_inv * dC_dd * e_vecs;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
       dlambda_dnu_full = e_vecs_inv * dC_dnu * e_vecs;
-    std::vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>>
+    Eigen::Vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Dynamic>
       dlambda_dcs_full;
+    dlambda_dcs_full.resize(_n_rs);
     for (int n = -N_c; n < N_c + 1; n++) {
-      dlambda_dcs_full[n] = e_vecs_inv * dC_dcs[n] * e_vecs;
+      int npN_c = n + N_c;
+      dlambda_dcs_full(npN_c) = e_vecs_inv * dC_dcs(npN_c) * e_vecs;
     }
 
     // Select real thetas only, and corresponding derivatives.
@@ -734,8 +743,9 @@ std::vector<double> Fluxes::compute_real_theta_roots(
         dthetas_dnu.push_back(
           (dtheta_dlambda * dlambda_dnu_full(j, j)).real());
         for (int n = -N_c; n < N_c + 1; n++) {
-          dthetas_dcs[n].push_back(
-            (dtheta_dlambda * dlambda_dcs_full[n](j, j)).real());
+          int npN_c = n + N_c;
+          dthetas_dcs[npN_c].push_back(
+            (dtheta_dlambda * dlambda_dcs_full(npN_c)(j, j)).real());
         }
       }
     }
@@ -784,7 +794,7 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
     dthetas_dd = {0., 0.};
     dthetas_dnu = {0., 0.};
     for (int n = -N_c; n < N_c + 1; n++) {
-      dthetas_dcs[n] = {0., 0.};
+      dthetas_dcs[n + N_c] = {0., 0.};
     }
   }
   return tc;
@@ -1603,9 +1613,9 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
       dsn_phi_j_plus_1_dnu = dphi_j_plus_1_dnu;
       for (int n = -N_c; n < N_c + 1; n++) {
         int npN_c = n + N_c;
-        double drpj_dcn = std::exp((1. * n) * 1.i * _theta_j);
-        double drpjp1_dcn = std::exp((1. * n) * 1.i * _theta_j_plus_1);
-        dsn_phi_j_rp_dcs[npN_c] += dphi_j_drp * drp_dcn;
+        std::complex<double> drpj_dcn = std::exp((1. * n) * 1.i * _theta_j);
+        std::complex<double> drpjp1_dcn = std::exp((1. * n) * 1.i * _theta_j_plus_1);
+        dsn_phi_j_rp_dcs[npN_c] += dphi_j_drp * drpj_dcn;
         dsn_phi_j_plus_1_rp_dcs[npN_c] += dphi_j_plus_1_drp * drpjp1_dcn;
       }
 
@@ -1648,10 +1658,11 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
 
     std::complex<double> dsn_dcs[_n_rs];
     for (int n = -N_c; n < N_c + 1; n++) {
-      dsn_dcs[n + N_c] = dsn_phi_j_rp_dcs[n] - dsn_phi_j_plus_1_rp_dcs[n]
-        + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dcs[n][_j]
+      int npN_c = n + N_c;
+      dsn_dcs[npN_c] = dsn_phi_j_rp_dcs[npN_c] - dsn_phi_j_plus_1_rp_dcs[npN_c]
+        + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dcs[npN_c][_j]
         - (dsn_phi_j_plus_1_theta_j_plus_1_dx
-           + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dcs[n][_j + 1];
+           + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dcs[npN_c][_j + 1];
     }
 
     if (_ld_law == limb_darkening::quadratic) {

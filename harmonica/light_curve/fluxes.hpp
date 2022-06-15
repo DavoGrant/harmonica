@@ -61,7 +61,7 @@ class Fluxes {
                          dcplus_dbn, dcminus_dbn;
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
       dC_dd, dC_dnu;
-    std::vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>>
+    Eigen::Vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Dynamic>
       dC_dcs;
     std::vector<double> dthetas_dd, dthetas_dnu;
     std::vector<std::vector<std::complex<double>>> dthetas_dcs;
@@ -196,6 +196,7 @@ class Fluxes {
      * intersection equation with respect to cn, dh_j_dcn.
      *
      * @param j polynomial term exponent, 0 <= j <= 4N_c.
+     * @param _n dcn term.
      * @return complex dh_j_dcn coefficient.
      */
     std::complex<double> dh_j_dcn(int j, int _n);
