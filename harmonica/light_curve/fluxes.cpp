@@ -1959,15 +1959,19 @@ void Fluxes::select_legendre_order(const double &d) {
 
 void Fluxes::reset_intersections_integrals_and_derivatives() {
   // Reset intersections.
-  theta = {};
-  theta_type = {};
-  dthetas_dd = {};
+  theta.clear();
+  theta_type.clear();
 
   // Reset integrals.
   s0 = 0., s12 = 0., s1 = 0., s32 = 0., s2 = 0.;
 
   if (_require_gradients == true) {
     // Reset derivatives.
+    dthetas_dd.clear();
+    dthetas_dnu.clear();
+    for (int n = -N_c; n < N_c + 1; n++) {
+      dthetas_dcs[n + N_c].clear();
+    }
     ds0_dd = 0., ds12_dd = 0., ds1_dd = 0., ds32_dd = 0., ds2_dd = 0.;
     ds0_dnu = 0., ds12_dnu = 0., ds1_dnu = 0., ds32_dnu = 0., ds2_dnu = 0.;
     ds0_dcs.setZero(), ds12_dcs.setZero(), ds1_dcs.setZero(),
