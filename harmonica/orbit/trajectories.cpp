@@ -1,5 +1,6 @@
 #include <cmath>
 #include <tuple>
+#include <iostream>
 
 #include "trajectories.hpp"
 #include "kepler.hpp"
@@ -45,6 +46,12 @@ void OrbitTrajectories::compute_circular_orbit(
   // Compute location of planet centre relative to stellar centre.
   const double x = _a * cos_M;
   const double y = _a *_cos_inc * sin_M;
+  const double z = _a * _sin_inc * sin_M;
+  if (z < 0.) {
+    // Planet behind star, no transit, and no need for derivatives.
+    d = intersections::behind;
+    return;
+  }
 
   // Compute angle between x-axis and planet velocity.
   const double atan_mcsM = std::atan(-cos_M / sin_M);
@@ -129,7 +136,13 @@ void OrbitTrajectories::compute_eccentric_orbit(
   const double sin_fpw = cos_f * _sin_omega + sin_f * _cos_omega;
   const double cos_fpw = cos_f * _cos_omega - sin_f * _sin_omega;
   const double x = r * cos_fpw;
-  const double y = r *_cos_inc * sin_fpw;
+  const double y = r * _cos_inc * sin_fpw;
+  const double z = r * _sin_inc * sin_fpw;
+  if (z < 0.) {
+    // Planet behind star, no transit, and no need for derivatives.
+    d = intersections::behind;
+    return;
+  }
 
   // Compute angle between x-axis and planet velocity.
   const double atan_mcs_fpw = std::atan(-cos_fpw / sin_fpw);
