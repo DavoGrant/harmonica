@@ -1,6 +1,5 @@
 #include <cmath>
 #include <vector>
-#include <iostream>
 #include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -623,7 +622,10 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
     // Duplicate first derivatives at end of vector.
     dthetas_dd.push_back(dthetas_dd[0]);
     dthetas_dnu.push_back(dthetas_dnu[0]);
-    dthetas_dcs.push_back(dthetas_dcs[0]);
+    for (int n = -N_c; n < N_c + 1; n++) {
+      int npN_c = n + N_c;
+      dthetas_dcs[npN_c].push_back(dthetas_dcs[npN_c][0]);
+    }
   }
 
   // Ensure theta vector spans a closed loop, 2pi in total.
@@ -743,7 +745,7 @@ std::vector<double> Fluxes::compute_real_theta_roots(
           && e_vals_abs < tolerance::unit_circle_hi) {
         _theta.push_back(std::arg(e_vals(j)));
 
-        // dtheta_dd.
+        // dtheta_dd, dtheta_dnu, dtheta_dcs.
         std::complex<double> dtheta_dlambda = -1.i / e_vals(j);
         dthetas_dd.push_back(
           (dtheta_dlambda * dlambda_dd_full(j, j)).real());
@@ -752,7 +754,7 @@ std::vector<double> Fluxes::compute_real_theta_roots(
         for (int n = -N_c; n < N_c + 1; n++) {
           int npN_c = n + N_c;
           dthetas_dcs[npN_c].push_back(
-            (dtheta_dlambda * dlambda_dcs_full(npN_c)(j, j)).real());
+            dtheta_dlambda * dlambda_dcs_full(npN_c)(j, j));
         }
       }
     }
@@ -1023,12 +1025,12 @@ void Fluxes::analytic_even_terms(int _j, int theta_type_j, double &_theta_j,
   if (_require_gradients == true) {
 
     Eigen::Vector<std::complex<double>, 3> beta_sin_prime = _beta_sin0;
-    beta_sin(0) *= cos_nu + sin_nu * 1.i;
-    beta_sin(2) *= cos_nu - sin_nu * 1.i;
+    beta_sin_prime(0) *= cos_nu + sin_nu * 1.i;
+    beta_sin_prime(2) *= cos_nu - sin_nu * 1.i;
 
     Eigen::Vector<std::complex<double>, 3> beta_cos_prime = _beta_cos0;
-    beta_cos(0) *= -sin_nu + cos_nu * 1.i;
-    beta_cos(2) *= -sin_nu - cos_nu * 1.i;
+    beta_cos_prime(0) *= -sin_nu + cos_nu * 1.i;
+    beta_cos_prime(2) *= -sin_nu - cos_nu * 1.i;
 
     Eigen::Vector<std::complex<double>, Eigen::Dynamic>
       beta_cos_prime_conv_c = complex_convolve(
@@ -1197,10 +1199,10 @@ void Fluxes::analytic_even_terms(int _j, int theta_type_j, double &_theta_j,
       int npN_c = n + N_c;
       ds0_dcs(npN_c) += fractions::one_half * (
         ds0_q0_dcs[npN_c] + ds0_theta_j_dx * dthetas_dcs[npN_c][_j]
-        + ds0_theta_j_plus_1_dx * dthetas_dcs[npN_c][_j + 1]).real();
+        + ds0_theta_j_plus_1_dx * dthetas_dcs[npN_c][_j + 1]);
       ds2_dcs(npN_c) += fractions::one_quarter * (
         ds2_q2_dcs[npN_c] + ds2_theta_j_dx * dthetas_dcs[npN_c][_j]
-        + ds2_theta_j_plus_1_dx * dthetas_dcs[npN_c][_j + 1]).real();
+        + ds2_theta_j_plus_1_dx * dthetas_dcs[npN_c][_j + 1]);
     }
   }
 }
@@ -1766,22 +1768,22 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
 
   if (_require_gradients == true) {
 
-    double dsn_dd = dsn_phi_j_dd - dsn_phi_j_plus_1_dd
-      + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dd[_j]
-      - (dsn_phi_j_plus_1_theta_j_plus_1_dx
+    double dsn_dd = -dsn_phi_j_dd + dsn_phi_j_plus_1_dd
+      - (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dd[_j]
+      + (dsn_phi_j_plus_1_theta_j_plus_1_dx
          + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dd[_j + 1];
 
-    double dsn_dnu = dsn_phi_j_dnu - dsn_phi_j_plus_1_dnu
-      + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dnu[_j]
-      - (dsn_phi_j_plus_1_theta_j_plus_1_dx
+    double dsn_dnu = -dsn_phi_j_dnu + dsn_phi_j_plus_1_dnu
+      - (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dnu[_j]
+      + (dsn_phi_j_plus_1_theta_j_plus_1_dx
          + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dnu[_j + 1];
 
     std::complex<double> dsn_dcs[_n_rs];
     for (int n = -N_c; n < N_c + 1; n++) {
       int npN_c = n + N_c;
-      dsn_dcs[npN_c] = dsn_phi_j_rp_dcs[npN_c] - dsn_phi_j_plus_1_rp_dcs[npN_c]
-        + (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dcs[npN_c][_j]
-        - (dsn_phi_j_plus_1_theta_j_plus_1_dx
+      dsn_dcs[npN_c] = -dsn_phi_j_rp_dcs[npN_c] + dsn_phi_j_plus_1_rp_dcs[npN_c]
+        - (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * dthetas_dcs[npN_c][_j]
+        + (dsn_phi_j_plus_1_theta_j_plus_1_dx
            + dsn_phi_j_plus_1_rp_theta_j_plus_1_dx) * dthetas_dcs[npN_c][_j + 1];
     }
 
@@ -1832,7 +1834,7 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
 void Fluxes::f_derivatives(const double* dd_dz[], const double* dnu_dz[],
                            double* df_dz[]) {
 
-  double dalpha_dI0 = alpha;
+  double dalpha_dI0 = alpha / I_0;
   if (_ld_law == limb_darkening::quadratic) {
 
     // df_dt0, df_dp, df_da, df_di, df_de, df_dw.
