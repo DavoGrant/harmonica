@@ -20,7 +20,11 @@ OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
   _sin_inc = std::sin(inc);
   _cos_inc = std::cos(inc);
   _ecc = ecc;
-  if (ecc != 0.) {
+  if (ecc == 0.) {
+    _omega = 0.;
+    _sin_omega = 0.;
+    _cos_omega = 1.;
+  } else {
     _omega = omega;
     _sin_omega = std::sin(omega);
     _cos_omega = std::cos(omega);
