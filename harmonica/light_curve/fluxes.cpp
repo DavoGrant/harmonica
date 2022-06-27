@@ -5,6 +5,7 @@
 #include <Eigen/Eigenvalues>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <iostream>
 
 #include "fluxes.hpp"
 #include "../constants/constants.hpp"
@@ -12,9 +13,7 @@
 using namespace std::complex_literals;
 
 
-Fluxes::Fluxes(int ld_law,
-               py::array_t<double, py::array::c_style> us,
-               py::array_t<double, py::array::c_style> rs,
+Fluxes::Fluxes(int ld_law, double us[], int n_rs, double rs[],
                int pnl_c, int pnl_e, bool require_gradients) {
 
   // Set switches.
@@ -22,20 +21,17 @@ Fluxes::Fluxes(int ld_law,
   _precision_nl_edge = pnl_e;
   _require_gradients = require_gradients;
 
-  // Unpack python arrays.
-  auto us_ = us.unchecked<1>();
-  auto rs_ = rs.unchecked<1>();
-  _n_rs = rs_.shape(0);  // Always odd.
+  _n_rs = n_rs;  // Always odd.
 
   _ld_law = ld_law;
   if (_ld_law == limb_darkening::quadratic) {
     // Normalisation.
-    double I_0_bt = (1. - us_(0) / 3. - us_(1) / 6.);
+    double I_0_bt = (1. - us[0] / 3. - us[1] / 6.);
     I_0_bts = I_0_bt * I_0_bt;
     I_0 = 1. / (fractions::pi * I_0_bt);
 
     // Quadratic limb-darkening law.
-    Eigen::Vector<double, 3> u {1., us_(0), us_(1)};
+    Eigen::Vector<double, 3> u {1., us[0], us[1]};
     Eigen::Matrix<double, 3, 3> B {{1., -1., -1.},
                                    {0., 1., 2.},
                                    {0., 0., -1.}};
@@ -45,13 +41,13 @@ Fluxes::Fluxes(int ld_law,
 
   } else {
     // Normalisation.
-    double I_0_bt = (1. - us_(0) / 5. - us_(1) / 3.
-                     - 3. * us_(2) / 7. - us_(3) / 2.);
+    double I_0_bt = (1. - us[0] / 5. - us[1] / 3.
+                     - 3. * us[2] / 7. - us[3] / 2.);
     I_0_bts = I_0_bt * I_0_bt;
     I_0 = 1. / (fractions::pi * I_0_bt);
 
     // Non-linear limb-darkening law.
-    Eigen::Vector<double, 5> u {1., us_(0), us_(1), us_(2), us_(3)};
+    Eigen::Vector<double, 5> u {1., us[0], us[1], us[2], us[3]};
     Eigen::Matrix<double, 5, 5> B {{1., -1., -1., -1., -1.},
                                    {0., 1., 0., 0., 0.},
                                    {0., 0., 1., 0., 0.},
@@ -65,10 +61,10 @@ Fluxes::Fluxes(int ld_law,
   // Convert cosine, sine to complex Fourier coefficients.
   N_c = (_n_rs - 1) * fractions::one_half;
   c.resize(_n_rs);
-  c(N_c) = rs_(0);
+  c(N_c) = rs[0];
   for (int n = 0; n < N_c; n++) {
-    double a_real = rs_(_n_rs - 2 - 2 * n);
-    double b_imag = rs_(_n_rs - 1 - 2 * n);
+    double a_real = rs[_n_rs - 2 - 2 * n];
+    double b_imag = rs[_n_rs - 1 - 2 * n];
     c(n) = (a_real + b_imag * 1.i) * fractions::one_half;
     c(_n_rs - 1 - n) = (a_real - b_imag * 1.i) * fractions::one_half;
   }
@@ -143,9 +139,9 @@ Fluxes::Fluxes(int ld_law,
       dI0_du1 = 1. / (fractions::threepi * I_0_bts);
       dI0_du2 = 1. / (fractions::sixpi * I_0_bts);
 
-      dalpha_ds0 = I_0 * (1. - us_(0) - us_(1));
-      dalpha_ds1 = I_0 * (us_(0) + 2. * us_(1));
-      dalpha_ds2 = -I_0 * us_(1);
+      dalpha_ds0 = I_0 * (1. - us[0] - us[1]);
+      dalpha_ds1 = I_0 * (us[0] + 2. * us[1]);
+      dalpha_ds2 = -I_0 * us[1];
 
     } else {
       dI0_du1 = 1. / (fractions::fivepi * I_0_bts);
@@ -153,11 +149,11 @@ Fluxes::Fluxes(int ld_law,
       dI0_du3 = 1. / (fractions::sevenpi_d_3 * I_0_bts);
       dI0_du4 = 1. / (fractions::twopi * I_0_bts);
 
-      dalpha_ds0 = I_0 * (1. - us_(0) - us_(1) - us_(2) - us_(3));
-      dalpha_ds12 = I_0 * us_(0);
-      dalpha_ds1 = I_0 * us_(1);
-      dalpha_ds32 = I_0 * us_(2);
-      dalpha_ds2 = I_0 * us_(3);
+      dalpha_ds0 = I_0 * (1. - us[0] - us[1] - us[2] - us[3]);
+      dalpha_ds12 = I_0 * us[0];
+      dalpha_ds1 = I_0 * us[1];
+      dalpha_ds32 = I_0 * us[2];
+      dalpha_ds2 = I_0 * us[3];
     }
 
     df_dcs.resize(_n_rs);
@@ -586,7 +582,6 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
       double dtheta_c0 = dtheta_dacos_arg * dacos_arg_dc0;
       dthetas_dd = {dtheta_dd, -dtheta_dd};
       dthetas_dnu = {1., 1.};
-      // todo check okay for nested vectors
       dthetas_dcs = {{dtheta_c0, -dtheta_c0}};
     }
   }
@@ -1214,7 +1209,6 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
   double s1_planet = 0.;
   double half_theta_range = (_theta_j_plus_1 - _theta_j) / 2.;
 
-  // todo some of these no need to be defined, can just be = in main body
   double ds1_zeta_zp_dd = 0., ds1_eta_dd = 0.,
          ds1_theta_j_dd = 0., ds1_theta_j_plus_1_dd = 0.,
          ds1_zeta_zp_dnu = 0., ds1_eta_dnu = 0.,
@@ -1831,80 +1825,70 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
 }
 
 
-void Fluxes::f_derivatives(const double* dd_dz[], const double* dnu_dz[],
-                           double* df_dz[]) {
+void Fluxes::f_derivatives(double df_dy[]) {
 
   double dalpha_dI0 = alpha / I_0;
   if (_ld_law == limb_darkening::quadratic) {
 
-    // df_dt0, df_dp, df_da, df_di, df_de, df_dw.
-    double df_dd = df_dalpha * (dalpha_ds0 * ds0_dd + dalpha_ds1 * ds1_dd
-                                + dalpha_ds2 * ds2_dd);
-    double df_dnu = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds1 * ds1_dnu
-                                 + dalpha_ds2 * ds2_dnu);
-    *df_dz[0] = df_dd * *dd_dz[0] + df_dnu * *dnu_dz[0];
-    *df_dz[1] = df_dd * *dd_dz[1] + df_dnu * *dnu_dz[1];
-    *df_dz[2] = df_dd * *dd_dz[2] + df_dnu * *dnu_dz[2];
-    *df_dz[3] = df_dd * *dd_dz[3] + df_dnu * *dnu_dz[3];
-    *df_dz[4] = df_dd * *dd_dz[4] + df_dnu * *dnu_dz[4];
-    *df_dz[5] = df_dd * *dd_dz[5] + df_dnu * *dnu_dz[5];
+    // df_dd, df_dnu.
+    df_dy[0] = df_dalpha * (dalpha_ds0 * ds0_dd
+                            + dalpha_ds1 * ds1_dd
+                            + dalpha_ds2 * ds2_dd);
+    df_dy[1] = df_dalpha * (dalpha_ds0 * ds0_dnu
+                            + dalpha_ds1 * ds1_dnu
+                            + dalpha_ds2 * ds2_dnu);
 
     // df_du1, df_du2.
     double dalpha_du1 = I_0 * (s1 - s0);
     double dalpha_du2 = I_0 * (2. * s1 - s0 - s2);
-    *df_dz[6] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
-    *df_dz[7] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
+    df_dy[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
+    df_dy[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
 
     // df_drs.
     df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds1 * ds1_dcs
                           + dalpha_ds2 * ds2_dcs);
     for (int n = 0; n < N_c + 1; n++) {
       if (n == 0){
-        *df_dz[8] = (df_dcs(N_c) * dc0_da0).real();
+        df_dy[4] = (df_dcs(N_c) * dc0_da0).real();
       } else {
-        *df_dz[7 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
-                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        *df_dz[8 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
-                             + df_dcs(-n + N_c) * dcminus_dbn).real();
+        df_dy[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+                            + df_dcs(-n + N_c) * dcminus_dan).real();
+        df_dy[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+                            + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }
   } else {
 
-    // df_dt0, df_dp, df_da, df_di, df_de, df_dw.
-    double df_dd = df_dalpha * (
-      dalpha_ds0 * ds0_dd + dalpha_ds12 * ds12_dd + dalpha_ds1 * ds1_dd
-      + dalpha_ds32 * ds32_dd + dalpha_ds2 * ds2_dd);
-    double df_dnu = df_dalpha * (
-      dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu + dalpha_ds1 * ds1_dnu
-      + dalpha_ds32 * ds32_dnu + dalpha_ds2 * ds2_dnu);
-    *df_dz[0] = df_dd * *dd_dz[0] + df_dnu * *dnu_dz[0];
-    *df_dz[1] = df_dd * *dd_dz[1] + df_dnu * *dnu_dz[1];
-    *df_dz[2] = df_dd * *dd_dz[2] + df_dnu * *dnu_dz[2];
-    *df_dz[3] = df_dd * *dd_dz[3] + df_dnu * *dnu_dz[3];
-    *df_dz[4] = df_dd * *dd_dz[4] + df_dnu * *dnu_dz[4];
-    *df_dz[5] = df_dd * *dd_dz[5] + df_dnu * *dnu_dz[5];
+    // df_dd, df_dnu.
+    df_dy[0] = df_dalpha * (dalpha_ds0 * ds0_dd + dalpha_ds12 * ds12_dd
+                            + dalpha_ds1 * ds1_dd + dalpha_ds32 * ds32_dd
+                            + dalpha_ds2 * ds2_dd);
+    df_dy[1] = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu
+                            + dalpha_ds1 * ds1_dnu + dalpha_ds32 * ds32_dnu
+                            + dalpha_ds2 * ds2_dnu);
 
     // df_du1, df_du2, df_du3, df_du4.
-    double dalpha_du1 = I_0 * (s1 - s0);
-    double dalpha_du2 = I_0 * (s12 - s0);
-    double dalpha_du3 = I_0 * (s1 - s0);
-    double dalpha_du4 = I_0 * (s32 - s0);
-    *df_dz[6] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
-    *df_dz[7] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
-    *df_dz[8] = df_dalpha * (dalpha_dI0 * dI0_du3 + dalpha_du3);
-    *df_dz[9] = df_dalpha * (dalpha_dI0 * dI0_du4 + dalpha_du4);
+    double dalpha_du1 = I_0 * (s12 - s0);
+    double dalpha_du2 = I_0 * (s1 - s0);
+    double dalpha_du3 = I_0 * (s32 - s0);
+    double dalpha_du4 = I_0 * (s2 - s0);
+    df_dy[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
+    df_dy[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
+    df_dy[4] = df_dalpha * (dalpha_dI0 * dI0_du3 + dalpha_du3);
+    df_dy[5] = df_dalpha * (dalpha_dI0 * dI0_du4 + dalpha_du4);
 
     // df_drs.
-    df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds1 * ds1_dcs
+    df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds12 * ds12_dcs
+                          + dalpha_ds1 * ds1_dcs + dalpha_ds32 * ds32_dcs
                           + dalpha_ds2 * ds2_dcs);
     for (int n = 0; n < N_c + 1; n++) {
       if (n == 0){
-        *df_dz[10] = (df_dcs(N_c) * dc0_da0).real();
+        df_dy[6] = (df_dcs(N_c) * dc0_da0).real();
       } else {
-        *df_dz[9 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
-                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        *df_dz[10 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
-                              + df_dcs(-n + N_c) * dcminus_dbn).real();
+        df_dy[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+                            + df_dcs(-n + N_c) * dcminus_dan).real();
+        df_dy[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+                            + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }
   }
@@ -1989,39 +1973,39 @@ double Fluxes::rp_theta(double &_theta) {
 }
 
 
-void Fluxes::transit_flux(const double &d, const double &nu, double &f,
-                          const double* dd_dz[], const double* dnu_dz[],
-                          double* df_dz[]) {
+void Fluxes::transit_flux(const double &d, const double &z, const double &nu,
+                          double &f, double df_dy[]) {
 
   // Reset and pre-compute some position-specific quantities.
-  // todo can we add another condition check to avoid multiplying by zero derivatives lots
-  // todo: some intermediate derivatives may become = rather than +=
-  // todo: plus_1 to p1 maybe
   this->reset_intersections_integrals_and_derivatives();
   this->select_legendre_order(d);
   this->pre_compute_psq(d, nu);
 
-  // Find planet-stellar limb intersections.
-  this->find_intersections_theta(d, nu);
+  if (z > 0.) {
+    // Find planet-stellar limb intersections.
+    this->find_intersections_theta(d, nu);
 
-  // Iterate thetas in adjacent pairs around the enclosed overlap region.
-  for (int j = 0; j < theta_type.size(); j++) {
+    // Iterate thetas in adjacent pairs around the enclosed overlap region.
+    for (int j = 0; j < theta_type.size(); j++) {
 
-    if (theta_type[j] == intersections::planet
-        || theta_type[j] == intersections::entire_planet) {
-      // Line integrals, s_n, along planet limb segment.
-      this->s_planet(j, theta_type[j], theta[j], theta[j + 1], d, nu);
+      if (theta_type[j] == intersections::planet
+          || theta_type[j] == intersections::entire_planet) {
+        // Line integrals, s_n, along planet limb segment.
+        this->s_planet(j, theta_type[j], theta[j], theta[j + 1], d, nu);
 
-    } else if (theta_type[j] == intersections::star
-               || theta_type[j] == intersections::entire_star) {
-      // Line integrals, s_n, along stellar limb segment.
-      this->s_star(j, theta_type[j], theta[j], theta[j + 1], d, nu);
+      } else if (theta_type[j] == intersections::star
+                 || theta_type[j] == intersections::entire_star) {
+        // Line integrals, s_n, along stellar limb segment.
+        this->s_star(j, theta_type[j], theta[j], theta[j + 1], d, nu);
 
-    } else {
-      // Planet is beyond the stellar disc.
-      break;
+      } else {
+        // Planet is beyond the stellar disc.
+      }
     }
+  } else {
+    // Planet behind star, only eclipses.
   }
+
 
   // Compute transit flux: alpha=I0sTp.
   if (_ld_law == limb_darkening::quadratic) {
@@ -2033,6 +2017,6 @@ void Fluxes::transit_flux(const double &d, const double &nu, double &f,
   f = 1. - alpha;
 
   if (_require_gradients == true) {
-    this->f_derivatives(dd_dz, dnu_dz, df_dz);
+    this->f_derivatives(df_dy);
   }
 }

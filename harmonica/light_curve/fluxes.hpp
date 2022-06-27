@@ -394,14 +394,10 @@ class Fluxes {
      * Compute model derivatives: the flux with respect to the model
      * input parameters d, nu, {us}, and {rs}.
      *
-     * @param dd_dz derivatives array dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz derivatives array dnu/dz z={t0, p, a, i, e, w}.
-     * @param df_dz empty derivatives array df/dy y={t0, p, a, i, e, w,
-                                                     {us}, {rs}}.
+     * @param df_dy empty derivatives array df/dy y={d, nu, {us}, {rs}}.
      * @return void.
      */
-    void f_derivatives(const double* dd_dz[], const double* dnu_dz[],
-                       double* df_dz[]);
+    void f_derivatives(double df_dy[]);
 
     /**
      * Select the order of legendre polynomial to use in numerical
@@ -429,14 +425,13 @@ class Fluxes {
      *
      * @param ld_law limb darkening law, 0=quadratic, 1=non-linear.
      * @param us array of stellar limb darkening coefficients [].
+     * @param n_rs number of harmonic coefficients.
      * @param rs array of planet radius harmonic coefficients [stellar radii].
      * @param pnl_c N_l precision for planet inside stellar disc.
      * @param pnl_e N_l precision for planet intersecting stellar disc.
      * @param require_gradients derivatives switch.
      */
-    Fluxes(int ld_law,
-           py::array_t<double, py::array::c_style> us,
-           py::array_t<double, py::array::c_style> rs,
+    Fluxes(int ld_law, double us[], int n_rs, double rs[],
            int pnl_c, int pnl_e, bool require_gradients);
 
     /**
@@ -451,17 +446,14 @@ class Fluxes {
      * Compute normalised transit flux.
      *
      * @param d planet-star centre separation [stellar radii].
+     * @param z distance from sky-plane, if z < 0 no transits [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @param f empty normalised light curve flux [].
-     * @param dd_dz derivatives array dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz derivatives array dnu/dz z={t0, p, a, i, e, w}.
-     * @param df_dz empty derivatives array df/dy y={t0, p, a, i, e, w,
-                                                     {us}, {rs}}.
+     * @param df_dy empty derivatives array df/dy y={d, nu, {us}, {rs}}.
      * @return void.
      */
-    void transit_flux(const double &d, const double &nu, double &f,
-                      const double* dd_dz[], const double* dnu_dz[],
-                      double* df_dz[]);
+    void transit_flux(const double &d, const double &z, const double &nu,
+                      double &f, double df_dy[]);
 
 
 };
