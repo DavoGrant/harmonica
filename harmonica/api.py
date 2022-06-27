@@ -72,6 +72,10 @@ class HarmonicaTransit(object):
         # Planet parameters.
         self._r = None
 
+        # todo: update api for new structure.
+        # todo: remove redundancy in psotion and derivative arrays.
+        # todo: no require gradients flag anymore.
+
         # Evaluation arrays.
         if times is not None:
             self.times = np.ascontiguousarray(times, dtype=np.float64)
@@ -89,10 +93,10 @@ class HarmonicaTransit(object):
 
         self._require_gradients = require_gradients
         n_od = self.ds.shape + (6,)
-        self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
-        self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
+        self.ds_grad = np.zeros(n_od, dtype=np.float64, order='C')
+        self.nus_grad = np.zeros(n_od, dtype=np.float64, order='C')
         n_lcd = self.ds.shape + (6 + 3 + 5,)
-        self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
+        self.lc_grad = np.zeros(n_lcd, dtype=np.float64, order='C')
 
         # Precision: number of legendre roots at centre and edges.
         self._pnl_c = pnl_c

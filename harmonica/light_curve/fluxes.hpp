@@ -394,10 +394,10 @@ class Fluxes {
      * Compute model derivatives: the flux with respect to the model
      * input parameters d, nu, {us}, and {rs}.
      *
-     * @param df_dy empty derivatives array df/dy y={d, nu, {us}, {rs}}.
+     * @param df_dz empty derivatives array df/dz z={d, nu, {us}, {rs}}.
      * @return void.
      */
-    void f_derivatives(double df_dy[]);
+    void f_derivatives(double df_dz[]);
 
     /**
      * Select the order of legendre polynomial to use in numerical
@@ -449,11 +449,11 @@ class Fluxes {
      * @param z distance from sky-plane, if z < 0 no transits [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @param f empty normalised light curve flux [].
-     * @param df_dy empty derivatives array df/dy y={d, nu, {us}, {rs}}.
+     * @param df_dz empty derivatives array df/dz z={d, nu, {us}, {rs}}.
      * @return void.
      */
     void transit_flux(const double &d, const double &z, const double &nu,
-                      double &f, double df_dy[]);
+                      double &f, double df_dz[]);
 
 
 };

@@ -1825,45 +1825,45 @@ void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
 }
 
 
-void Fluxes::f_derivatives(double df_dy[]) {
+void Fluxes::f_derivatives(double df_dz[]) {
 
   double dalpha_dI0 = alpha / I_0;
   if (_ld_law == limb_darkening::quadratic) {
 
     // df_dd, df_dnu.
-    df_dy[0] = df_dalpha * (dalpha_ds0 * ds0_dd
+    df_dz[0] = df_dalpha * (dalpha_ds0 * ds0_dd
                             + dalpha_ds1 * ds1_dd
                             + dalpha_ds2 * ds2_dd);
-    df_dy[1] = df_dalpha * (dalpha_ds0 * ds0_dnu
+    df_dz[1] = df_dalpha * (dalpha_ds0 * ds0_dnu
                             + dalpha_ds1 * ds1_dnu
                             + dalpha_ds2 * ds2_dnu);
 
     // df_du1, df_du2.
     double dalpha_du1 = I_0 * (s1 - s0);
     double dalpha_du2 = I_0 * (2. * s1 - s0 - s2);
-    df_dy[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
-    df_dy[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
+    df_dz[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
+    df_dz[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
 
     // df_drs.
     df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds1 * ds1_dcs
                           + dalpha_ds2 * ds2_dcs);
     for (int n = 0; n < N_c + 1; n++) {
       if (n == 0){
-        df_dy[4] = (df_dcs(N_c) * dc0_da0).real();
+        df_dz[4] = (df_dcs(N_c) * dc0_da0).real();
       } else {
-        df_dy[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+        df_dz[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        df_dy[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+        df_dz[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
                             + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }
   } else {
 
     // df_dd, df_dnu.
-    df_dy[0] = df_dalpha * (dalpha_ds0 * ds0_dd + dalpha_ds12 * ds12_dd
+    df_dz[0] = df_dalpha * (dalpha_ds0 * ds0_dd + dalpha_ds12 * ds12_dd
                             + dalpha_ds1 * ds1_dd + dalpha_ds32 * ds32_dd
                             + dalpha_ds2 * ds2_dd);
-    df_dy[1] = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu
+    df_dz[1] = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu
                             + dalpha_ds1 * ds1_dnu + dalpha_ds32 * ds32_dnu
                             + dalpha_ds2 * ds2_dnu);
 
@@ -1872,10 +1872,10 @@ void Fluxes::f_derivatives(double df_dy[]) {
     double dalpha_du2 = I_0 * (s1 - s0);
     double dalpha_du3 = I_0 * (s32 - s0);
     double dalpha_du4 = I_0 * (s2 - s0);
-    df_dy[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
-    df_dy[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
-    df_dy[4] = df_dalpha * (dalpha_dI0 * dI0_du3 + dalpha_du3);
-    df_dy[5] = df_dalpha * (dalpha_dI0 * dI0_du4 + dalpha_du4);
+    df_dz[2] = df_dalpha * (dalpha_dI0 * dI0_du1 + dalpha_du1);
+    df_dz[3] = df_dalpha * (dalpha_dI0 * dI0_du2 + dalpha_du2);
+    df_dz[4] = df_dalpha * (dalpha_dI0 * dI0_du3 + dalpha_du3);
+    df_dz[5] = df_dalpha * (dalpha_dI0 * dI0_du4 + dalpha_du4);
 
     // df_drs.
     df_dcs = df_dalpha * (dalpha_ds0 * ds0_dcs + dalpha_ds12 * ds12_dcs
@@ -1883,11 +1883,11 @@ void Fluxes::f_derivatives(double df_dy[]) {
                           + dalpha_ds2 * ds2_dcs);
     for (int n = 0; n < N_c + 1; n++) {
       if (n == 0){
-        df_dy[6] = (df_dcs(N_c) * dc0_da0).real();
+        df_dz[6] = (df_dcs(N_c) * dc0_da0).real();
       } else {
-        df_dy[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
+        df_dz[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        df_dy[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+        df_dz[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
                             + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }
@@ -1974,7 +1974,7 @@ double Fluxes::rp_theta(double &_theta) {
 
 
 void Fluxes::transit_flux(const double &d, const double &z, const double &nu,
-                          double &f, double df_dy[]) {
+                          double &f, double df_dz[]) {
 
   // Reset and pre-compute some position-specific quantities.
   this->reset_intersections_integrals_and_derivatives();
@@ -2017,6 +2017,6 @@ void Fluxes::transit_flux(const double &d, const double &z, const double &nu,
   f = 1. - alpha;
 
   if (_require_gradients == true) {
-    this->f_derivatives(df_dy);
+    this->f_derivatives(df_dz);
   }
 }

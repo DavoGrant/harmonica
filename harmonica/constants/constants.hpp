@@ -37,7 +37,7 @@ namespace fractions {
   const double twopi = M_PI * 2.;
   const double threepi = M_PI * 3.;
   const double fourpi = M_PI * 4.;
-  const double fivepi = M_PI * 4.;
+  const double fivepi = M_PI * 5.;
   const double sixpi = M_PI * 6.;
 
 }
