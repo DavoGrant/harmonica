@@ -45,36 +45,38 @@ class OrbitTrajectories {
      * The separation distance, d, is between the planet and stellar centres
      * and the angle, nu, is between the planet's velocity and the stellar
      * centre. Both quantities are computed in the plane of the sky.
-     * Optionally, the partial derivatives dd/dz and dnu/dz, for z in the
+     * Optionally, the partial derivatives dd/dx and dnu/dx, for z in the
      * set {t0, p, a, i} may be computed.
      *
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
+     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i}.
-     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i}.
+     * @param dd_dx empty derivatives array dd/dx z={t0, p, a, i}.
+     * @param dnu_dx empty derivatives array dnu/dx z={t0, p, a, i}.
      * @return void.
      */
-    void compute_circular_orbit(const double &time, double &d, double &nu,
-                                double* dd_dz[], double* dnu_dz[]);
+    void compute_circular_orbit(const double &time, double &d, double &z,
+                                double &nu, double dd_dx[], double dnu_dx[]);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
      * The separation distance, d, is between the planet and stellar centres
      * and the angle, nu, is between the planet's velocity and the stellar
      * centre. Both quantities are computed in the plane of the sky.
-     * Optionally, the partial derivatives dd/dz and dnu/dz, for z in the
+     * Optionally, the partial derivatives dd/dx and dnu/dx, for z in the
      * set {t0, p, a, i, e, w} may be computed.
      *
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
+     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i, e, w}.
+     * @param dd_dx empty derivatives array dd/dx z={t0, p, a, i, e, w}.
+     * @param dnu_dx empty derivatives array dnu/dx z={t0, p, a, i, e, w}.
      * @return void.
      */
-    void compute_eccentric_orbit(const double &time, double &d, double &nu,
-                                 double* dd_dz[], double* dnu_dz[]);
+    void compute_eccentric_orbit(const double &time, double &d, double &z,
+                                 double &nu, double dd_dx[], double dnu_dx[]);
 
 };
 
