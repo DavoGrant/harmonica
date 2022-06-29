@@ -75,6 +75,7 @@ class HarmonicaTransit(object):
         # todo: update api for new structure.
         # todo: remove redundancy in psotion and derivative arrays.
         # todo: no require gradients flag anymore.
+        # todo: crash catch for zero final two terms of rs.
 
         # Evaluation arrays.
         if times is not None:
@@ -176,6 +177,7 @@ class HarmonicaTransit(object):
             equal to the number of model evaluation epochs.
 
         """
+        # todo apply changeable shape.
         self._r = r
 
     def get_transit_light_curve(self):

@@ -1853,7 +1853,7 @@ void Fluxes::f_derivatives(double df_dz[]) {
       } else {
         df_dz[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        df_dz[3 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+        df_dz[4 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
                             + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }
@@ -1887,7 +1887,7 @@ void Fluxes::f_derivatives(double df_dz[]) {
       } else {
         df_dz[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dan
                             + df_dcs(-n + N_c) * dcminus_dan).real();
-        df_dz[5 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
+        df_dz[6 + 2 * n] = (df_dcs(n + N_c) * dcplus_dbn
                             + df_dcs(-n + N_c) * dcminus_dbn).real();
       }
     }

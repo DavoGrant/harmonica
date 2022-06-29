@@ -80,46 +80,59 @@ void compute_transmission_string(
 }
 
 
-const void jax_quad_ld_light_curve(void* out_tuple, const void** in) {
+const void jax_light_curve(void* out_tuple, const void** in) {
 
   // Unpack input meta.
   int n_times = *((int*) in[0]);
-  int n_rs = *((int*) in[1]);
+  int n_params = *((int*) in[1]);
+  int ld_law = std::round(((double*) in[3])[0]);
+  int n_us, n_rs, rs_idx0;
+  if (ld_law == 0) {
+    n_us = 2;
+    n_rs = n_params - 8;
+    rs_idx0 = 12;
+  } else {
+    n_us = 4;
+    n_rs = n_params - 10;
+    rs_idx0 = 14;
+  }
 
-  // Unpack input data structures.
-  // The params are const through time so only require first index.
+  // Unpack input data structures. The params are const
+  // through time so only require first index.
   double* times = (double*) in[2];
-  double t0 = ((double*) in[3])[0];
-  double period = ((double*) in[4])[0];
-  double a = ((double*) in[5])[0];
-  double inc = ((double*) in[6])[0];
-  double ecc = ((double*) in[7])[0];
-  double omega = ((double*) in[8])[0];
-  double us[2];
+  double t0 = ((double*) in[4])[0];
+  double period = ((double*) in[5])[0];
+  double a = ((double*) in[6])[0];
+  double inc = ((double*) in[7])[0];
+  double ecc = ((double*) in[8])[0];
+  double omega = ((double*) in[9])[0];
+  double us[n_us];
   for (int i = 0; i < 2; ++i) {
-    us[i] = ((double*) in[i + 9])[0];
+    us[i] = ((double*) in[i + 10])[0];
   }
   double rs[n_rs];
   for (int i = 0; i < n_rs; ++i) {
-    rs[i] = ((double*) in[i + 11])[0];
+    rs[i] = ((double*) in[i + rs_idx0])[0];
   }
 
   // Unpack output data structures.
   int n_x_derivatives = 6;
-  int n_y_derivatives = 4 + n_rs;
-  int n_z_derivatives = 8 + n_rs;
+  int n_y_derivatives = 2 + n_us + n_rs;
+  int n_z_derivatives = n_x_derivatives + n_us + n_rs;
   void **out = reinterpret_cast<void **>(out_tuple);
   double* f = (double*) out[0];
   double* df_dz = (double*) out[1];
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, true);
-  Fluxes flux(0, us, n_rs, rs, 50, 500, true);
+  // todo: adjust precision here.
+//  std::cout << "C++ called." << std::endl;
+  Fluxes flux(0, us, n_rs, rs, 20, 50, true);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
     double d, z, nu;
-    double dd_dx[n_x_derivatives], dnu_dx[n_x_derivatives];
+    double dd_dx[6], dnu_dx[6];
     orbital.compute_eccentric_orbit(times[i], d, z, nu, dd_dx, dnu_dx);
 
     // Compute flux and derivatives wrt y={d, nu, {us}, {rs}}.
@@ -128,25 +141,14 @@ const void jax_quad_ld_light_curve(void* out_tuple, const void** in) {
 
     // Compute total derivatives wrt z={t0, p, a, i, e, w, {us}, {rs}}.
     int idx_ravel = i * n_z_derivatives;
-    df_dz[idx_ravel] = df_dy[0] * dd_dx[0] + df_dy[1] * dd_dx[0];
-    df_dz[idx_ravel + 1] = df_dy[0] * dd_dx[1] + df_dy[1] * dd_dx[1];
-    df_dz[idx_ravel + 2] = df_dy[0] * dd_dx[2] + df_dy[1] * dd_dx[2];
-    df_dz[idx_ravel + 3] = df_dy[0] * dd_dx[3] + df_dy[1] * dd_dx[3];
-    df_dz[idx_ravel + 4] = df_dy[0] * dd_dx[4] + df_dy[1] * dd_dx[4];
-    df_dz[idx_ravel + 5] = df_dy[0] * dd_dx[5] + df_dy[1] * dd_dx[5];
-    df_dz[idx_ravel + 6] = df_dy[2];
-    df_dz[idx_ravel + 7] = df_dy[3];
-    for (int j = 0; j < n_rs + 1; j++) {
-      df_dz[idx_ravel + 8 + j] = df_dy[4 + j];
+    for (int j = 0; j < n_z_derivatives; j++) {
+      if (j < 6) {
+        df_dz[idx_ravel + j] = df_dy[0] * dd_dx[j] + df_dy[1] * dd_dx[j];
+      } else {
+        df_dz[idx_ravel + j] = df_dy[j - 4];
+      }
     }
   }
-}
-
-
-const void jax_nl_ld_light_curve(void* out_tuple, const void** in) {
-
-  // todo: similar to above but with additional ld terms.
-
 }
 
 
@@ -160,8 +162,7 @@ py::capsule encapsulate(T* fn) {
 py::dict jax_registrations() {
   // Dictionary of JAX callables.
   py::dict dict;
-  dict["jax_quad_ld_lc"] = encapsulate(jax_quad_ld_light_curve);
-  dict["jax_nl_ld_lc"] = encapsulate(jax_nl_ld_light_curve);
+  dict["jax_light_curve"] = encapsulate(jax_light_curve);
   return dict;
 }
 

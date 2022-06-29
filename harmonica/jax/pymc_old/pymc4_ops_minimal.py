@@ -9,14 +9,7 @@ from harmonica import bindings
 
 class HarmonicaLC(op.Op):
 
-    __props__ = ('ld_mode', )
-
-    def __init__(self, limb_dark_law):
-        if limb_dark_law == 'quadratic':
-            self.ld_mode = 0
-        elif limb_dark_law == 'non-linear':
-            self.ld_mode = 1
-        super().__init__()
+    __props__ = ()
 
     def make_node(self, *args):
         in_args = [at.as_tensor_variable(a, dtype='float64') for a in args]
