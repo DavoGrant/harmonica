@@ -14,15 +14,17 @@ def generate_complex_fourier_coeffs(_as, _bs):
 
 # Config.
 np.random.seed(123)
-u1 = 0.4
-u2 = 0.3
-a_s = np.array([0.1, -0.003, 0.001])
-b_s = np.array([0.003, 0.001])
+u1 = 0.1
+u2 = 0.2
+u3 = 0.3
+u4 = 0.4
+a_s = np.array([0.1, -0.003])
+b_s = np.array([0.003])
 cs = generate_complex_fourier_coeffs(a_s, b_s)
 N_c = int((len(cs) - 1) / 2)
 N_c_s = np.arange(-N_c, N_c + 1, 1)
 nu = 0.1
-N_l = 100
+N_l = 500
 epsilon = 1.e-7
 
 
@@ -297,12 +299,14 @@ def line_integral_planet(_theta, _cs, _d, _nu, n_val):
 
 def F_func(d):
     # Limb darkening.
-    us = np.array([1., u1, u2])
-    B = np.array([[1., -1., -1.],
-                  [0., 1., 2.],
-                  [0., 0., -1.]])
+    us = np.array([1., u1, u2, u3, u4])
+    B = np.array([[1., -1., -1., -1., -1.],
+                  [0., 1., 0., 0., 0.],
+                  [0., 0., 1., 0., 0.],
+                  [0., 0., 0., 1., 0.],
+                  [0., 0., 0., 0., 1.]])
     ps = np.matmul(B, us)
-    I_0 = 1. / ((1. - us[1] / 3. - us[2] / 6.) * np.pi)
+    I_0 = 1. / ((1. - us[1] / 5. - us[2] / 3. - 3. * us[3] / 7. - us[4] / 2.) * np.pi)
 
     # Find planet-stellar limb intersections.
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
@@ -315,15 +319,23 @@ def F_func(d):
                 line_integral_planet, intersections[j], intersections[j + 1],
                 args=(cs, d, nu, 0),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
+            s12, s12_err = quad(
+                line_integral_planet, intersections[j], intersections[j + 1],
+                args=(cs, d, nu, 0.5),
+                epsabs=1.e-15, epsrel=1.e-15, limit=500)
             s1, s1_err = quad(
                 line_integral_planet, intersections[j], intersections[j + 1],
                 args=(cs, d, nu, 1),
+                epsabs=1.e-15, epsrel=1.e-15, limit=500)
+            s32, s32_err = quad(
+                line_integral_planet, intersections[j], intersections[j + 1],
+                args=(cs, d, nu, 1.5),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
             s2, s2_err = quad(
                 line_integral_planet, intersections[j], intersections[j + 1],
                 args=(cs, d, nu, 2),
                 epsabs=1.e-15, epsrel=1.e-15, limit=500)
-            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            alpha += I_0 * (s0 * ps[0] + s12 * ps[1] + s1 * ps[2] + s32 * ps[3] + s2 * ps[4])
         elif intersection_types[j] == 2 or intersection_types[j] == 3:
             phi_j = np.arctan2(
                 -r_p(intersections[j]) * np.sin(intersections[j] - nu),
@@ -335,9 +347,11 @@ def F_func(d):
                 -r_p(intersections[j + 1]) * np.cos(
                     intersections[j + 1] - nu) + d)
             s0 = 1. / (0. + 2) * (phi_j_plus_1 - phi_j)
+            s12 = 1. / (0.5 + 2) * (phi_j_plus_1 - phi_j)
             s1 = 1. / (1. + 2) * (phi_j_plus_1 - phi_j)
+            s32 = 1. / (1.5 + 2) * (phi_j_plus_1 - phi_j)
             s2 = 1. / (2. + 2) * (phi_j_plus_1 - phi_j)
-            alpha += I_0 * (s0 * ps[0] + s1 * ps[1] + s2 * ps[2])
+            alpha += I_0 * (s0 * ps[0] + s12 * ps[1] + s1 * ps[2] + s32 * ps[3] + s2 * ps[4])
         else:
             pass
 
@@ -518,7 +532,7 @@ def ds2_dtheta_j_dtheta_j_dd(d):
     return np.real(_ds2_dtheta_j_dtheta_j_dd)
 
 
-def ds1_dtheta_j_dtheta_j_dd(d):
+def ds1_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dtheta_j_dtheta_j_dd = 0.
@@ -529,7 +543,7 @@ def ds1_dtheta_j_dtheta_j_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             _ds1_dtheta_j = 0.
             for k in range(N_l):
-                _ds1_dtheta_j += -0.5 * zeta(z_p(cs, t[k], d, nu), 1) \
+                _ds1_dtheta_j += -0.5 * zeta(z_p(cs, t[k], d, nu), n_val) \
                                  * eta(t[k], cs, d, nu) * weights[k]
 
             _ds1_dtheta_j_dtheta_j_dd += _ds1_dtheta_j * dtheta_dds[j]
@@ -620,7 +634,7 @@ def ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return np.real(_ds2_dtheta_j_dtheta_j_plus_1_dd)
 
 
-def ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -631,7 +645,7 @@ def ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             _ds1_dtheta_j_plus_1 = 0.
             for k in range(N_l):
-                _ds1_dtheta_j_plus_1 += 0.5 * zeta(z_p(cs, t[k], d, nu), 1) \
+                _ds1_dtheta_j_plus_1 += 0.5 * zeta(z_p(cs, t[k], d, nu), n_val) \
                                         * eta(t[k], cs, d, nu) * weights[k]
 
             _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd += _ds1_dtheta_j_plus_1 \
@@ -696,7 +710,7 @@ def ds2_dphi_j_dphi_j_dd(d):
     return _ds2_dphi_j_dphi_j_dd
 
 
-def ds1_dphi_j_dphi_j_dd(d):
+def ds1_dphi_j_dphi_j_dd(d, n_val=1.):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_dphi_j_dd = 0.
@@ -707,7 +721,7 @@ def ds1_dphi_j_dphi_j_dd(d):
             pass
         elif intersection_types[j] == 2:
             _rp_j = r_p(intersections[j])
-            _ds1_dphi_j = -1. / 3.
+            _ds1_dphi_j = -1. / (n_val + 2)
             _dphi_j_dd = (_rp_j * np.sin(intersections[j] - nu)) \
                          / (d**2 - 2. * d * _rp_j * np.cos(intersections[j] - nu)
                             + _rp_j**2)
@@ -770,7 +784,7 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_dd(d):
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_dd
 
 
-def ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d):
+def ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_plus_1_dphi_j_plus_1_dd = 0.
@@ -781,7 +795,7 @@ def ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d):
             pass
         elif intersection_types[j] == 2:
             _rp_j_plus_1 = r_p(intersections[j + 1])
-            _ds1_dphi_j_plus_1 = 1. / 3.
+            _ds1_dphi_j_plus_1 = 1. / (n_val + 2)
             _dphi_j_plus_1_dd = \
                 (_rp_j_plus_1 * np.sin(intersections[j + 1] - nu)) \
                 / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
@@ -847,7 +861,7 @@ def ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
     return _ds2_dphi_j_dphi_j_dtheta_j_dtheta_j_dd
 
 
-def ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
+def ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = 0.
@@ -858,7 +872,7 @@ def ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d):
             pass
         elif intersection_types[j] == 2:
             _rp_j = r_p(intersections[j])
-            _ds1_dphi_j = -1. / 3.
+            _ds1_dphi_j = -1. / (n_val + 2)
             _dphi_j_dtheta_j = (_rp_j**2 - d * _rp_j * np.cos(intersections[j] - nu)) \
                          / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
                             + d**2 + _rp_j**2)
@@ -927,7 +941,7 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -938,7 +952,7 @@ def ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             pass
         elif intersection_types[j] == 2:
             _rp_j_plus_1 = r_p(intersections[j + 1])
-            _ds1_dphi_j_plus_1 = 1. / 3.
+            _ds1_dphi_j_plus_1 = 1. / (n_val + 2)
             _dphi_j_plus_1_dtheta_j_plus_1 = \
                 (_rp_j_plus_1**2 - d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)) \
                 / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
@@ -1008,7 +1022,7 @@ def ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
     return _ds2_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd
 
 
-def ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
+def ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = 0.
@@ -1019,7 +1033,7 @@ def ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d):
             pass
         elif intersection_types[j] == 2:
             _rp_j = r_p(intersections[j])
-            _ds1_dphi_j = -1. / 3.
+            _ds1_dphi_j = -1. / (n_val + 2)
             _dphi_j_drp = (- d * np.sin(intersections[j] - nu)) \
                          / (-2 * d * _rp_j * np.cos(intersections[j] - nu)
                             + d**2 + _rp_j**2)
@@ -1091,7 +1105,7 @@ def ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d
     return _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1102,7 +1116,7 @@ def ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d
             pass
         elif intersection_types[j] == 2:
             _rp_j_plus_1 = r_p(intersections[j + 1])
-            _ds1_dphi_j_plus_1 = 1. / 3.
+            _ds1_dphi_j_plus_1 = 1. / (n_val + 2)
             _dphi_j_plus_1_drp = (- d * np.sin(intersections[j + 1] - nu)) \
                          / (-2 * d * _rp_j_plus_1 * np.cos(intersections[j + 1] - nu)
                             + d**2 + _rp_j_plus_1**2)
@@ -1119,7 +1133,7 @@ def ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d
     return _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
+def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = 0.
@@ -1131,7 +1145,10 @@ def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
                 _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
-                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _zp = z_p(cs, t[k], d, nu)
+                _dzeta_dz = _zp * (n_val * _zp**(n_val + 2)
+                                   - (n_val + 2) * _zp**n_val
+                                   + 2) / ((n_val + 2) * (1 - _zp**2)**2)
                 _dz_dr = (d * np.cos(t[k] - nu) - r_p(t[k])) / z_p(cs, t[k], d, nu)
                 _dr_dt = drp_dtheta(cs, t[k])
                 _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
@@ -1154,7 +1171,7 @@ def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
     return _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd
 
 
-def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1166,7 +1183,10 @@ def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
                 _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
-                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _zp = z_p(cs, t[k], d, nu)
+                _dzeta_dz = _zp * (n_val * _zp**(n_val + 2)
+                                   - (n_val + 2) * _zp**n_val
+                                   + 2) / ((n_val + 2) * (1 - _zp**2)**2)
                 _dz_dr = (d * np.cos(t[k] - nu) - r_p(t[k])) / z_p(cs, t[k], d, nu)
                 _dr_dt = drp_dtheta(cs, t[k])
                 _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
@@ -1189,7 +1209,7 @@ def ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d):
+def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = 0.
@@ -1201,7 +1221,10 @@ def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
                 _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
-                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _zp = z_p(cs, t[k], d, nu)
+                _dzeta_dz = _zp * (n_val * _zp**(n_val + 2)
+                                   - (n_val + 2) * _zp**n_val
+                                   + 2) / ((n_val + 2) * (1 - _zp**2)**2)
                 _dz_dt = (-d * r_p(t[k]) * np.sin(t[k] - nu)) / z_p(cs, t[k], d, nu)
                 _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
 
@@ -1223,7 +1246,7 @@ def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d):
     return _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd
 
 
-def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1235,7 +1258,10 @@ def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
                 _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
-                _dzeta_dz = 1. / 3 - 1. / (3 * (z_p(cs, t[k], d, nu) + 1)**2)
+                _zp = z_p(cs, t[k], d, nu)
+                _dzeta_dz = _zp * (n_val * _zp**(n_val + 2)
+                                   - (n_val + 2) * _zp**n_val
+                                   + 2) / ((n_val + 2) * (1 - _zp**2)**2)
                 _dz_dt = (-d * r_p(t[k]) * np.sin(t[k] - nu)) / z_p(cs, t[k], d, nu)
                 _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
 
@@ -1257,7 +1283,7 @@ def ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_dzeta_dzeta_dz_dz_dd(d):
+def ds1_dzeta_dzeta_dz_dz_dd(d, n_val=1.):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
     _ds1_dzeta_dzeta_dz_dz_dd = 0.
@@ -1269,7 +1295,10 @@ def ds1_dzeta_dzeta_dz_dz_dd(d):
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
                 _ds1_dzeta = eta(t[k], cs, d, nu) * weights[k]
-                _dzeta_dz = (1. / 3) - (1. / (3. * (z_p(cs, t[k], d, nu) + 1)**2))
+                _zp = z_p(cs, t[k], d, nu)
+                _dzeta_dz = _zp * (n_val * _zp**(n_val + 2)
+                                   - (n_val + 2) * _zp**n_val
+                                   + 2) / ((n_val + 2) * (1 - _zp**2)**2)
                 _dz_dd = (-d + r_p(t[k]) * np.cos(t[k] - nu)) / z_p(cs, t[k], d, nu)
                 chain_j += _ds1_dzeta * _dzeta_dz * _dz_dd
             chain_j *= half_theta_range
@@ -1283,7 +1312,7 @@ def ds1_dzeta_dzeta_dz_dz_dd(d):
     return _ds1_dzeta_dzeta_dz_dz_dd
 
 
-def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
+def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = 0.
@@ -1294,7 +1323,7 @@ def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_dr = 2. * r_p(t[k]) - d * np.cos(t[k] - nu)
                 _dr_dt = drp_dtheta(cs, t[k])
                 _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
@@ -1317,7 +1346,7 @@ def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d):
     return _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd
 
 
-def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1328,7 +1357,7 @@ def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_dr = 2. * r_p(t[k]) - d * np.cos(t[k] - nu)
                 _dr_dt = drp_dtheta(cs, t[k])
                 _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
@@ -1351,7 +1380,7 @@ def ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d):
+def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = 0.
@@ -1362,7 +1391,7 @@ def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_drdash = -d * np.sin(t[k] - nu)
                 _drdash_dt = d2rp_dtheta2(cs, t[k])
                 _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
@@ -1385,7 +1414,7 @@ def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d):
     return _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd
 
 
-def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1396,7 +1425,7 @@ def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_drdash = -d * np.sin(t[k] - nu)
                 _drdash_dt = d2rp_dtheta2(cs, t[k])
                 _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
@@ -1419,7 +1448,7 @@ def ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d):
+def ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = 0.
@@ -1430,7 +1459,7 @@ def ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_dt = d * np.sin(t[k] - nu) * r_p(t[k]) \
                            - d * np.cos(t[k] - nu) * drp_dtheta(cs, t[k])
                 _dt_dtheta_j = -(roots[k] + 1.) / 2 + 1
@@ -1452,7 +1481,7 @@ def ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d):
     return _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd
 
 
-def ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
+def ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.):
     intersections, intersection_types, dtheta_dds = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = 0.
@@ -1463,7 +1492,7 @@ def ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_dt = d * np.sin(t[k] - nu) * r_p(t[k]) \
                            - d * np.cos(t[k] - nu) * drp_dtheta(cs, t[k])
                 _dt_dtheta_j_plus_1 = (roots[k] + 1.) / 2
@@ -1486,7 +1515,7 @@ def ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d):
     return _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
 
-def ds1_deta_deta_dd(d):
+def ds1_deta_deta_dd(d, n_val=1.):
     intersections, intersection_types, _ = find_intersections(cs, d, nu)
 
     _ds1_deta_deta_dd = 0.
@@ -1497,7 +1526,7 @@ def ds1_deta_deta_dd(d):
             roots, weights = roots_legendre(N_l)
             t = half_theta_range * (roots + 1.) + intersections[j]
             for k in range(N_l):
-                _ds1_deta = zeta(z_p(cs, t[k], d, nu), 1) * weights[k]
+                _ds1_deta = zeta(z_p(cs, t[k], d, nu), n_val) * weights[k]
                 _deta_dd = -np.cos(t[k] - nu) * r_p(t[k]) \
                            - np.sin(t[k] - nu) * drp_dtheta(cs, t[k])
 
@@ -1517,13 +1546,13 @@ def ds1_deta_deta_dd(d):
 
 
 def dF_dd_total(d):
-    us = np.array([1., u1, u2])
-    I_0 = 1. / (np.pi * (1. - us[1] / 3. - us[2] / 6.))
+    us = np.array([1., u1, u2, u3, u4])
+    I_0 = 1. / ((1. - us[1] / 5. - us[2] / 3. - 3. * us[3] / 7. - us[4] / 2.) * np.pi)
 
     dF_dalpha = -1.
 
     # S0.
-    dalpha_ds0 = I_0 * (1 - u1 - u2)
+    dalpha_ds0 = I_0 * (1 - u1 - u2 - u3 - u4)
     _ds0_dq0_dq0_dd = ds0_dq0_dq0_dd(d)
     _ds0_dtheta_j_dtheta_j_dd = ds0_dtheta_j_dtheta_j_dd(d)
     _ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd = ds0_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
@@ -1547,43 +1576,102 @@ def dF_dd_total(d):
                    + _ds0_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
                    + _ds0_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
+    # S1/2.
+    dalpha_ds12 = I_0 * u1
+    _ds12_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_dzeta_dzeta_dz_dz_dd = \
+        ds1_dzeta_dzeta_dz_dz_dd(d, n_val=0.5)
+    _ds12_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_deta_deta_dd = ds1_deta_deta_dd(d, n_val=0.5)
+    _ds12_dtheta_j_dtheta_j_dd = ds1_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_dphi_j_dphi_j_dd = ds1_dphi_j_dphi_j_dd(d, n_val=0.5)
+    _ds12_dphi_j_plus_1_dphi_j_plus_1_dd = ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d, n_val=0.5)
+    _ds12_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+    _ds12_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
+        ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d, n_val=0.5)
+    _ds12_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=0.5)
+
+    ds12_dd_total = _ds12_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds12_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds12_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_dzeta_dzeta_dz_dz_dd \
+                    + _ds12_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds12_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds12_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_deta_deta_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds12_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_deta_deta_dd \
+                    + _ds12_dtheta_j_dtheta_j_dd \
+                    + _ds12_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_dphi_j_dphi_j_dd \
+                    + _ds12_dphi_j_plus_1_dphi_j_plus_1_dd \
+                    + _ds12_dphi_j_dphi_j_dtheta_j_dtheta_j_dd \
+                    + _ds12_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds12_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
+                    + _ds12_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
     # S1.
-    dalpha_ds1 = I_0 * (u1 + 2. * u2)
+    dalpha_ds1 = I_0 * u2
     _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
-        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d)
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
     _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = \
-        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d)
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
     _ds1_dzeta_dzeta_dz_dz_dd = \
-        ds1_dzeta_dzeta_dz_dz_dd(d)
+        ds1_dzeta_dzeta_dz_dz_dd(d, n_val=1.0)
     _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
-        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d)
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
     _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = \
-        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d)
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
     _ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = \
-        ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d)
+        ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
-    _ds1_deta_deta_dd = ds1_deta_deta_dd(d)
-    _ds1_dtheta_j_dtheta_j_dd = ds1_dtheta_j_dtheta_j_dd(d)
+        ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
+    _ds1_deta_deta_dd = ds1_deta_deta_dd(d, n_val=1.0)
+    _ds1_dtheta_j_dtheta_j_dd = ds1_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
-    _ds1_dphi_j_dphi_j_dd = ds1_dphi_j_dphi_j_dd(d)
-    _ds1_dphi_j_plus_1_dphi_j_plus_1_dd = ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d)
-    _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d)
+        ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
+    _ds1_dphi_j_dphi_j_dd = ds1_dphi_j_dphi_j_dd(d, n_val=1.0)
+    _ds1_dphi_j_plus_1_dphi_j_plus_1_dd = ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d, n_val=1.0)
+    _ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
     _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
-        ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d)
+        ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d, n_val=1.0)
     _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
-        ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
+        ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.0)
 
     ds1_dd_total = _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
                    + _ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
@@ -1606,8 +1694,67 @@ def dF_dd_total(d):
                    + _ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
                    + _ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
+    # S3/2.
+    dalpha_ds32 = I_0 * u3
+    _ds32_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_dzeta_dzeta_dz_dz_dd = \
+        ds1_dzeta_dzeta_dz_dz_dd(d, n_val=1.5)
+    _ds32_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_deta_deta_dt_dt_dtheta_j_dtheta_j_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_deta_deta_dd = ds1_deta_deta_dd(d, n_val=1.5)
+    _ds32_dtheta_j_dtheta_j_dd = ds1_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_dphi_j_dphi_j_dd = ds1_dphi_j_dphi_j_dd(d, n_val=1.5)
+    _ds32_dphi_j_plus_1_dphi_j_plus_1_dd = ds1_dphi_j_plus_1_dphi_j_plus_1_dd(d, n_val=1.5)
+    _ds32_dphi_j_dphi_j_dtheta_j_dtheta_j_dd = ds1_dphi_j_dphi_j_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+    _ds32_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd = \
+        ds1_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd(d, n_val=1.5)
+    _ds32_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd = \
+        ds1_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd(d, n_val=1.5)
+
+    ds32_dd_total = _ds32_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds32_dzeta_dzeta_dz_dz_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds32_dzeta_dzeta_dz_dz_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_dzeta_dzeta_dz_dz_dd \
+                    + _ds32_deta_deta_dr_dr_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds32_deta_deta_dr_dr_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_deta_deta_drdash_drdash_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds32_deta_deta_drdash_drdash_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_deta_deta_dt_dt_dtheta_j_dtheta_j_dd \
+                    + _ds32_deta_deta_dt_dt_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_deta_deta_dd \
+                    + _ds32_dtheta_j_dtheta_j_dd \
+                    + _ds32_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_dphi_j_dphi_j_dd \
+                    + _ds32_dphi_j_plus_1_dphi_j_plus_1_dd \
+                    + _ds32_dphi_j_dphi_j_dtheta_j_dtheta_j_dd \
+                    + _ds32_dphi_j_plus_1_dphi_j_plus_1_dtheta_j_plus_1_dtheta_j_plus_1_dd \
+                    + _ds32_dphi_j_dphi_j_drp_drp_dtheta_j_dtheta_j_dd \
+                    + _ds32_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
+
     # S2.
-    dalpha_ds2 = -I_0 * u2
+    dalpha_ds2 = I_0 * u4
     _ds2_dq2_dq2_dd = ds2_dq2_dq2_dd(d)
     _ds2_dtheta_j_dtheta_j_dd = ds2_dtheta_j_dtheta_j_dd(d)
     _ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd = ds2_dtheta_j_plus_1_dtheta_j_plus_1_dd(d)
@@ -1632,7 +1779,9 @@ def dF_dd_total(d):
                    + _ds2_dphi_j_plus_1_dphi_j_plus_1_drp_drp_dtheta_j_plus_1_dtheta_j_plus_1_dd
 
     _dF_dd_total = dF_dalpha * (dalpha_ds0 * ds0_dd_total +
+                                dalpha_ds12 * ds12_dd_total +
                                 dalpha_ds1 * ds1_dd_total +
+                                dalpha_ds32 * ds32_dd_total +
                                 dalpha_ds2 * ds2_dd_total)
 
     return _dF_dd_total

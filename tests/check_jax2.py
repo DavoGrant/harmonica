@@ -39,7 +39,8 @@ n_obs = 200
 times = np.linspace(-0.22, 0.22, n_obs)
 us = np.array([0.074, 0.193])
 rs = np.array([0.1, -0.003, 0., 0.003, 0.])
-var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
+# var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
+var_names = ['u1', 'u2']
 y_sigma = 70.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
@@ -83,26 +84,27 @@ observed_fluxes += y_errs
 def numpyro_model(t, obs_err, f_obs=None):
     """ Numpyro model. """
     # Parameters
-    r0 = numpyro.sample('r0', dist.Normal(0.1, 0.01))
-    r1 = numpyro.sample('r1', dist.Normal(0., 0.005))
-    r2 = numpyro.sample('r2', dist.Normal(0., 0.005))
-    r3 = numpyro.sample('r3', dist.Normal(0., 0.005))
-    r4 = numpyro.sample('r4', dist.Normal(0., 0.005))
+    # r0 = numpyro.sample('r0', dist.Normal(0.1, 0.01))
+    # r1 = numpyro.sample('r1', dist.Normal(0., 0.005))
+    # r2 = numpyro.sample('r2', dist.Normal(0., 0.005))
+    # r3 = numpyro.sample('r3', dist.Normal(0., 0.005))
+    # r4 = numpyro.sample('r4', dist.Normal(0., 0.005))
 
-    # u1 = numpyro.sample('u1', dist.Normal(0.074, 0.1))
-    # u2 = numpyro.sample('u2', dist.Normal(0.193, 0.1))
+    u1 = numpyro.sample('u1', dist.Normal(0.074, 0.1))
+    u2 = numpyro.sample('u2', dist.Normal(0.193, 0.1))
 
     # # Model evaluation: this is our custom JAX primitive.
     fs = harmonica_transit(
         t, 0., 3.735, 7.025, 86.9 * np.pi / 180., 0., 0.,
-        'quadratic', us[0], us[1], r0, r1, r2, r3, r4)
+        'quadratic', u1, us[1], u2, -0.003, 0., 0.003, 0.)
 
     # Condition on the observations
     numpyro.sample('obs', dist.Normal(fs, obs_err), obs=f_obs)
 
 
 # Define NUTS kernel.
-iinit = {'r0': 0.1, 'r1': -0.003, 'r2': 0., 'r3': 0.003, 'r4': 0.}
+# iinit = {'r0': 0.1, 'r1': -0.003, 'r2': 0., 'r3': 0.003, 'r4': 0.}
+iinit = {'u1': 0.074, 'u2': 0.193}
 nuts_kernel = NUTS(
     numpyro_model,
     # dense_mass=True,

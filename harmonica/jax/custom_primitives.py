@@ -17,6 +17,10 @@ def harmonica_transit(times, t0, period, a, inc, ecc=0., omega=0.,
     """ Harmonica transit light curve -- custom JAX.
 
     todo: update args format here, and docs correspondingly
+    todo: check still runs
+    todo: update api
+    todo: update unit tests for regular flux forward modelling.
+    todo: make unti tests for gradients and jax jit etc.
 
     Parameters
     ----------

@@ -13,15 +13,15 @@ def generate_complex_fourier_coeffs(_as, _bs):
 
 # Config.
 np.random.seed(123)
-u2 = 0.3
-u3 = 0.2
-u4 = 0.2
+u1 = 0.1
+u2 = 0.2
+u3 = 0.3
 a_s = np.array([0.1, -0.003])
 b_s = np.array([0.003])
 cs = generate_complex_fourier_coeffs(a_s, b_s)
 N_c = int((len(cs) - 1) / 2)
 N_c_s = np.arange(-N_c, N_c + 1, 1)
-d = 0.9
+d = 0.95
 nu = 0.1
 epsilon = 1.e-7
 
@@ -236,7 +236,7 @@ def line_integral_star(_theta, _cs, _d, _nu, n_val):
     return zeta(z_p(_cs, _theta, _d, _nu), n_val) * eta(_theta, _cs, _d, _nu)
 
 
-def F_func(u1):
+def F_func(u4):
     # Limb darkening.
     us = np.array([1., u1, u2, u3, u4])
     B = np.array([[1., -1., -1., -1., -1.],
@@ -297,7 +297,7 @@ def F_func(u1):
     return 1. - alpha
 
 
-def s_vals(u1):
+def s_vals(u4):
     # Find planet-stellar limb intersections.
     intersections, intersection_types = find_intersections(cs, d, nu)
 
@@ -355,7 +355,7 @@ def s_vals(u1):
     return s0, s12, s1, s32, s2
 
 
-def dF_du1_total(u1):
+def dF_du4_total(u4):
     us = np.array([1., u1, u2, u3, u4])
     B = np.array([[1., -1., -1., -1., -1.],
                   [0., 1., 0., 0., 0.],
@@ -364,16 +364,16 @@ def dF_du1_total(u1):
                   [0., 0., 0., 0., 1.]])
     ps = np.matmul(B, us)
     I_0 = 1. / ((1. - us[1] / 5. - us[2] / 3. - 3. * us[3] / 7. - us[4] / 2.) * np.pi)
-    s0, s12, s1, s32, s2 = s_vals(u1)
+    s0, s12, s1, s32, s2 = s_vals(u4)
 
     dF_dalpha = -1.
     dalpha_dI0 = s0 * ps[0] + s12 * ps[1] + s1 * ps[2] + s32 * ps[3] + s2 * ps[4]
-    dI0_du1 = 1. / (5. * np.pi * (1. - us[1] / 5. - us[2] / 3. - 3. * us[3] / 7. - us[4] / 2.)**2)
-    dalpha_du1 = I_0 * (-s0 + s12)
+    dI0_du4 = 1. / (2. * np.pi * (1. - us[1] / 5. - us[2] / 3. - 3. * us[3] / 7. - us[4] / 2.)**2)
+    dalpha_du4 = I_0 * (-s0 + s2)
 
-    _dF_du1_total = dF_dalpha * dalpha_dI0 * dI0_du1 + dF_dalpha * dalpha_du1
+    _dF_du4_total = dF_dalpha * dalpha_dI0 * dI0_du4 + dF_dalpha * dalpha_du4
 
-    return _dF_du1_total
+    return _dF_du4_total
 
 
 def grad_arrow(x_draw, x, y, grad):
@@ -382,24 +382,24 @@ def grad_arrow(x_draw, x, y, grad):
 
 
 while True:
-    u1_a = np.random.uniform(0.01, 0.5)
-    F_a = F_func(u1_a)
+    u4_a = np.random.uniform(0.01, 0.5)
+    F_a = F_func(u4_a)
 
     delta = 1.e-6
-    u1_b = u1_a + delta
-    F_b = F_func(u1_b)
+    u4_b = u4_a + delta
+    F_b = F_func(u4_b)
 
-    u1_a_grad = dF_du1_total(u1_a)
+    u4_a_grad = dF_du4_total(u4_a)
 
-    plt.scatter(u1_a, F_a, label='$u_1$')
-    plt.scatter(u1_b, F_b, label='$u_1 + \delta$: $\delta={}$'.format(delta))
-    x_arrow = np.linspace(u1_a, u1_b, 2)
-    plt.plot(x_arrow, grad_arrow(x_arrow, u1_a, F_a, u1_a_grad),
-             label='Gradient: $\\frac{dF}{d u_1}$')
-    print(F_a, F_b, (u1_a_grad * delta + F_a) - F_b)
+    plt.scatter(u4_a, F_a, label='$u_3$')
+    plt.scatter(u4_b, F_b, label='$u_4 + \delta$: $\delta={}$'.format(delta))
+    x_arrow = np.linspace(u4_a, u4_b, 2)
+    plt.plot(x_arrow, grad_arrow(x_arrow, u4_a, F_a, u4_a_grad),
+             label='Gradient: $\\frac{dF}{d u_4}$')
+    print(F_a, F_b, (u4_a_grad * delta + F_a) - F_b)
 
     plt.legend()
-    plt.xlabel('$u_1$')
+    plt.xlabel('$u_4$')
     plt.ylabel('$F$')
     plt.tight_layout()
     plt.show()

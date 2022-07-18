@@ -1,8 +1,11 @@
 import aesara
 import numpy as np
+import arviz as az
 import aesara.tensor as at
 import pymc as pm
 from aesara.graph import basic, op
+import corner
+import matplotlib.pyplot as plt
 
 from harmonica import bindings
 
@@ -20,36 +23,25 @@ class HarmonicaLC(op.Op):
         return [input_shapes[0] for i in input_shapes]
 
     def perform(self, node, inputs, output_storage):
-        print('perform')
+        # print('perform')
         times, t0, period, a, inc, ecc, omega = inputs[:7]
         us = np.array(inputs[7:9])
         rs = np.array(inputs[9:])
 
-        ds = np.empty(times.shape, dtype='float64')
-        nus = np.empty(times.shape, dtype='float64')
+        n_lcd = times.shape + (6 + 2 + 3,)
+        fs = np.empty(times.shape, dtype='float64')
+        fs_grad = np.zeros(n_lcd, dtype='float64')
 
-        n_od = times.shape + (6,)
-        n_lcd = times.shape + (6 + 3 + 5,)
-        ds_grad = np.zeros(n_od, dtype='float64')
-        nus_grad = np.zeros(n_od, dtype='float64')
+        bindings.test_pymc(t0, period, a, inc, ecc, omega,
+                           0, us, rs, times, fs, fs_grad,
+                           20, 50)
 
-        lc = np.empty(times.shape, dtype='float64')
-        lc_grad = np.zeros(n_lcd, dtype='float64')
-
-        bindings.orbit(t0, period, a, inc, ecc, omega,
-                       times, ds, nus,
-                       ds_grad, nus_grad,
-                       require_gradients=True)
-        bindings.light_curve(self.ld_mode, us, rs, ds, nus, lc,
-                             ds_grad, nus_grad, lc_grad, 50, 500,
-                             require_gradients=True)
-
-        output_storage[0][0] = lc
-        for i in range(1, 12):
-            output_storage[i][0] = lc_grad[:, i]
+        output_storage[0][0] = fs
+        for i in range(0, 11):
+            output_storage[i + 1][0] = fs_grad[:, i]
 
     def grad(self, inputs, output_grads):
-        print('ello gradient')
+        # print('ello gradient')
         lc, *lc_grads = self(*inputs)
 
         for g in output_grads[1:]:
@@ -134,25 +126,36 @@ obs = np.array([1.        , 1.        , 1.        , 1.        , 1.        ,
 
 
 with pm.Model() as model:
-    pm_t0 = pm.Normal('t0', mu=5., sigma=0.1)
-    pm_period = pm.Normal('period', mu=10., sigma=0.1)
-    pm_a = pm.Normal('a', mu=89. * np.pi / 180., sigma=0.1)
-    pm_inc = pm.Normal('inc', mu=7., sigma=0.1)
-    pm_ecc = pm.Normal('ecc', mu=0.1, sigma=0.01)
-    pm_omega = pm.Normal('omega', mu=0.1, sigma=0.01)
-
-    pm_u1 = pm.Normal('u1', mu=0.1, sigma=0.01)
-    pm_u2 = pm.Normal('u2', mu=0.2, sigma=0.01)
-
-    pm_r0 = pm.Normal('r0', mu=0.1, sigma=0.01)
+    # pm_r0 = pm.Normal('r0', mu=0.1, sigma=0.01)
+    pm_r0 = pm.Uniform('r0', lower=0.05, upper=0.15)
     pm_r1 = pm.Normal('r1', mu=0.001, sigma=0.0001)
     pm_r2 = pm.Normal('r2', mu=0.001, sigma=0.0001)
+    # pm_r0 = 0.1
+    # pm_r1 = 0.001
+    # pm_r2 = 0.001
 
-    hlc = HarmonicaLC(_ld_law)
+    # pm_u1 = pm.Normal('u1', mu=0.1, sigma=0.01)
+    # pm_u2 = pm.Normal('u2', mu=0.2, sigma=0.01)
+    pm_u1 = 0.1
+    pm_u2 = 0.2
+
+    hlc = HarmonicaLC()
     flux = pm.Deterministic('flux',
-                            hlc(_times, pm_t0, pm_period, pm_a, pm_inc, pm_ecc, pm_omega,
+                            hlc(_times, 5., 10., 7., 89. * np.pi / 180., 0.1, 0.1,
                                 pm_u1, pm_u2, pm_r0, pm_r1, pm_r2)[0])
 
     pm.Normal('y', mu=flux, sigma=10.e-6, observed=obs)
 
-    trace = pm.sample(tune=100, draws=100, chains=1, cores=1)
+    trace = pm.sample(
+        tune=100, draws=1000,
+        chains=1, cores=1,
+        initvals={'r0': 0.1, 'r1': 0.001, 'r2': 0.001},
+        # initvals={'u1': 0.1, 'u2': 0.2},
+        progressbar=False)
+
+    # print(az.summary(trace, var_names=['u1', 'u2']).to_string())
+
+
+
+    # fig = corner.corner(trace, truths=[0.1, 0.001, 0.001], labels=['r0', 'r1', 'r2'])
+    # plt.show()

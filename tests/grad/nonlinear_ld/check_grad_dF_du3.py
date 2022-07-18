@@ -13,15 +13,15 @@ def generate_complex_fourier_coeffs(_as, _bs):
 
 # Config.
 np.random.seed(123)
-u1 = 0.3
+u1 = 0.1
 u2 = 0.2
-u4 = 0.2
+u4 = 0.4
 a_s = np.array([0.1, -0.003])
 b_s = np.array([0.003])
 cs = generate_complex_fourier_coeffs(a_s, b_s)
 N_c = int((len(cs) - 1) / 2)
 N_c_s = np.arange(-N_c, N_c + 1, 1)
-d = 0.98
+d = 0.95
 nu = 0.1
 epsilon = 1.e-7
 

@@ -1366,7 +1366,11 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
     double s12_planet = 0.;
     double s32_planet = 0.;
 
-    double ds12_eta_dd = 0., ds1_eta_dd = 0., ds32_eta_dd = 0.,
+    // todo may not all need to be init 0.
+    double ds12_zeta_zp_dd = 0., ds12_zeta_zp_dnu = 0.,
+           ds12_zeta_zp_t_theta_j_dx = 0., ds12_zeta_zp_t_theta_j_plus_1_dx = 0.,
+           ds12_zeta_zp_r_t_theta_j_dx = 0., ds12_zeta_zp_r_t_theta_j_plus_1_dx = 0.,
+           ds12_eta_dd = 0., ds1_eta_dd = 0., ds32_eta_dd = 0.,
            ds12_theta_j_dd = 0., ds12_theta_j_plus_1_dd = 0., ds1_theta_j_dd = 0.,
            ds1_theta_j_plus_1_dd = 0., ds32_theta_j_dd = 0., ds32_theta_j_plus_1_dd = 0.,
            ds12_eta_dnu = 0., ds1_eta_dnu = 0., ds32_eta_dnu = 0.,
@@ -1378,6 +1382,9 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
            ds1_eta_r_t_theta_j_dx = 0., ds1_eta_r_t_theta_j_plus_1_dx = 0.,
            ds1_eta_t_theta_j_dx = 0., ds1_eta_t_theta_j_plus_1_dx = 0.,
            ds1_eta_rdash_t_theta_j_dx = 0., ds1_eta_rdash_t_theta_j_plus_1_dx = 0.,
+           ds32_zeta_zp_dd = 0., ds32_zeta_zp_dnu = 0.,
+           ds32_zeta_zp_t_theta_j_dx = 0., ds32_zeta_zp_t_theta_j_plus_1_dx = 0.,
+           ds32_zeta_zp_r_t_theta_j_dx = 0., ds32_zeta_zp_r_t_theta_j_plus_1_dx = 0.,
            ds32_eta_r_t_theta_j_dx = 0., ds32_eta_r_t_theta_j_plus_1_dx = 0.,
            ds32_eta_t_theta_j_dx = 0., ds32_eta_t_theta_j_plus_1_dx = 0.,
            ds32_eta_rdash_t_theta_j_dx = 0., ds32_eta_rdash_t_theta_j_plus_1_dx = 0.;
@@ -1420,7 +1427,10 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
 
         double opzp = 1 + zp_tk;
         double ds1_dzeta = eta * _l_weights[k];
-        double dzeta_dzp = fractions::one_third * (1. - 1. / (opzp * opzp));
+        // todo: speed up expression by evaluating them for n + 2 etc. and simplify
+        double dzeta12_dzp = zp_tk * (0.5 * std::pow(zp_tk, 2.5) - 2.5 * std::pow(zp_tk, 0.5) + 2.) / (2.5 * omzp_tks * omzp_tks);
+        double dzeta1_dzp = fractions::one_third * (1. - 1. / (opzp * opzp));
+        double dzeta32_dzp = zp_tk * (1.5 * std::pow(zp_tk, 3.5) - 3.5 * std::pow(zp_tk, 1.5) + 2.) / (3.5 * omzp_tks * omzp_tks);
         double dzp_dd = (rp_tk * costkmnu - d) / zp_tk;
         double dzp_dnu = d * rp_tk * sintkmnu / zp_tk;
         double dzp_drp = (d * costkmnu - rp_tk) / zp_tk;
@@ -1433,12 +1443,17 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
         double deta_drp = 2. * rp_tk - d * costkmnu;
         double deta_drdash = -d * sintkmnu;
 
-        ds1_zeta_zp_dd += ds1_dzeta * dzeta_dzp * dzp_dd;
+        ds12_zeta_zp_dd += ds1_dzeta * dzeta12_dzp * dzp_dd;
+        ds1_zeta_zp_dd += ds1_dzeta * dzeta1_dzp * dzp_dd;
+        ds32_zeta_zp_dd += ds1_dzeta * dzeta32_dzp * dzp_dd;
         ds12_eta_dd += ds12_deta * deta_dd;
         ds1_eta_dd += ds1_deta * deta_dd;
         ds32_eta_dd += ds32_deta * deta_dd;
 
-        ds1_zeta_zp_dnu += ds1_dzeta * dzeta_dzp * dzp_dnu;
+        // todo propogate
+        ds12_zeta_zp_dnu += ds1_dzeta * dzeta12_dzp * dzp_dnu;
+        ds1_zeta_zp_dnu += ds1_dzeta * dzeta1_dzp * dzp_dnu;
+        ds32_zeta_zp_dnu += ds1_dzeta * dzeta32_dzp * dzp_dnu;
         ds12_eta_dnu += ds12_deta * deta_dnu;
         ds1_eta_dnu += ds1_deta * deta_dnu;
         ds32_eta_dnu += ds32_deta * deta_dnu;
@@ -1447,13 +1462,13 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
           int npN_c = n + N_c;
           std::complex<double> drp_dcn = std::exp((1. * n) * 1.i * t_k);
           std::complex<double> drpdash_dcn = (1. * n) * 1.i * std::exp((1. * n) * 1.i * t_k);
-          ds12_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta_dzp * dzp_drp * drp_dcn;
+          ds12_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta12_dzp * dzp_drp * drp_dcn;
           ds12_eta_rp_dcs[npN_c] += ds12_deta * deta_drp * drp_dcn;
           ds12_eta_rpdash_dcs[npN_c] += ds12_deta * deta_drdash * drpdash_dcn;
-          ds1_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta_dzp * dzp_drp * drp_dcn;
+          ds1_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta1_dzp * dzp_drp * drp_dcn;
           ds1_eta_rp_dcs[npN_c] += ds1_deta * deta_drp * drp_dcn;
           ds1_eta_rpdash_dcs[npN_c] += ds1_deta * deta_drdash * drpdash_dcn;
-          ds32_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta_dzp * dzp_drp * drp_dcn;
+          ds32_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta32_dzp * dzp_drp * drp_dcn;
           ds32_eta_rp_dcs[npN_c] += ds32_deta * deta_drp * drp_dcn;
           ds32_eta_rpdash_dcs[npN_c] += ds32_deta * deta_drdash * drpdash_dcn;
         }
@@ -1464,14 +1479,28 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
           double dtk_dtheta_j_plus_1 = fractions::one_half * (_l_roots[k] + 1.);
 
           double dzp_dtk = -d * rp_tk * sintkmnu / zp_tk;
-          double ds1_zeta_dzp = ds1_dzeta * dzeta_dzp;
+          double ds12_zeta_dzp = ds1_dzeta * dzeta12_dzp;
+          double ds12_zeta_zp_dtk = ds12_zeta_dzp * dzp_dtk;
+          double ds12_zeta_zp_r_dtk = ds12_zeta_dzp * dzp_drp * drp_dtk;
+          double ds1_zeta_dzp = ds1_dzeta * dzeta1_dzp;
           double ds1_zeta_zp_dtk = ds1_zeta_dzp * dzp_dtk;
           double ds1_zeta_zp_r_dtk = ds1_zeta_dzp * dzp_drp * drp_dtk;
+          double ds32_zeta_dzp = ds1_dzeta * dzeta32_dzp;
+          double ds32_zeta_zp_dtk = ds32_zeta_dzp * dzp_dtk;
+          double ds32_zeta_zp_r_dtk = ds32_zeta_dzp * dzp_drp * drp_dtk;
 
+          ds12_zeta_zp_t_theta_j_dx += ds12_zeta_zp_dtk * dtk_dtheta_j;
+          ds12_zeta_zp_t_theta_j_plus_1_dx += ds12_zeta_zp_dtk * dtk_dtheta_j_plus_1;
+          ds12_zeta_zp_r_t_theta_j_dx += ds12_zeta_zp_r_dtk * dtk_dtheta_j;
+          ds12_zeta_zp_r_t_theta_j_plus_1_dx += ds12_zeta_zp_r_dtk * dtk_dtheta_j_plus_1;
           ds1_zeta_zp_t_theta_j_dx += ds1_zeta_zp_dtk * dtk_dtheta_j;
           ds1_zeta_zp_t_theta_j_plus_1_dx += ds1_zeta_zp_dtk * dtk_dtheta_j_plus_1;
           ds1_zeta_zp_r_t_theta_j_dx += ds1_zeta_zp_r_dtk * dtk_dtheta_j;
           ds1_zeta_zp_r_t_theta_j_plus_1_dx += ds1_zeta_zp_r_dtk * dtk_dtheta_j_plus_1;
+          ds32_zeta_zp_t_theta_j_dx += ds32_zeta_zp_dtk * dtk_dtheta_j;
+          ds32_zeta_zp_t_theta_j_plus_1_dx += ds32_zeta_zp_dtk * dtk_dtheta_j_plus_1;
+          ds32_zeta_zp_r_t_theta_j_dx += ds32_zeta_zp_r_dtk * dtk_dtheta_j;
+          ds32_zeta_zp_r_t_theta_j_plus_1_dx += ds32_zeta_zp_r_dtk * dtk_dtheta_j_plus_1;
 
           double drdash_dtk = this->d2rp_dtheta2(t_k);
           double deta_dtk = d * (rp_tk * sintkmnu - drp_dtk * costkmnu);
@@ -1533,14 +1562,14 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
 
       ds12_dd += ds12_theta_j_dd + ds12_theta_j_plus_1_dd
                 + half_theta_range * (
-        ds1_zeta_zp_dd + ds12_eta_dd
-        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dx
-                            + ds1_zeta_zp_r_t_theta_j_dx
+        ds12_zeta_zp_dd + ds12_eta_dd
+        + dthetas_dd[_j] * (ds12_zeta_zp_t_theta_j_dx
+                            + ds12_zeta_zp_r_t_theta_j_dx
                             + ds12_eta_t_theta_j_dx
                             + ds12_eta_r_t_theta_j_dx
                             + ds12_eta_rdash_t_theta_j_dx)
-        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+        + dthetas_dd[_j + 1] * (ds12_zeta_zp_t_theta_j_plus_1_dx
+                                + ds12_zeta_zp_r_t_theta_j_plus_1_dx
                                 + ds12_eta_t_theta_j_plus_1_dx
                                 + ds12_eta_r_t_theta_j_plus_1_dx
                                 + ds12_eta_rdash_t_theta_j_plus_1_dx));
@@ -1559,28 +1588,28 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
                                 + ds1_eta_rdash_t_theta_j_plus_1_dx));
       ds32_dd += ds32_theta_j_dd + ds32_theta_j_plus_1_dd
                 + half_theta_range * (
-        ds1_zeta_zp_dd + ds32_eta_dd
-        + dthetas_dd[_j] * (ds1_zeta_zp_t_theta_j_dx
-                            + ds1_zeta_zp_r_t_theta_j_dx
+        ds32_zeta_zp_dd + ds32_eta_dd
+        + dthetas_dd[_j] * (ds32_zeta_zp_t_theta_j_dx
+                            + ds32_zeta_zp_r_t_theta_j_dx
                             + ds32_eta_t_theta_j_dx
                             + ds32_eta_r_t_theta_j_dx
                             + ds32_eta_rdash_t_theta_j_dx)
-        + dthetas_dd[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+        + dthetas_dd[_j + 1] * (ds32_zeta_zp_t_theta_j_plus_1_dx
+                                + ds32_zeta_zp_r_t_theta_j_plus_1_dx
                                 + ds32_eta_t_theta_j_plus_1_dx
                                 + ds32_eta_r_t_theta_j_plus_1_dx
                                 + ds32_eta_rdash_t_theta_j_plus_1_dx));
 
       ds12_dnu += ds12_theta_j_dnu + ds12_theta_j_plus_1_dnu
                 + half_theta_range * (
-        ds1_zeta_zp_dnu + ds12_eta_dnu
-        + dthetas_dnu[_j] * (ds1_zeta_zp_t_theta_j_dx
-                            + ds1_zeta_zp_r_t_theta_j_dx
+        ds12_zeta_zp_dnu + ds12_eta_dnu
+        + dthetas_dnu[_j] * (ds12_zeta_zp_t_theta_j_dx
+                            + ds12_zeta_zp_r_t_theta_j_dx
                             + ds12_eta_t_theta_j_dx
                             + ds12_eta_r_t_theta_j_dx
                             + ds12_eta_rdash_t_theta_j_dx)
-        + dthetas_dnu[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+        + dthetas_dnu[_j + 1] * (ds12_zeta_zp_t_theta_j_plus_1_dx
+                                + ds12_zeta_zp_r_t_theta_j_plus_1_dx
                                 + ds12_eta_t_theta_j_plus_1_dx
                                 + ds12_eta_r_t_theta_j_plus_1_dx
                                 + ds12_eta_rdash_t_theta_j_plus_1_dx));
@@ -1599,14 +1628,14 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
                                 + ds1_eta_rdash_t_theta_j_plus_1_dx));
       ds32_dnu += ds32_theta_j_dnu + ds32_theta_j_plus_1_dnu
                 + half_theta_range * (
-        ds1_zeta_zp_dnu + ds32_eta_dnu
-        + dthetas_dnu[_j] * (ds1_zeta_zp_t_theta_j_dx
-                            + ds1_zeta_zp_r_t_theta_j_dx
+        ds32_zeta_zp_dnu + ds32_eta_dnu
+        + dthetas_dnu[_j] * (ds32_zeta_zp_t_theta_j_dx
+                            + ds32_zeta_zp_r_t_theta_j_dx
                             + ds32_eta_t_theta_j_dx
                             + ds32_eta_r_t_theta_j_dx
                             + ds32_eta_rdash_t_theta_j_dx)
-        + dthetas_dnu[_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+        + dthetas_dnu[_j + 1] * (ds32_zeta_zp_t_theta_j_plus_1_dx
+                                + ds32_zeta_zp_r_t_theta_j_plus_1_dx
                                 + ds32_eta_t_theta_j_plus_1_dx
                                 + ds32_eta_r_t_theta_j_plus_1_dx
                                 + ds32_eta_rdash_t_theta_j_plus_1_dx));
@@ -1622,14 +1651,14 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
         ds12_dcs(npN_c) += ds12_theta_j_dcn + ds12_theta_j_plus_1_dcn
                             + half_theta_range * (
           ds12_zeta_zp_rp_dcs[npN_c] + ds12_eta_rp_dcs[npN_c] + ds12_eta_rpdash_dcs[npN_c]
-          + dthetas_dcs[npN_c][_j] * (ds1_zeta_zp_t_theta_j_dx
-                                      + ds1_zeta_zp_r_t_theta_j_dx
+          + dthetas_dcs[npN_c][_j] * (ds12_zeta_zp_t_theta_j_dx
+                                      + ds12_zeta_zp_r_t_theta_j_dx
                                       + ds12_eta_t_theta_j_dx
                                       + ds12_eta_r_t_theta_j_dx
                                       + ds12_eta_rdash_t_theta_j_dx)
-          + dthetas_dcs[npN_c][_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                          + ds1_zeta_zp_r_t_theta_j_plus_1_dx
-                                          + ds1_eta_t_theta_j_plus_1_dx
+          + dthetas_dcs[npN_c][_j + 1] * (ds12_zeta_zp_t_theta_j_plus_1_dx
+                                          + ds12_zeta_zp_r_t_theta_j_plus_1_dx
+                                          + ds12_eta_t_theta_j_plus_1_dx
                                           + ds12_eta_r_t_theta_j_plus_1_dx
                                           + ds12_eta_rdash_t_theta_j_plus_1_dx));
         ds1_dcs(npN_c) += ds1_theta_j_dcn + ds1_theta_j_plus_1_dcn
@@ -1648,13 +1677,13 @@ void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
         ds32_dcs(npN_c) += ds32_theta_j_dcn + ds32_theta_j_plus_1_dcn
                             + half_theta_range * (
           ds32_zeta_zp_rp_dcs[npN_c] + ds32_eta_rp_dcs[npN_c] + ds32_eta_rpdash_dcs[npN_c]
-          + dthetas_dcs[npN_c][_j] * (ds1_zeta_zp_t_theta_j_dx
-                                      + ds1_zeta_zp_r_t_theta_j_dx
+          + dthetas_dcs[npN_c][_j] * (ds32_zeta_zp_t_theta_j_dx
+                                      + ds32_zeta_zp_r_t_theta_j_dx
                                       + ds32_eta_t_theta_j_dx
                                       + ds32_eta_r_t_theta_j_dx
                                       + ds32_eta_rdash_t_theta_j_dx)
-          + dthetas_dcs[npN_c][_j + 1] * (ds1_zeta_zp_t_theta_j_plus_1_dx
-                                          + ds1_zeta_zp_r_t_theta_j_plus_1_dx
+          + dthetas_dcs[npN_c][_j + 1] * (ds32_zeta_zp_t_theta_j_plus_1_dx
+                                          + ds32_zeta_zp_r_t_theta_j_plus_1_dx
                                           + ds32_eta_t_theta_j_plus_1_dx
                                           + ds32_eta_r_t_theta_j_plus_1_dx
                                           + ds32_eta_rdash_t_theta_j_plus_1_dx));
@@ -1866,6 +1895,15 @@ void Fluxes::f_derivatives(double df_dz[]) {
     df_dz[1] = df_dalpha * (dalpha_ds0 * ds0_dnu + dalpha_ds12 * ds12_dnu
                             + dalpha_ds1 * ds1_dnu + dalpha_ds32 * ds32_dnu
                             + dalpha_ds2 * ds2_dnu);
+
+    std::cout.precision(17);
+    std::cout << df_dalpha << std::endl;
+    std::cout << dalpha_ds0 << " " << ds0_dnu << std::endl;
+    std::cout << dalpha_ds12 << " " << ds12_dnu << std::endl;
+    std::cout << dalpha_ds1 << " " << ds1_dnu << std::endl;
+    std::cout << dalpha_ds32 << " " << ds32_dnu << std::endl;
+    std::cout << dalpha_ds2 << " " << ds2_dnu << std::endl;
+    std::cout << df_dz[1] << std::endl;
 
     // df_du1, df_du2, df_du3, df_du4.
     double dalpha_du1 = I_0 * (s12 - s0);
