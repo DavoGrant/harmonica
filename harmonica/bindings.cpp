@@ -65,6 +65,7 @@ void compute_transmission_string(
   // Unpack python arrays.
   auto rs_py_ = rs_py.unchecked<1>();
   int n_rs = rs_py_.shape(0);
+  double us[2] = {0., 0.};
   double rs[n_rs];
   for (int i = 0; i < n_rs; ++i) {
     rs[i] = rs_py_(i);
@@ -73,7 +74,7 @@ void compute_transmission_string(
   auto transmission_string_py_ = transmission_string_py.mutable_unchecked<1>();
 
   // Compute transmission string.
-  Fluxes flux(0, NULL, n_rs, rs, 0, 0, false);
+  Fluxes flux(0, us, n_rs, rs, 0, 0, false);
   for (int i = 0; i < thetas_py_.shape(0); i++) {
     transmission_string_py_(i) = flux.rp_theta(thetas_py_(i));
   }
@@ -168,65 +169,6 @@ py::dict jax_registrations() {
 }
 
 
-void temp_compute_harmonica_light_curve(
-  int ld_law,
-  py::array_t<double, py::array::c_style> us_py,
-  py::array_t<double, py::array::c_style> rs_py,
-  py::array_t<double, py::array::c_style> ds_py,
-  py::array_t<double, py::array::c_style> nus_py,
-  py::array_t<double, py::array::c_style> fs_py,
-  py::array_t<double, py::array::c_style> fs_grad_py,
-  int pnl_c, int pnl_e) {
-
-  // Unpack python arrays.
-  auto us_py_ = us_py.unchecked<1>();
-  int n_us = us_py_.shape(0);
-  double us[n_us];
-  for (int i = 0; i < n_us; ++i) {
-    us[i] = us_py_(i);
-  }
-  auto rs_py_ = rs_py.unchecked<1>();
-  int n_rs = rs_py_.shape(0);
-  double rs[n_rs];
-  for (int i = 0; i < n_rs; ++i) {
-    rs[i] = rs_py_(i);
-  }
-  auto ds_py_ = ds_py.unchecked<1>();
-  auto nus_py_ = nus_py.unchecked<1>();
-  int n_times = ds_py_.shape(0);
-  auto fs_py_ = fs_py.mutable_unchecked<1>();
-  auto fs_grad_py_ = fs_grad_py.mutable_unchecked<2>();
-
-  // Iterate times.
-  Fluxes flux(ld_law, us, n_rs, rs, pnl_c, pnl_e, true);
-  for (int i = 0; i < n_times; i++) {
-
-    // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
-    double d = ds_py_(i);
-    double nu = nus_py_(i);
-    double z = 1.;
-    double dd_dx[6] = {1., 1., 1., 1., 1., 1.};
-    double dnu_dx[6] = {1., 1., 1., 1., 1., 1.};
-
-    // Compute flux and derivatives wrt y={d, nu, {us}, {rs}}.
-    int n_y_derivatives = 2 + 4 + 7;
-    double df_dy[n_y_derivatives];
-    flux.transit_flux(d, z, nu, fs_py_(i), df_dy);
-
-    // Compute total derivatives wrt z={t0, p, a, i, e, w, {us}, {rs}}.
-    int n_z_derivatives = 6 + 4 + 7;
-    for (int j = 0; j < n_z_derivatives; j++) {
-      if (j < 6) {
-        fs_grad_py_(i, j) = df_dy[0] * dd_dx[j] + df_dy[1] * dnu_dx[j];
-      } else {
-        fs_grad_py_(i, j) = df_dy[j - 4];
-      }
-    }
-  }
-}
-
-
-
 PYBIND11_MODULE(bindings, m) {
 
   m.def("light_curve", &compute_harmonica_light_curve,
@@ -241,17 +183,6 @@ PYBIND11_MODULE(bindings, m) {
     py::arg("rs") = py::none(),
     py::arg("times") = py::none(),
     py::arg("fs") = py::none(),
-    py::arg("pnl_c") = 50,
-    py::arg("pnl_e") = 500);
-
-  m.def("temp_light_curve", &temp_compute_harmonica_light_curve,
-    py::arg("ld_law") = py::none(),
-    py::arg("us") = py::none(),
-    py::arg("rs") = py::none(),
-    py::arg("ds") = py::none(),
-    py::arg("nus") = py::none(),
-    py::arg("fs") = py::none(),
-    py::arg("fs_grad") = py::none(),
     py::arg("pnl_c") = 50,
     py::arg("pnl_e") = 500);
 

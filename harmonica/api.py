@@ -13,19 +13,13 @@ class HarmonicaTransit(object):
     ----------
     times : ndarray, optional
         1D array of model evaluation times [days].
-    ds : ndarray, optional
-        1D array of planet-star separations [stellar radii].
-    nus : ndarray, optional
-        1D array of planet-star angles [radians].
-    require_gradients : bool, optional
-        Compute derivatives of model with respect to input parameters.
-        This mode should be enabled when using a gradient-based
-        inference methods, such Hamiltonian Monte Carlo.
     pnl_c and pnl_e : int, optional
         Number of legendre roots used to approximate the integrals
         with no closed form solution. pnl_c corresponds to when the
         planet lies entirely inside the stellar disc, and pnl_e
         corresponds to when the planet intersects the stellar limb.
+        Allowed values = {10, 20, 100, 200, 500}. Use
+        get_precision_estimate() to check model precision.
 
     Methods
     -------
@@ -55,8 +49,7 @@ class HarmonicaTransit(object):
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None,
-                 require_gradients=False, pnl_c=50, pnl_e=500):
+    def __init__(self, times=None, pnl_c=20, pnl_e=50):
         # Orbital parameters.
         self._t0 = None
         self._period = None
@@ -71,41 +64,26 @@ class HarmonicaTransit(object):
 
         # Planet parameters.
         self._r = None
-
-        # todo: update api for new structure.
-        # todo: remove redundancy in psotion and derivative arrays.
-        # todo: no require gradients flag anymore.
-        # todo: crash catch for zero final two terms of rs.
-
-        # Evaluation arrays.
-        if times is not None:
-            self.times = np.ascontiguousarray(times, dtype=np.float64)
-            self.ds = np.empty(times.shape, dtype=np.float64, order='C')
-            self.nus = np.empty(times.shape, dtype=np.float64, order='C')
-            self._orbit_updated = True
-            self.lc = np.empty(times.shape, dtype=np.float64, order='C')
-        elif ds is not None and nus is not None:
-            self.ds = np.ascontiguousarray(ds, dtype=np.float64)
-            self.nus = np.ascontiguousarray(nus, dtype=np.float64)
-            self._orbit_updated = False
-            self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
-        else:
-            return
-
-        self._require_gradients = require_gradients
-        n_od = self.ds.shape + (6,)
-        self.ds_grad = np.zeros(n_od, dtype=np.float64, order='C')
-        self.nus_grad = np.zeros(n_od, dtype=np.float64, order='C')
-        n_lcd = self.ds.shape + (6 + 3 + 5,)
-        self.lc_grad = np.zeros(n_lcd, dtype=np.float64, order='C')
+        self._time_dep_strings = False
 
         # Precision: number of legendre roots at centre and edges.
         self._pnl_c = pnl_c
         self._pnl_e = pnl_e
 
+        # Evaluation arrays.
+        if times is not None:
+            self.times = np.ascontiguousarray(times, dtype=np.float64)
+            self.fs = np.empty(times.shape, dtype=np.float64)
+        else:
+            self.times = None
+            self.fs = None
+
     def __repr__(self):
-        return '<Harmonica transit: require_gradients={}>'.format(
-            self._require_gradients)
+        if self.times is not None:
+            return '<Harmonica transit: {} eval points>'.format(
+                self.times.shape[0])
+        else:
+            return '<Harmonica transit: transmission strings mode>'
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
                   ecc=0., omega=0.):
@@ -134,7 +112,6 @@ class HarmonicaTransit(object):
         self._inc = inc
         self._ecc = ecc
         self._omega = omega
-        self._orbit_updated = True
 
     def set_stellar_limb_darkening(self, u=None, limb_dark_law='quadratic'):
         """
@@ -151,7 +128,7 @@ class HarmonicaTransit(object):
             The stellar limb darkening law. Default=`quadratic`.
 
         """
-        self._u = u
+        self._u = np.ascontiguousarray(u, dtype=np.float64)
         if limb_dark_law == 'quadratic':
             self._ld_mode = 0
         else:
@@ -163,7 +140,7 @@ class HarmonicaTransit(object):
 
         Parameters
         ----------
-        r : ndarray (N,) or (N, M)
+        r : ndarray (N,) or (M, N)
             Transmission string coefficients. 1D array of N Fourier
             coefficients that specify the planet radius as a function
             of angle in the sky-plane.
@@ -173,12 +150,15 @@ class HarmonicaTransit(object):
 
             The input array is given as r=[a_0, a_1, b_1, a_2, b_2,..].
             For time-dependent transmission strings, use a 2D array
-            with N Fourier coefficients and M time steps, where M is
-            equal to the number of model evaluation epochs.
+            with M time steps and N Fourier coefficients, where M is
+            equal to the number of model evaluation times.
 
         """
-        # todo apply changeable shape.
-        self._r = r
+        self._r = np.ascontiguousarray(r, dtype=np.float64)
+        if r.ndim == 1:
+            self._time_dep_strings = False
+        else:
+            self._time_dep_strings = True
 
     def get_transit_light_curve(self):
         """
@@ -186,35 +166,31 @@ class HarmonicaTransit(object):
 
         Returns
         -------
-        if self._require_gradients == False:
-            name : type
-                Description of return object.
-        else
-            name : type
-                Description of return object.
+        fluxes : ndarray (M,),
+            The transit light curve fluxes evaluated at M times.
 
         """
-        # Get orbit (if parameters updated).
-        if self._orbit_updated:
-            bindings.orbit(self._t0, self._period, self._a,
-                           self._inc, self._ecc, self._omega,
-                           self.times, self.ds, self.nus,
-                           self.ds_grad, self.nus_grad,
-                           require_gradients=self._require_gradients)
-            self._orbit_updated = False
+        if not self._time_dep_strings:
+            bindings.light_curve(
+                self._t0, self._period, self._a, self._inc, self._ecc,
+                self._omega, self._ld_mode, self._u, self._r,
+                self.times, self.fs, self._pnl_c, self._pnl_e)
+        else:
+            for i in range(self.times.shape[0]):
+                t = np.array([self.times[i]])
+                f = np.array([self.fs[i]])
+                bindings.light_curve(
+                    self._t0, self._period, self._a, self._inc, self._ecc,
+                    self._omega, self._ld_mode, self._u, self._r[i],
+                    t, f, self._pnl_c, self._pnl_e)
+                self.fs[i] = f
 
-        # Get light curve.
-        bindings.light_curve(self._ld_mode, self._u, self._r,
-                             self.ds, self.nus, self.lc,
-                             self.ds_grad, self.nus_grad, self.lc_grad,
-                             self._pnl_c, self._pnl_e,
-                             require_gradients=self._require_gradients)
-
-        return np.copy(self.lc)
+        return self.fs
 
     def get_planet_transmission_string(self, theta):
         """
-        Get transmission string evaluated at an array of angles.
+        Get transmission string evaluated at an array of angles around
+        the planet's terminator.
 
         Parameters
         ----------
@@ -224,14 +200,26 @@ class HarmonicaTransit(object):
 
         Returns
         -------
-        r_p : ndarray,
-            The transmission string, ``r_{\rm{p}}(\theta)``, evaluated
-            at the provided thetas.
+        if r.ndim == 1:
+            r_p : ndarray (N,),
+                The transmission string, ``r_{\rm{p}}(\theta)``, evaluated
+                at N thetas.
+        elif r.ndim == 2:
+            r_p : ndarray (M, N),
+                The transmission strings, ``r_{\rm{p}}(\theta)``, each
+                M strings evaluated at N provided thetas.
 
         """
-        transmission_string = np.empty(theta.shape, dtype=np.float64, order='C')
-        bindings.transmission_string(self._r, theta, transmission_string)
-        return transmission_string
+        theta = np.ascontiguousarray(theta, dtype=np.float64)
+        if not self._time_dep_strings:
+            r_p = np.empty(theta.shape, dtype=np.float64)
+            bindings.transmission_string(self._r, theta, r_p)
+        else:
+            r_p = np.empty((self._r.shape[0], theta.shape[0]), dtype=np.float64)
+            for i in range(r_p.shape[0]):
+                bindings.transmission_string(self._r[i], theta, r_p[i])
+
+        return r_p
 
     def get_precision_estimate(self):
         """
@@ -248,10 +236,11 @@ class HarmonicaTransit(object):
         lc_user = self.get_transit_light_curve()
 
         # Get light curve at max precision.
-        lc_best = np.empty(lc_user.shape, dtype=np.float64, order='C')
-        bindings.light_curve(self._ld_mode, self._u, self._r,
-                             self.ds, self.nus, lc_best,
-                             self.ds_grad, self.nus_grad, self.lc_grad,
-                             500, 500, False)
+        lc_best = np.empty(lc_user.shape, dtype=np.float64)
+        bindings.light_curve(self._t0, self._period, self._a,
+                             self._inc, self._ecc, self._omega,
+                             self._ld_mode, self._u, self._r,
+                             self.times, lc_best,
+                             500, 500)
 
         return lc_user - lc_best

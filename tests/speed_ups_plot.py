@@ -4,18 +4,20 @@ import matplotlib.pyplot as plt
 
 
 data = pd.DataFrame(
-    [['1', 'first', 9.218931198120118e-06, 2.550315856933594e-05],],
+    [['f14b12b2d197e7df078dc29edd468412e3103367', 'Start benchmarking', 9.15384292602539e-06, 2.550315856933594e-05],],
     columns=['commit', 'note', 'speed', 'speed_wgrad'])
 
 fig, ax1 = plt.subplots(1, 1, figsize=(7, 5))
 x = np.arange(len(data))
 width = 0.3
-ax1.bar(x - width/2, data['speed'] * 1.e6, width=width, color='#bc5090', label='Model')
-ax1.bar(x + width/2, data['speed_wgrad'] * 1.e6, width=width, color='#58508d', label='Model + gradients')
+ax1.bar(x - width/2, data['speed'] * 1.e2 * 1.e3,
+        width=width, color='#bc5090', label='Model')
+ax1.bar(x + width/2, data['speed_wgrad'] * 1.e2 * 1.e3,
+        width=width, color='#58508d', label='Model + gradients')
 
-ax1.set_xticks(x, data['commit'])
+ax1.set_xticks(x, data['note'])
 ax1.set_xlabel('Commit history')
-ax1.set_ylabel('Runtime per evaluation point / $\mu s$')
+ax1.set_ylabel('Runtime per 100 point light curve / ms')
 ax1.legend(loc='upper right')
 
 plt.tight_layout()

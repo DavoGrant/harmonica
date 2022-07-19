@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from harmonica import bindings
+from harmonica import HarmonicaTransit
 
 
 class TestFlux(unittest.TestCase):
@@ -13,14 +14,11 @@ class TestFlux(unittest.TestCase):
         # Make reproducible.
         np.random.seed(3)
 
-        # Differential element, epsilon.
-        self.epsilon = 1.e-8
-
         # Example params.
         self.t0 = 5.
         self.period = 10.
-        self.a = 7.
-        self.inc = 88. * np.pi / 180.
+        self.a = 10.
+        self.inc = 89. * np.pi / 180.
         self.ecc_zero = 0.
         self.ecc_non_zero = 0.1
         self.omega = 0.1 * np.pi / 180.
@@ -29,14 +27,14 @@ class TestFlux(unittest.TestCase):
         self.times = None
         self.fs = None
 
-    def _build_test_data_structures(self, n_dp=100):
+    def _build_test_data_structures(self, n_dp=100, start=2.5, stop=7.5):
         """ Build test input data structures. """
-        self.times = np.ascontiguousarray(np.linspace(0., 7.5, n_dp),
-                                          dtype=np.float64)
+        self.times = np.ascontiguousarray(
+            np.linspace(start, stop, n_dp), dtype=np.float64)
         self.fs = np.empty(self.times.shape, dtype=np.float64)
 
-    def test_flux_data_structures(self):
-        """ Test flux data structures. """
+    def test_bindings_light_curve(self):
+        """ Test primary binding, light_curve. """
         rs = np.array([0.1, 0.001, 0.001], dtype=np.float64)
         quad_ld = np.array([0.1, 0.5], dtype=np.float64)
         nl_ld = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
@@ -47,10 +45,9 @@ class TestFlux(unittest.TestCase):
             # Check circular and eccentric cases.
             for ecc, w, in zip([self.ecc_zero, self.omega],
                                [self.ecc_non_zero, self.omega]):
-                self._build_test_data_structures(n_dp=100)
+                self._build_test_data_structures(n_dp=1000)
 
-                # Check input array types compatible.
-                fs_shape = self.fs.shape
+                # Check input array types are as expected.
                 self.assertIsInstance(us, np.ndarray)
                 self.assertIsInstance(rs, np.ndarray)
                 self.assertIsInstance(self.times, np.ndarray)
@@ -58,19 +55,14 @@ class TestFlux(unittest.TestCase):
 
                 bindings.light_curve(
                     self.t0, self.period, self.a, self.inc, ecc, w,
-                    ld_law, us, rs, self.times, self.fs, 50, 500)
+                    ld_law, us, rs, self.times, self.fs, 20, 50)
 
-                # Check output array type unchanged.
+                # Check output array type and shape.
                 self.assertIsInstance(self.fs, np.ndarray)
+                self.assertEqual(self.fs.shape, self.times.shape)
 
-                # Check updated array has consistent shape.
-                self.assertEqual(self.fs.shape, fs_shape)
-
-
-    # todo: add trasnmisison string test
-
-    def test_flux_derivatives_switch(self):
-        """ Test flux derivatives switch. """
+    def test_api_light_curve(self):
+        """ Test api, transit light curve. """
         rs = np.array([0.1, 0.001, 0.001], dtype=np.float64)
         quad_ld = np.array([0.1, 0.5], dtype=np.float64)
         nl_ld = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
@@ -79,223 +71,123 @@ class TestFlux(unittest.TestCase):
         for ld_law, us in zip([0, 1], [quad_ld, nl_ld]):
 
             if ld_law == 0:
-                self._build_test_data_structures(n_dp=100, n_us=2, n_rs=3)
+                limb_dark_law = 'quadratic'
             else:
-                self._build_test_data_structures(n_dp=100, n_us=4, n_rs=3)
+                limb_dark_law = 'non-linear'
 
-            # Derivatives switched off.
-            fs_grad_a = np.copy(self.fs_grad)
-            bindings.orbit(self.t0, self.period, self.a,
-                           self.inc, self.ecc_zero, self.omega,
-                           self.times, self.ds, self.nus,
-                           self.ds_grad, self.nus_grad,
-                           require_gradients=False)
-            bindings.light_curve(ld_law, us, rs,
-                                 self.ds, self.nus, self.fs,
-                                 self.ds_grad, self.nus_grad, self.fs_grad,
-                                 50, 500, require_gradients=False)
-            self.assertTrue(np.array_equal(fs_grad_a, self.fs_grad))
+            # Check circular and eccentric cases.
+            for ecc, w, in zip([self.ecc_zero, self.omega],
+                               [self.ecc_non_zero, self.omega]):
+                self._build_test_data_structures(n_dp=1000)
 
-            # Derivatives switched on.
-            bindings.orbit(self.t0, self.period, self.a,
-                           self.inc, self.ecc_zero, self.omega,
-                           self.times, self.ds, self.nus,
-                           self.ds_grad, self.nus_grad,
-                           require_gradients=True)
-            bindings.light_curve(ld_law, us, rs,
-                                 self.ds, self.nus, self.fs,
-                                 self.ds_grad, self.nus_grad, self.fs_grad,
-                                 50, 500, require_gradients=True)
-            self.assertFalse(np.array_equal(fs_grad_a, self.fs_grad))
+                ht = HarmonicaTransit(self.times)
+                ht.set_orbit(self.t0, self.period, self.a, self.inc, ecc, w)
+                ht.set_stellar_limb_darkening(us, limb_dark_law)
+                ht.set_planet_transmission_string(rs)
+                fluxes = ht.get_transit_light_curve()
 
-    def test_flux_derivative_quad_ld_df_dy(self):
-        """ Test flux derivative dd_dy, y={t0, p, a, i, e, w, {us}, {rs}}. """
-        # Check derivatives wrt t0, period, a, and inc.
-        y_idxs = [0, 1, 2, 3, 4, 5, 6, 8]
-        y_names = ['t0', 'period', 'a', 'inc', 'e', 'w', 'us', 'rs']
-        for param_idx, param_name in zip(y_idxs, y_names):
+                # Check output array type and shape.
+                self.assertIsInstance(fluxes, np.ndarray)
+                self.assertEqual(fluxes.shape, self.times.shape)
 
-            # Randomly generate trial light curves.
-            for i in range(20):
+    def test_api_light_curve_time_dependent(self):
+        """ Test api, light curve w/ time dependence. """
+        rs_ingress = np.array([0.1, 0.001, 0.001], dtype=np.float64)
+        rs_egress = np.array([0.1, -0.001, 0.001], dtype=np.float64)
+        quad_ld = np.array([0.1, 0.5], dtype=np.float64)
+        nl_ld = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
 
-                circular_bool = np.random.binomial(1, 0.5)
-                if not circular_bool or param_name == 'e':
-                    ecc = np.random.uniform(0., 0.9)
-                else:
-                    ecc = 0.
+        # Check quad and nl limb-darkening cases.
+        for ld_law, us in zip([0, 1], [quad_ld, nl_ld]):
 
-                us = np.random.uniform(0.01, 0.9, 2)
+            if ld_law == 0:
+                limb_dark_law = 'quadratic'
+            else:
+                limb_dark_law = 'non-linear'
 
-                n_rs = 2 * (np.random.randint(3, 9) // 2) + 1
-                a0 = np.random.uniform(0.05, 1.5)
-                rs = np.append([a0], a0 * np.random.uniform(-0.001, 0.001, n_rs - 1))
+            # Check circular and eccentric cases.
+            for ecc, w, in zip([self.ecc_zero, self.omega],
+                               [self.ecc_non_zero, self.omega]):
+                self._build_test_data_structures(n_dp=1000,
+                                                 start=4.4, stop=5.6)
 
-                params = {'t0': np.random.uniform(-1., 11.),
-                          'period': np.random.uniform(5., 100.),
-                          'a': np.random.uniform(5., 10.),
-                          'inc': np.random.uniform(80., 90.) * np.pi / 180.,
-                          'e': ecc,
-                          'w': np.random.uniform(0., 2. * np.pi),
-                          'us': us,
-                          'rs': rs}
+                # Build linear interpolating variable string.
+                rs = np.empty(self.times.shape + (3,), dtype=np.float64)
+                rs[:, 0] = np.interp(
+                    self.times, [4.6, 5.4], [rs_ingress[0], rs_egress[0]])
+                rs[:, 1] = np.interp(
+                    self.times, [4.6, 5.4], [rs_ingress[1], rs_egress[1]])
+                rs[:, 2] = np.interp(
+                    self.times, [4.6, 5.4], [rs_ingress[2], rs_egress[2]])
+                self.assertEqual(rs.ndim, 2)
+                self.assertEqual(rs.shape[0], self.times.shape[0])
 
-                # Compute fluxes.
-                self._build_test_data_structures(n_dp=100, n_us=2, n_rs=n_rs)
-                bindings.orbit(params['t0'], params['period'], params['a'],
-                               params['inc'], params['e'], params['w'],
-                               self.times, self.ds, self.nus,
-                               self.ds_grad, self.nus_grad,
-                               require_gradients=True)
-                bindings.light_curve(0, params['us'], params['rs'],
-                                     self.ds, self.nus, self.fs,
-                                     self.ds_grad, self.nus_grad,
-                                     self.fs_grad, 50, 500,
-                                     require_gradients=True)
-                fs_a = np.copy(self.fs)
+                ht = HarmonicaTransit(self.times)
+                ht.set_orbit(self.t0, self.period, self.a, self.inc, ecc, w)
+                ht.set_stellar_limb_darkening(us, limb_dark_law)
+                ht.set_planet_transmission_string(rs)
+                fluxes = ht.get_transit_light_curve()
 
-                # Update z by epsilon.
-                if param_name == 'us':
-                    u_idx = np.random.randint(0, 2)
-                    us[u_idx] += self.epsilon
-                    params['us'] = us
-                    _param_idx = param_idx + u_idx
-                elif param_name == 'rs':
-                    r_idx = np.random.randint(0, n_rs)
-                    rs[r_idx] += self.epsilon
-                    params['rs'] = rs
-                    _param_idx = param_idx + r_idx
-                else:
-                    params[param_name] = params[param_name] + self.epsilon
-                    _param_idx = param_idx
+                # Check output array type and shape.
+                self.assertIsInstance(fluxes, np.ndarray)
+                self.assertEqual(fluxes.shape, self.times.shape)
 
-                # Get gradient.
-                df_dy_a = np.copy(self.fs_grad[:, _param_idx])
+    def test_api_transmission_string(self):
+        """ Test api, transmission string. """
+        # Constant strings of various complexity.
+        theta = np.linspace(-np.pi, np.pi, 10000)
+        rs = np.array([0.1, 0.001, 0.002, -0.001, -0.002, 0.003, -0.003],
+                      dtype=np.float64)
+        for n_rs in range(1, 8, 2):
+            ht = HarmonicaTransit()
+            ht.set_planet_transmission_string(rs[:n_rs])
+            r_p = ht.get_planet_transmission_string(theta)
 
-                # Compute fluxes at new z.
-                self._build_test_data_structures(n_dp=100, n_us=2, n_rs=n_rs)
-                bindings.orbit(params['t0'], params['period'], params['a'],
-                               params['inc'], params['e'], params['w'],
-                               self.times, self.ds, self.nus,
-                               self.ds_grad, self.nus_grad,
-                               require_gradients=True)
-                bindings.light_curve(0, params['us'], params['rs'],
-                                     self.ds, self.nus, self.fs,
-                                     self.ds_grad, self.nus_grad,
-                                     self.fs_grad, 50, 500,
-                                     require_gradients=True)
-                fs_b = np.copy(self.fs)
+            # Check output array type and shape.
+            self.assertIsInstance(r_p, np.ndarray)
+            self.assertEqual(r_p.shape, theta.shape)
 
-                # Check algebraic gradients match numerical.
-                res_iter = zip(fs_a, fs_b, df_dy_a)
-                for res_idx, (d_a, d_b, grad) in enumerate(res_iter):
-                    delta_d = d_b - d_a
-                    residual = np.abs(d_b - (grad * self.epsilon + d_a))
-                    tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(
-                        residual, tol, msg='df/d{} failed no.{}.'.format(
-                            param_name, res_idx))
+    def test_api_transmission_string_time_dependent(self):
+        """ Test api, transmission string w/ time dependence. """
+        # Time dependent string.
+        theta = np.linspace(-np.pi, np.pi, 100)
+        self._build_test_data_structures(n_dp=1000, start=4.4, stop=5.6)
+        rs_ingress = np.array([0.1, 0.001, 0.001], dtype=np.float64)
+        rs_egress = np.array([0.1, -0.001, 0.001], dtype=np.float64)
+        rs = np.empty(self.times.shape + (3,), dtype=np.float64)
+        rs[:, 0] = np.interp(
+            self.times, [4.6, 5.4], [rs_ingress[0], rs_egress[0]])
+        rs[:, 1] = np.interp(
+            self.times, [4.6, 5.4], [rs_ingress[1], rs_egress[1]])
+        rs[:, 2] = np.interp(
+            self.times, [4.6, 5.4], [rs_ingress[2], rs_egress[2]])
 
-    def test_temp(self):
-        us = np.array([0.1, 0.2, 0.3, 0.4])
-        rs = np.array([0.1, -0.003, 0.003])
-        times = np.array([4.9])
-        fs = np.empty(times.shape, dtype=np.float64, order='C')
-        fs_grad = np.empty(times.shape + (6 + 4 + 3,), dtype=np.float64, order='C')
-        bindings.temp_light_curve(5., 10., 10., 89.9 * np.pi / 180., 0.01, 0.1,
-                                  1, us, rs, times,
-                                  fs, fs_grad, 50, 500)
-        print(fs)
+        ht = HarmonicaTransit()
+        ht.set_planet_transmission_string(rs)
+        r_ps = ht.get_planet_transmission_string(theta)
 
-    def test_flux_derivative_non_linear_ld_df_dy(self):
-        """ Test flux derivative dd_dy, y={t0, p, a, i, e, w, {us}, {rs}}. """
-        # Check derivatives wrt t0, period, a, and inc.
-        # y_idxs = [0, 1, 2, 3, 4, 5, 6, 10]
-        # y_names = ['t0', 'period', 'a', 'inc', 'e', 'w', 'us', 'rs']
-        y_idxs = [0]
-        y_names = ['t0']
-        for param_idx, param_name in zip(y_idxs, y_names):
+        # Check output array type and shape.
+        self.assertIsInstance(r_ps, np.ndarray)
+        self.assertEqual(r_ps.shape[0], self.times.shape[0])
+        self.assertEqual(r_ps.shape[1], theta.shape[0])
 
-            # Randomly generate trial light curves.
-            for i in range(20):
+    def test_api_precision_check(self):
+        """ Test api, precision check. """
+        quad_ld = np.array([0.1, 0.5], dtype=np.float64)
+        rs = np.array([0.1, 0.001, 0.001], dtype=np.float64)
+        self._build_test_data_structures(n_dp=1000, start=4.4, stop=5.6)
 
-                circular_bool = np.random.binomial(1, 0.5)
-                if not circular_bool or param_name == 'e':
-                    ecc = np.random.uniform(0., 0.9)
-                else:
-                    ecc = 0.
+        ht = HarmonicaTransit(self.times, pnl_c=20, pnl_e=50)
+        ht.set_orbit(self.t0, self.period, self.a, self.inc,
+                     self.ecc_non_zero, self.omega)
+        ht.set_stellar_limb_darkening(quad_ld)
+        ht.set_planet_transmission_string(rs)
+        errors = ht.get_precision_estimate()
 
-                us = np.random.uniform(0.01, 0.9, 4)
-                # us = [0., 1., 0., 1.]
-
-                n_rs = 2 * (np.random.randint(3, 9) // 2) + 1
-                a0 = np.random.uniform(0.05, 1.5)
-                rs = np.append([a0], a0 * np.random.uniform(-0.001, 0.001, n_rs - 1))
-
-                params = {'t0': np.random.uniform(-1., 11.),
-                          'period': np.random.uniform(5., 100.),
-                          'a': np.random.uniform(5., 10.),
-                          'inc': np.random.uniform(80., 90.) * np.pi / 180.,
-                          'e': ecc,
-                          'w': np.random.uniform(0., 2. * np.pi),
-                          'us': us,
-                          'rs': rs}
-
-                # Compute fluxes.
-                self._build_test_data_structures(n_dp=100, n_us=4, n_rs=n_rs)
-                bindings.orbit(params['t0'], params['period'], params['a'],
-                               params['inc'], params['e'], params['w'],
-                               self.times, self.ds, self.nus,
-                               self.ds_grad, self.nus_grad,
-                               require_gradients=True)
-                bindings.light_curve(1, params['us'], params['rs'],
-                                     self.ds, self.nus, self.fs,
-                                     self.ds_grad, self.nus_grad,
-                                     self.fs_grad, 50, 500,
-                                     require_gradients=True)
-                fs_a = np.copy(self.fs)
-
-                # Update z by epsilon.
-                print(param_name)
-                if param_name == 'us':
-                    u_idx = np.random.randint(0, 4)
-                    us[u_idx] += self.epsilon
-                    params['us'] = us
-                    _param_idx = param_idx + u_idx
-                elif param_name == 'rs':
-                    r_idx = np.random.randint(0, n_rs)
-                    rs[r_idx] += self.epsilon
-                    params['rs'] = rs
-                    _param_idx = param_idx + r_idx
-                else:
-                    params[param_name] = params[param_name] + self.epsilon
-                    _param_idx = param_idx
-
-                # Get gradient.
-                df_dy_a = np.copy(self.fs_grad[:, _param_idx])
-
-                # Compute fluxes at new z.
-                self._build_test_data_structures(n_dp=100, n_us=4, n_rs=n_rs)
-                bindings.orbit(params['t0'], params['period'], params['a'],
-                               params['inc'], params['e'], params['w'],
-                               self.times, self.ds, self.nus,
-                               self.ds_grad, self.nus_grad,
-                               require_gradients=True)
-                bindings.light_curve(1, params['us'], params['rs'],
-                                     self.ds, self.nus, self.fs,
-                                     self.ds_grad, self.nus_grad,
-                                     self.fs_grad, 50, 500,
-                                     require_gradients=True)
-                fs_b = np.copy(self.fs)
-
-                # Check algebraic gradients match numerical.
-                res_iter = zip(fs_a, fs_b, df_dy_a)
-                for res_idx, (d_a, d_b, grad) in enumerate(res_iter):
-                    delta_d = d_b - d_a
-                    residual = np.abs(d_b - (grad * self.epsilon + d_a))
-                    tol = max(np.abs(delta_d * 1.e-2), 1.e-13)
-                    self.assertLess(
-                        residual, tol, msg='df/d{} failed no.{}.'.format(
-                            param_name, res_idx))
+        # Check output array type and shape.
+        self.assertIsInstance(errors, np.ndarray)
+        self.assertEqual(errors.shape, self.times.shape)
+        self.assertLess(np.max(np.abs(errors)), 1.e-7)
 
 
 if __name__ == '__main__':
