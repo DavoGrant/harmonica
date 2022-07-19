@@ -209,12 +209,12 @@ void temp_compute_harmonica_light_curve(
     double dnu_dx[6] = {1., 1., 1., 1., 1., 1.};
 
     // Compute flux and derivatives wrt y={d, nu, {us}, {rs}}.
-    int n_y_derivatives = 2 + 4 + 3;
+    int n_y_derivatives = 2 + 4 + 7;
     double df_dy[n_y_derivatives];
     flux.transit_flux(d, z, nu, fs_py_(i), df_dy);
 
     // Compute total derivatives wrt z={t0, p, a, i, e, w, {us}, {rs}}.
-    int n_z_derivatives = 6 + 4 + 3;
+    int n_z_derivatives = 6 + 4 + 7;
     for (int j = 0; j < n_z_derivatives; j++) {
       if (j < 6) {
         fs_grad_py_(i, j) = df_dy[0] * dd_dx[j] + df_dy[1] * dnu_dx[j];

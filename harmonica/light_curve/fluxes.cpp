@@ -1896,15 +1896,6 @@ void Fluxes::f_derivatives(double df_dz[]) {
                             + dalpha_ds1 * ds1_dnu + dalpha_ds32 * ds32_dnu
                             + dalpha_ds2 * ds2_dnu);
 
-    std::cout.precision(17);
-    std::cout << df_dalpha << std::endl;
-    std::cout << dalpha_ds0 << " " << ds0_dnu << std::endl;
-    std::cout << dalpha_ds12 << " " << ds12_dnu << std::endl;
-    std::cout << dalpha_ds1 << " " << ds1_dnu << std::endl;
-    std::cout << dalpha_ds32 << " " << ds32_dnu << std::endl;
-    std::cout << dalpha_ds2 << " " << ds2_dnu << std::endl;
-    std::cout << df_dz[1] << std::endl;
-
     // df_du1, df_du2, df_du3, df_du4.
     double dalpha_du1 = I_0 * (s12 - s0);
     double dalpha_du2 = I_0 * (s1 - s0);
