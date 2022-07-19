@@ -55,27 +55,27 @@ observed_fluxes += y_errs
 # plt.show()
 
 
-def log_prob(params):
-    """ Typical Gaussian likelihood. """
-    # Ln prior.
-    ln_prior = -0.5 * np.sum(((params[0] - 0.1) / 0.01)**2)
-    ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
-
-    # Ln likelihood.
-    model = hlc_generate(_us=us, _rs=params, _times=times)
-    ln_like = -0.5 * np.sum((observed_fluxes - model)**2 / y_sigma**2
-                            + np.log(2 * np.pi * y_sigma**2))
-
-    return ln_like + ln_prior
-
-
-coords = np.array([0.1, -0.003, 0., 0.003, 0.]) + 1.e-5 * np.random.randn(36, len(rs))
-sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob)
-state = sampler.run_mcmc(coords, 4000, progress=True)
-chain = sampler.get_chain(discard=1000, flat=True)
-
-emcee_data = az.from_emcee(sampler, var_names)
-print(az.summary(emcee_data, var_names, round_to=6).to_string())
+# def log_prob(params):
+#     """ Typical Gaussian likelihood. """
+#     # Ln prior.
+#     ln_prior = -0.5 * np.sum(((params[0] - 0.1) / 0.01)**2)
+#     ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
+#
+#     # Ln likelihood.
+#     model = hlc_generate(_us=us, _rs=params, _times=times)
+#     ln_like = -0.5 * np.sum((observed_fluxes - model)**2 / y_sigma**2
+#                             + np.log(2 * np.pi * y_sigma**2))
+#
+#     return ln_like + ln_prior
+#
+#
+# coords = np.array([0.1, -0.003, 0., 0.003, 0.]) + 1.e-5 * np.random.randn(36, len(rs))
+# sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob)
+# state = sampler.run_mcmc(coords, 4000, progress=True)
+# chain = sampler.get_chain(discard=1000, flat=True)
+#
+# emcee_data = az.from_emcee(sampler, var_names)
+# print(az.summary(emcee_data, var_names, round_to=6).to_string())
 
 # figure = corner.corner(chain, truths=rs, labels=var_names)
 # plt.show()
@@ -122,7 +122,7 @@ nuts_kernel = NUTS(
     # step_size=0.1,
     # adapt_step_size=False,
     # forward_mode_differentiation=True,
-    max_tree_depth=3,
+    max_tree_depth=10,
     target_accept_prob=0.80,
     init_strategy=init_to_value(
         values=iinit),
