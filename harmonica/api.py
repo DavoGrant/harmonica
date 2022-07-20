@@ -34,9 +34,6 @@ class HarmonicaTransit(object):
     -----
     Some notes about where the method is described.
 
-    For light curve modelling, either times or ds and nus should be
-    provided.
-
     Perhaps a further note about the limb darkening for common uses.
     For example a quadratic law; u=[0.1, 0.2], limb_dark_law=`integers`,
     or a 4-param non-linear law u=[0.1, 0.2, 0.1, 0.2], limb_dark_law=`
@@ -45,7 +42,7 @@ class HarmonicaTransit(object):
     Perhaps a further note about the r coeffs intuition. If only r=[r0]
     is given then r0 is the radius of a circular planet.
 
-    Perhaps a further note about the use of the require_gradients arg.
+    Perhaps a further note about precision.
 
     """
 

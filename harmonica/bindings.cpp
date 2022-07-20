@@ -108,7 +108,7 @@ const void jax_light_curve(void* out_tuple, const void** in) {
   double ecc = ((double*) in[8])[0];
   double omega = ((double*) in[9])[0];
   double us[n_us];
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < n_us; ++i) {
     us[i] = ((double*) in[i + 10])[0];
   }
   double rs[n_rs];
@@ -126,10 +126,7 @@ const void jax_light_curve(void* out_tuple, const void** in) {
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, true);
-  // todo: adjust precision here.
-  // todo: separate into quad and nonl maybe.
-//  std::cout << "C++ called." << std::endl;
-  Fluxes flux(0, us, n_rs, rs, 20, 50, true);
+  Fluxes flux(ld_law, us, n_rs, rs, 20, 50, true);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
@@ -145,7 +142,7 @@ const void jax_light_curve(void* out_tuple, const void** in) {
     int idx_ravel = i * n_z_derivatives;
     for (int j = 0; j < n_z_derivatives; j++) {
       if (j < 6) {
-        df_dz[idx_ravel + j] = df_dy[0] * dd_dx[j] + df_dy[1] * dd_dx[j];
+        df_dz[idx_ravel + j] = df_dy[0] * dd_dx[j] + df_dy[1] * dnu_dx[j];
       } else {
         df_dz[idx_ravel + j] = df_dy[j - 4];
       }
