@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from jax.config import config
 from jaxlib import xla_client
 from functools import partial
-from jax.interpreters import ad, batching
+from jax.interpreters import ad
 from jax import abstract_arrays, core, xla
 
 from harmonica import bindings
@@ -18,9 +18,6 @@ def harmonica_transit(times, t0, period, a, inc, ecc=0., omega=0.,
 
     todo: update args format here, and docs correspondingly
     todo: check still runs
-    todo: update api
-    todo: update unit tests for regular flux forward modelling.
-    todo: make unti tests for gradients and jax jit etc.
 
     Parameters
     ----------

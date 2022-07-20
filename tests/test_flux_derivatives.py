@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
-from jax import grad
+import jax.numpy as jnp
+from jax import jit, jvp, grad
 
 from harmonica.jax import harmonica_transit
+from harmonica.jax.custom_primitives import jax_light_curve_prim
 
 
 class TestFlux(unittest.TestCase):
@@ -16,7 +18,7 @@ class TestFlux(unittest.TestCase):
 
         # Differential element and gradient error tolerance.
         self.epsilon = 1.e-8
-        self.grad_tol = 1.e-5
+        self.grad_tol = 1.e-6
 
         # Example params.
         self.t0 = 5.
@@ -36,6 +38,46 @@ class TestFlux(unittest.TestCase):
         self.times = np.ascontiguousarray(
             np.linspace(start, stop, n_dp), dtype=np.float64)
         self.fs = np.empty(self.times.shape, dtype=np.float64)
+
+    def test_custom_jax_primitive_quad_ld(self):
+        """ Test custom jax primitive for quadratic limb-darkening. """
+        n_dp = 4
+        self._build_test_data_structures(n_dp=n_dp)
+        args = (0.1, 0.5, 0.1, -0.003, 0.)
+        args_struc = (0, self.t0, self.period, self.a, self.inc,
+                      self.ecc_non_zero, self.omega) + args
+
+        # Broadcast input params to same length as times.
+        times, *args_struc = jnp.broadcast_arrays(self.times, *args_struc)
+
+        # Check JIT.
+        f, df_dz = jit(jax_light_curve_prim)(times, *args_struc)
+        self.assertEqual(f.shape, self.times.shape)
+        self.assertEqual(df_dz.ndim, 2)
+        self.assertEqual(df_dz.shape[0], self.times.shape[0])
+        self.assertEqual(df_dz.shape[1], 6 + 2 + 3)
+
+        # Check JVP. # todo not working until we take out non param args.
+        der_jit = jit(lambda arg_values, arg_tangents: jvp(
+            jax_light_curve_prim, arg_values, arg_tangents))
+        input_tangents = tuple(jnp.ones(n_dp) for p in range((len((times, *args_struc)))))
+        a = der_jit((self.times, *args_struc), input_tangents)
+        # todo: get ooutput data and check dims of jacobian.
+
+    def test_custom_jax_primitive_nonlinear_ld(self):
+        """ Test custom jax primitive for non-linear limb-darkening. """
+        # todo: same as above for nonlinear ld.
+        return
+
+    def test_api_jax_quad_ld(self):
+        """ Test jax api for quadratic limb-darkening. """
+        # todo: check calling of jax.harmonica_transit_quad_ld
+        return
+
+    def test_api_jax_nonlinear_ld(self):
+        """ Test jax api for non-linear limb-darkening. """
+        # todo: check calling of jax.harmonica_transit_nonlinear_ld
+        return
 
     def test_flux_derivative_quad_ld(self):
         """ Test flux derivative for quadratic limb-darkening. """

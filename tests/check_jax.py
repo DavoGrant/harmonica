@@ -119,9 +119,6 @@ iinit = {'r0': 0.1, 'r1': -0.003, 'r2': 0., 'r3': 0.003, 'r4': 0.}
 nuts_kernel = NUTS(
     numpyro_model,
     dense_mass=True,
-    # step_size=0.1,
-    # adapt_step_size=False,
-    # forward_mode_differentiation=True,
     max_tree_depth=10,
     target_accept_prob=0.80,
     init_strategy=init_to_value(
@@ -142,9 +139,5 @@ fig = corner.corner(samples, truths=rs, labels=var_names)
 plt.show()
 
 # todo: try (data - 1.) * 1.e3
-
-# todo: check gradients working with finite diff.
-# todo: check gradients shape for jacobian
-# todo: check finite diffs on hello world first perhasp,
 # see https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html#checking-against-numerical-differences
 # and https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html#handling-non-differentiable-arguments
