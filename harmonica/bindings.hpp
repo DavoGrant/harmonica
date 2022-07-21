@@ -7,6 +7,9 @@
 namespace py = pybind11;
 
 
+// todo: add orbit
+// todo: update docstrings.
+
 /**
  * Compute a normalised transit light curve for a given transmission
  * string, defined by an array of harmonic coefficients rs, and stellar

@@ -1,12 +1,45 @@
-#include <iostream>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
 #include "bindings.hpp"
 #include "orbit/trajectories.hpp"
 #include "light_curve/fluxes.hpp"
+#include "light_curve/gradients.hpp"
 
 namespace py = pybind11;
+
+
+void compute_orbit_trajectories(
+  const double t0, const double period, const double a,
+  const double inc, const double ecc, const double omega,
+  py::array_t<double, py::array::c_style> times_py,
+  py::array_t<double, py::array::c_style> ds_py,
+  py::array_t<double, py::array::c_style> zs_py,
+  py::array_t<double, py::array::c_style> nus_py) {
+
+  // Unpack python arrays.
+  auto times_py_ = times_py.unchecked<1>();
+  int n_times = times_py_.shape(0);
+  auto ds_py_ = ds_py.mutable_unchecked<1>();
+  auto zs_py_ = zs_py.mutable_unchecked<1>();
+  auto nus_py_ = nus_py.mutable_unchecked<1>();
+
+  // Iterate times.
+  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, false);
+  for (int i = 0; i < n_times; i++) {
+
+    // Compute orbital trajectories.
+    if (ecc == 0.) {
+      // Circular case.
+      orbital.compute_circular_orbit(times_py_(i), ds_py_(i), zs_py_(i),
+                                     nus_py_(i), nullptr, nullptr);
+    } else {
+      // Eccentric case.
+      orbital.compute_eccentric_orbit(times_py_(i), ds_py_(i), zs_py_(i),
+                                      nus_py_(i), nullptr, nullptr);
+    }
+  }
+}
 
 
 void compute_harmonica_light_curve(
@@ -38,21 +71,21 @@ void compute_harmonica_light_curve(
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, false);
-  Fluxes flux(ld_law, us, n_rs, rs, pnl_c, pnl_e, false);
+  Fluxes flux(ld_law, us, n_rs, rs, pnl_c, pnl_e);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbital trajectories.
     double d, z, nu;
     if (ecc == 0.) {
       // Circular case.
-      orbital.compute_circular_orbit(times_py_(i), d, z, nu, NULL, NULL);
+      orbital.compute_circular_orbit(times_py_(i), d, z, nu, nullptr, nullptr);
     } else {
       // Eccentric case.
-      orbital.compute_eccentric_orbit(times_py_(i), d, z, nu, NULL, NULL);
+      orbital.compute_eccentric_orbit(times_py_(i), d, z, nu, nullptr, nullptr);
     }
 
     // Compute transit flux.
-    flux.transit_flux(d, z, nu, fs_py_(i), NULL);
+    flux.transit_flux(d, z, nu, fs_py_(i));
   }
 }
 
@@ -74,7 +107,7 @@ void compute_transmission_string(
   auto transmission_string_py_ = transmission_string_py.mutable_unchecked<1>();
 
   // Compute transmission string.
-  Fluxes flux(0, us, n_rs, rs, 0, 0, false);
+  Fluxes flux(0, us, n_rs, rs, 0, 0);
   for (int i = 0; i < thetas_py_.shape(0); i++) {
     transmission_string_py_(i) = flux.rp_theta(thetas_py_(i));
   }
@@ -126,7 +159,7 @@ const void jax_light_curve(void* out_tuple, const void** in) {
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, true);
-  Fluxes flux(ld_law, us, n_rs, rs, 20, 50, true);
+  FluxDerivatives flux(ld_law, us, n_rs, rs, 20, 50);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
@@ -167,6 +200,18 @@ py::dict jax_registrations() {
 
 
 PYBIND11_MODULE(bindings, m) {
+
+  m.def("orbit", &compute_orbit_trajectories,
+    py::arg("t0") = py::none(),
+    py::arg("period") = py::none(),
+    py::arg("a") = py::none(),
+    py::arg("inc") = py::none(),
+    py::arg("ecc") = py::none(),
+    py::arg("omega") = py::none(),
+    py::arg("times") = py::none(),
+    py::arg("ds") = py::none(),
+    py::arg("zs") = py::none(),
+    py::arg("nus") = py::none());
 
   m.def("light_curve", &compute_harmonica_light_curve,
     py::arg("t0") = py::none(),

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
+from harmonica import bindings
 from harmonica import HarmonicaTransit
 
 
@@ -25,7 +26,7 @@ for i in range(1, len(_as)):
 rs = np.array(rs)
 N_c = int((len(rs) - 1) / 2)
 N_c_s = np.arange(-N_c, N_c + 1, 1)
-ts = np.linspace(4.7, 5.3, 1000)
+ts = np.linspace(4.7, 5.3, 500)
 epsilon = 1.e-7
 
 
@@ -325,11 +326,17 @@ ht.set_stellar_limb_darkening(us[1:], limb_dark_law='quadratic')
 ht.set_planet_transmission_string(rs)
 fs = ht.get_transit_light_curve()
 
+# Get orbit.
+ds = np.empty(ts.shape, dtype=np.float64)
+zs = np.empty(ts.shape, dtype=np.float64)
+nus = np.empty(ts.shape, dtype=np.float64)
+bindings.orbit(t0, period, a, inc, 0., 0., ts, ds, zs, nus)
+
 # Numerical double-precision light curve.
 fs_numerical = []
 fs_numerical_err = []
 cs = generate_complex_fourier_coeffs()
-for d, nu in zip(ht.ds, ht.nus):
+for d, nu in zip(ds, nus):
     f_num, f_num_err = compute_numerical_flux(cs, d, nu)
     fs_numerical.append(f_num)
     fs_numerical_err.append(f_num_err)
@@ -337,25 +344,28 @@ for d, nu in zip(ht.ds, ht.nus):
 fs_numerical = np.array(fs_numerical)
 fs_numerical_err = np.array(fs_numerical_err)
 
-fig = plt.figure(figsize=(8, 6))
+fig = plt.figure(figsize=(6, 9))
 ax1 = plt.subplot(1, 1, 1)
 
-ax1.plot(ht.ds, np.abs(fs_20 - fs_numerical),
-         c='#ffa600', label='$N_l = 20$')
-ax1.plot(ht.ds, np.abs(fs_50 - fs_numerical),
-         c='#ff6361', label='$N_l = 50$')
-ax1.plot(ht.ds, np.abs(fs_100 - fs_numerical),
-         c='#bc5090', label='$N_l = 100$')
-ax1.plot(ht.ds, np.abs(fs_200 - fs_numerical),
-         c='#58508d', label='$N_l = 200$')
-ax1.plot(ht.ds, np.abs(fs_500 - fs_numerical),
-         c='#003f5c', label='$N_l = 500$')
-# ax1.plot(ht.ds, np.abs(fs - fs_numerical),
-#          c='#000000', label='$N_l = \\rm{auto}$')
-ax1.plot(ht.ds, fs_numerical_err,
+ax1.plot(ds, fs_numerical_err,
          c='#b0b0b0', label='Numerical error estimate')
+ax1.plot(ds, np.abs(fs_20 - fs_numerical),
+         c='#ffa600', label='$N_l = 20$')
+ax1.plot(ds, np.abs(fs_50 - fs_numerical),
+         c='#ff6361', label='$N_l = 50$')
+ax1.plot(ds, np.abs(fs_100 - fs_numerical),
+         c='#bc5090', label='$N_l = 100$')
+ax1.plot(ds, np.abs(fs_200 - fs_numerical),
+         c='#58508d', label='$N_l = 200$')
+ax1.plot(ds, np.abs(fs_500 - fs_numerical),
+         c='#003f5c', label='$N_l = 500$')
+# ax1.plot(ds, np.abs(fs - fs_numerical),
+#          c='#000000', label='$N_l = \\rm{auto}$')
 
-ax1.set_ylim(1.e-17, 1.e-7)
+ax1.axhline(10.e-6, ls='--', color='#000000', alpha=0.5)
+ax1.text(0.9, 15.e-6, 'JWST noise floor', color='#000000', alpha=0.6)
+
+ax1.set_ylim(1.e-17, 7.e-3)
 ax1.set_yscale('log')
 ax1.set_xlabel('$d$ / stellar radii')
 ax1.set_ylabel('Error')
