@@ -29,13 +29,13 @@ class OrbitTrajectories {
      * centre. Both quantities are computed in the plane of the sky.
      *
      * @param time model evaluation time [days].
-     * @param d empty planet-star centre separation [stellar radii].
-     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
-     * @param nu empty planet velocity-star centre angle [radians].
+     * @param out_d planet-star centre separation [stellar radii].
+     * @param out_z distance from sky-plane, z < 0 planet behind [stellar radii].
+     * @param out_nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    void compute_circular_orbit(const double& time, double& d,
-                                double& z, double& nu);
+    void compute_circular_orbit(const double time, double& out_d,
+                                double& out_z, double& out_nu);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -44,13 +44,13 @@ class OrbitTrajectories {
      * centre. Both quantities are computed in the plane of the sky.
      *
      * @param time model evaluation time [days].
-     * @param d empty planet-star centre separation [stellar radii].
-     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
-     * @param nu empty planet velocity-star centre angle [radians].
+     * @param out_d planet-star centre separation [stellar radii].
+     * @param out_z distance from sky-plane, z < 0 planet behind [stellar radii].
+     * @param out_nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    void compute_eccentric_orbit(const double& time, double& d,
-                                 double& z, double& nu);
+    void compute_eccentric_orbit(const double time, double& out_d,
+                                 double& out_z, double& out_nu);
 
   protected:
 

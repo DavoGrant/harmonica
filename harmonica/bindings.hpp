@@ -25,7 +25,7 @@ namespace py = pybind11;
  * @param us_py array of stellar limb darkening coefficients [].
  * @param rs_py array of planet radius harmonic coefficients [stellar radii].
  * @param times_py array of model evaluation times [days].
- * @param fs_py empty array of normalised light curve fluxes [].
+ * @param out_fs_py array of normalised light curve fluxes [].
  * @param pnl_c N_l precision for planet inside stellar disc.
  * @param pnl_e N_l precision for planet intersecting stellar disc.
  * @return void.
@@ -37,7 +37,7 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> us_py,
   py::array_t<double, py::array::c_style> rs_py,
   py::array_t<double, py::array::c_style> times_py,
-  py::array_t<double, py::array::c_style> fs_py,
+  py::array_t<double, py::array::c_style> out_fs_py,
   int pnl_c, int pnl_e);
 
 
@@ -48,7 +48,7 @@ void compute_harmonica_light_curve(
  *
  * @param rs_py array of planet radius harmonic coefficients [stellar radii].
  * @param thetas_py array of angles in the terminator plane [radians].
- * @param transmission_string_py empty array of planet radii [stellar radii].
+ * @param out_transmission_string_py array of planet radii [stellar radii].
  * @return void.
  */
 void compute_transmission_string(

@@ -11,14 +11,14 @@ OrbitDerivatives::OrbitDerivatives(double t0, double period, double a,
 
 
 void OrbitDerivatives::compute_circular_orbit_and_derivatives(
-  const double& time, double& d, double& z, double& nu,
-  double dd_dz[], double dnu_dz[]) {
+  const double time, double& out_d, double& out_z, double& out_nu,
+  double out_dd_dz[], double out_dnu_dz[]) {
 
-  this->compute_circular_orbit(time, d, z, nu);
+  this->compute_circular_orbit(time, out_d, out_z, out_nu);
 
   // Compute d partial derivatives: first branches of the tree.
-  const double dd_dx = m_x / d;
-  const double dd_dy = m_y / d;
+  const double dd_dx = m_x / out_d;
+  const double dd_dy = m_y / out_d;
 
   // Compute d partial derivatives: second branches of the tree.
   const double dx_da = m_cos_M;
@@ -42,30 +42,30 @@ void OrbitDerivatives::compute_circular_orbit_and_derivatives(
   const double dpsi_dinc = -m_sin_inc * m_atan_mcsM;
 
   // Compute dd_dt0, dd_dp, dd_da, and dd_dinc via the chain rule.
-  dd_dz[0] = dd_dx * dx_dM * dM_dt0 + dd_dy * dy_dM * dM_dt0;
-  dd_dz[1] = dd_dx * dx_dM * dM_dp + dd_dy * dy_dM * dM_dp;
-  dd_dz[2] = dd_dx * dx_da + dd_dy * dy_da;
-  dd_dz[3] = dd_dy * dy_dinc;
+  out_dd_dz[0] = dd_dx * dx_dM * dM_dt0 + dd_dy * dy_dM * dM_dt0;
+  out_dd_dz[1] = dd_dx * dx_dM * dM_dp + dd_dy * dy_dM * dM_dp;
+  out_dd_dz[2] = dd_dx * dx_da + dd_dy * dy_da;
+  out_dd_dz[3] = dd_dy * dy_dinc;
 
   // Compute dnu_dt0, dnu_dp, dnu_da, and dnu_dinc via the chain rule.
-  dnu_dz[0] = dnu_dx * dx_dM * dM_dt0 + dnu_dy * dy_dM * dM_dt0
-               + dnu_dpsi * dpsi_dM * dM_dt0;
-  dnu_dz[1] = dnu_dx * dx_dM * dM_dp + dnu_dy * dy_dM * dM_dp
-               + dnu_dpsi * dpsi_dM * dM_dp;
-  dnu_dz[2] = 0.;
-  dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
+  out_dnu_dz[0] = dnu_dx * dx_dM * dM_dt0 + dnu_dy * dy_dM * dM_dt0
+                  + dnu_dpsi * dpsi_dM * dM_dt0;
+  out_dnu_dz[1] = dnu_dx * dx_dM * dM_dp + dnu_dy * dy_dM * dM_dp
+                  + dnu_dpsi * dpsi_dM * dM_dp;
+  out_dnu_dz[2] = 0.;
+  out_dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
 }
 
 
 void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
-  const double& time, double& d, double& z, double& nu,
-  double dd_dz[], double dnu_dz[]) {
+  const double time, double& out_d, double& out_z, double& out_nu,
+  double out_dd_dz[], double out_dnu_dz[]) {
 
-  this->compute_eccentric_orbit(time, d, z, nu);
+  this->compute_eccentric_orbit(time, out_d, out_z, out_nu);
 
   // Compute d partial derivatives: first branches of the tree.
-  const double dd_dx = m_x / d;
-  const double dd_dy = m_y / d;
+  const double dd_dx = m_x / out_d;
+  const double dd_dy = m_y / out_d;
 
   // Compute d partial derivatives: second branches of the tree.
   const double dx_dr = m_cos_fpw;
@@ -116,21 +116,21 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
 
   // Compute dd_dt0, dd_dp, dd_da, dd_dinc, dd_de, and dd_dw
   // via the chain rule. Probs autograd next time eh.
-  dd_dz[0] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
+  out_dd_dz[0] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
                       + dx_dsinf * dsinf_dM * dM_dt0
                       + dx_dcosf * dcosf_dM * dM_dt0)
              + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
                         + dy_dsinf * dsinf_dM * dM_dt0
                         + dy_dcosf * dcosf_dM * dM_dt0);
-  dd_dz[1] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
+  out_dd_dz[1] = dd_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
                       + dx_dsinf * dsinf_dM * dM_dp
                       + dx_dcosf * dcosf_dM * dM_dp)
              + dd_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
                         + dy_dsinf * dsinf_dM * dM_dp
                         + dy_dcosf * dcosf_dM * dM_dp);
-  dd_dz[2] = dd_dx * dx_dr * dr_da + dd_dy * dy_dr * dr_da;
-  dd_dz[3] = dd_dy * dy_dinc;
-  dd_dz[4] = dd_dx * (dx_dr * (dr_de
+  out_dd_dz[2] = dd_dx * dx_dr * dr_da + dd_dy * dy_dr * dr_da;
+  out_dd_dz[3] = dd_dy * dy_dinc;
+  out_dd_dz[4] = dd_dx * (dx_dr * (dr_de
                                + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
                       + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
                       + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
@@ -138,7 +138,7 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
                                  + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
                         + dy_dsinf * (dsinf_de + dsinf_dM * dM_de)
                         + dy_dcosf * (dcosf_de + dcosf_dM * dM_de));
-  dd_dz[5] = dd_dx * (dx_domega + dx_dr * dr_dcosf * dcosf_dM * dM_domega
+  out_dd_dz[5] = dd_dx * (dx_domega + dx_dr * dr_dcosf * dcosf_dM * dM_domega
                       + dx_dsinf * dsinf_dM * dM_domega
                       + dx_dcosf * dcosf_dM * dM_domega)
              + dd_dy * (dy_domega
@@ -148,7 +148,7 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
 
   // Compute dnu_dt0, dnu_dp, dnu_da, dnu_dinc, dnu_de, and dnu_dw
   // via the chain rule.
-  dnu_dz[0] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
+  out_dnu_dz[0] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dt0
                         + dx_dsinf * dsinf_dM * dM_dt0
                         + dx_dcosf * dcosf_dM * dM_dt0)
               + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dt0
@@ -156,7 +156,7 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
                           + dy_dcosf * dcosf_dM * dM_dt0)
               + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dt0
                             + dpsi_dcosf * dcosf_dM * dM_dt0);
-  dnu_dz[1] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
+  out_dnu_dz[1] = dnu_dx * (dx_dr * dr_dcosf * dcosf_dM * dM_dp
                         + dx_dsinf * dsinf_dM * dM_dp
                         + dx_dcosf * dcosf_dM * dM_dp)
               + dnu_dy * (dy_dr * dr_dcosf * dcosf_dM * dM_dp
@@ -164,9 +164,9 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
                           + dy_dcosf * dcosf_dM * dM_dp)
               + dnu_dpsi * (dpsi_dsinf * dsinf_dM * dM_dp
                             + dpsi_dcosf * dcosf_dM * dM_dp);
-  dnu_dz[2] = dnu_dx * dx_dr * dr_da + dnu_dy * dy_dr * dr_da;
-  dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
-  dnu_dz[4] = dnu_dx * (dx_dr * (dr_de
+  out_dnu_dz[2] = dnu_dx * dx_dr * dr_da + dnu_dy * dy_dr * dr_da;
+  out_dnu_dz[3] = dnu_dy * dy_dinc + dnu_dpsi * dpsi_dinc;
+  out_dnu_dz[4] = dnu_dx * (dx_dr * (dr_de
                                  + dr_dcosf * (dcosf_de + dcosf_dM * dM_de))
                         + dx_dsinf * (dsinf_de + dsinf_dM * dM_de)
                         + dx_dcosf * (dcosf_de + dcosf_dM * dM_de))
@@ -177,7 +177,7 @@ void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
                           + dy_dcosf * (dcosf_de + dcosf_dM * dM_de))
               + dnu_dpsi * (dpsi_dsinf * (dsinf_de + dsinf_dM * dM_de)
                             + dpsi_dcosf * (dcosf_de + dcosf_dM * dM_de));
-  dnu_dz[5] = dnu_dx * (dx_domega
+  out_dnu_dz[5] = dnu_dx * (dx_domega
                         + dx_dr * dr_dcosf * dcosf_dM * dM_domega
                         + dx_dsinf * dsinf_dM * dM_domega
                         + dx_dcosf * dcosf_dM * dM_domega)

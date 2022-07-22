@@ -30,7 +30,7 @@ OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
 
 
 void OrbitTrajectories::compute_circular_orbit(
-  const double& time, double& d, double& z, double& nu) {
+  const double time, double& out_d, double& out_z, double& out_nu) {
 
   // Compute time of periastron.
   const double tp = m_t0 - fractions::pi_d_2 / m_n;
@@ -45,7 +45,7 @@ void OrbitTrajectories::compute_circular_orbit(
   // Compute location of planet centre relative to stellar centre.
   m_x = m_a * m_cos_M;
   m_y = m_a *m_cos_inc * m_sin_M;
-  z = m_a * m_sin_inc * m_sin_M;
+  out_z = m_a * m_sin_inc * m_sin_M;
 
   // Compute angle between x-axis and planet velocity.
   m_atan_mcsM = std::atan(-m_cos_M / m_sin_M);
@@ -53,15 +53,15 @@ void OrbitTrajectories::compute_circular_orbit(
 
   // Compute separation distance between planet and stellar centres.
   m_d_squared = m_x * m_x + m_y * m_y;
-  d = std::sqrt(m_d_squared);
+  out_d = std::sqrt(m_d_squared);
 
   // Compute angle between planet velocity and stellar centre.
-  nu = std::atan2(m_y, m_x) - psi;
+  out_nu = std::atan2(m_y, m_x) - psi;
 }
 
 
 void OrbitTrajectories::compute_eccentric_orbit(
-  const double& time, double& d, double& z, double& nu) {
+  const double time, double& out_d, double& out_z, double& out_nu) {
 
   // Compute time of periastron.
   m_some = std::sqrt(1. - m_ecc);
@@ -86,7 +86,7 @@ void OrbitTrajectories::compute_eccentric_orbit(
   m_cos_fpw = m_cos_f * m_cos_omega - m_sin_f * m_sin_omega;
   m_x = m_r * m_cos_fpw;
   m_y = m_r * m_cos_inc * m_sin_fpw;
-  z = m_r * m_sin_inc * m_sin_fpw;
+  out_z = m_r * m_sin_inc * m_sin_fpw;
 
   // Compute angle between x-axis and planet velocity.
   m_atan_mcs_fpw = std::atan(-m_cos_fpw / m_sin_fpw);
@@ -94,8 +94,8 @@ void OrbitTrajectories::compute_eccentric_orbit(
 
   // Compute separation distance between planet and stellar centres.
   m_d_squared = m_x * m_x + m_y * m_y;
-  d = std::sqrt(m_d_squared);
+  out_d = std::sqrt(m_d_squared);
 
   // Compute angle between planet velocity and stellar centre.
-  nu = std::atan2(m_y, m_x) - psi;
+  out_nu = std::atan2(m_y, m_x) - psi;
 }

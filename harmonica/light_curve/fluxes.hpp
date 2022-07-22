@@ -34,7 +34,7 @@ class Fluxes {
      * @param theta angle in the terminator plane from v_orb [radians].
      * @return rp, the planet radius, is always real.
      */
-    double rp_theta(double& _theta);
+    double rp_theta(const double _theta);
 
     /**
      * Compute normalised transit flux.
@@ -42,16 +42,16 @@ class Fluxes {
      * @param d planet-star centre separation [stellar radii].
      * @param z distance from sky-plane, if z < 0 no transits [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
-     * @param f empty normalised light curve flux [].
+     * @param out_f normalised light curve flux [].
      * @return void.
      */
-    void transit_flux(const double& d, const double& z,
-                      const double& nu, double& f);
+    void transit_flux(double d, const double z,
+                      const double nu, double& out_f);
 
   protected:
 
     // Limb-darkening variables.
-    double m_ld_law;
+    int m_ld_law;
     double m_I_0, m_I_0_bts;
     Eigen::Vector<double, EigD> m_p;
 
@@ -82,8 +82,8 @@ class Fluxes {
      * Compute solution vector S for each element in the polynomial
      * limb-darkening basis.
      */
-    void compute_solution_vector(const double& d, const double& z,
-                                 const double& nu, double& f);
+    void compute_solution_vector(const double d, const double z,
+                                 const double nu);
 
     /**
      * Find and characterise the planet-stellar limb intersections
@@ -93,30 +93,30 @@ class Fluxes {
      * These pairs are assigned as either planet=0, entire_planet=1,
      * star=2, entire_star=3, or beyond=4 (flux=0).
      */
-    virtual void find_intersections_theta(const double& d, const double& nu);
+    virtual void find_intersections_theta(const double d, const double nu);
 
     /**
      * Compute the line integrals s_n along a segment of the
      * planet's limb from theta_j to theta_j_p1 anticlockwise.
      */
-    void s_planet(int _j, int theta_type_j, double& _theta_j,
-                  double& _theta_j_p1, const double& d,
-                  const double& nu);
+    void s_planet(int _j, int theta_type_j, double _theta_j,
+                  double _theta_j_p1, const double d,
+                  const double nu);
 
     /**
      * Compute the line integrals s_n along a segment of the
      * star's limb from theta_j to theta_j_p1 anticlockwise.
      */
-    virtual void s_star(int _j, int theta_type_j, double& _theta_j,
-                        double& _theta_j_p1, const double& d,
-                        const double& nu);
+    virtual void s_star(int _j, int theta_type_j, double _theta_j,
+                        double _theta_j_p1, const double d,
+                        const double nu);
 
     /**
      * Select the order of legendre polynomial to use in numerical
      * evaluation of an integral. Order n integrates polynomial
      * integrands of order 2n - 1 exactly.
      */
-    void select_legendre_order(const double& d);
+    void select_legendre_order(const double d);
 
     /**
      * Reset all intersection and integral quantities to zero when
@@ -128,7 +128,7 @@ class Fluxes {
      * Compute some position-specific quantities at start of each
      * new flux calculation, ie. avoiding recalc of exponentials.
      */
-    void pre_compute_psq(const double& d, const double& nu);
+    void pre_compute_psq(const double d, const double nu);
 
     /**
      * Compute the distance to the stellar limb from the planet centred
@@ -136,26 +136,26 @@ class Fluxes {
      * exist when d > 1, however we only take the + solution inside the
      * stellar disc, d < 1.
      */
-    double rs_theta(const double& d, double& dcos_thetamnu,
+    double rs_theta(const double d, double dcos_thetamnu,
                     int plus_solution);
 
     /**
      * Compute derivative of the planet radius wrt theta at a given theta.
      */
-    double drp_dtheta(double& _theta);
+    double drp_dtheta(double _theta);
 
     /**
      * Compute second derivative of the planet radius wrt theta at a
      * given theta.
      */
-    double d2rp_dtheta2(double& _theta);
+    double d2rp_dtheta2(double _theta);
 
     /**
      * Companion matrix elements for computing the max and min radii of
      * a transmission string, D_jk(c).
      */
     std::complex<double> extrema_companion_matrix_D_jk(
-        int j, int k, int& shape);
+        int j, int k, int shape);
 
     /**
      * Companion matrix elements for computing the planet-star limb
@@ -163,7 +163,7 @@ class Fluxes {
      * of the relative position, d and nu.
      */
     std::complex<double> intersection_companion_matrix_C_jk_base(
-        int j, int k, int& shape);
+        int j, int k, int shape);
 
     /**
      * Complex polynomial coefficients for the intersection equation, h_j,
@@ -199,7 +199,7 @@ class Fluxes {
      * position and its max and min radius. This reduces the need to compute
      * the costly eigenvalues for much of a light curve.
      */
-    bool no_obvious_intersections(const double& d, const double& nu);
+    bool no_obvious_intersections(const double d, const double nu);
 
     /**
      * Compute the real roots, as a vector of thetas, from a given companion
@@ -207,8 +207,8 @@ class Fluxes {
      * the matrix eigenvalues lie on the unit circle.
      */
     virtual std::vector<double> compute_real_theta_roots(
-        Eigen::Matrix<std::complex<double>, EigD, EigD>
-          companion_matrix, int& shape);
+        const Eigen::Matrix<std::complex<double>, EigD, EigD>&
+          companion_matrix, int shape);
 
     /**
      * If there are no intersections found check which trivial configuration
@@ -218,7 +218,7 @@ class Fluxes {
      * coarseness of the max/min radius checking. Always true when there are
      * no intersections found.
      */
-    bool trivial_configuration(const double& d, const double& nu);
+    bool trivial_configuration(const double d, const double nu);
 
     /**
      * Characterise the bodies limb that forms a segment of the closed loop
@@ -226,30 +226,30 @@ class Fluxes {
      * as either planet=0 or star=1 integral types. NB. the theta vector must
      * be pre-sorted in ascending order, and span the full two pi.
      */
-    void characterise_intersection_pairs(const double& d, const double& nu);
+    void characterise_intersection_pairs(const double d, const double nu);
 
     /**
      * Check intersection associations with either the T+ or T- intersection
      * equation.
      */
-    void associate_intersections(int j, const double& d,
-                                 double& dcos_thetamnu, int& T_theta_j);
+    void associate_intersections(int j, const double d,
+                                 double dcos_thetamnu, int& out_T_theta_j);
 
     /**
      * Check intersection gradients are dT_dtheta+ or dT_dtheta- at
      * intersection.
      */
-    void gradient_intersections(int j, double& dsin_thetamnu,
-                                double& dcos_thetamnu, int plus_solution,
-                                int& dT_dtheta_theta_j);
+    void gradient_intersections(int j, double dsin_thetamnu,
+                                double dcos_thetamnu, int plus_solution,
+                                int& out_dT_dtheta_theta_j);
 
     /**
      * Convolve two 1d vectors of complex values fully. c = a (*) b with
      * a final size of len_a + len_b - 1
      */
     Eigen::Vector<std::complex<double>, EigD> complex_convolve(
-        Eigen::Vector<std::complex<double>, EigD> a,
-        Eigen::Vector<std::complex<double>, EigD> b,
+        const Eigen::Vector<std::complex<double>, EigD>& a,
+        const Eigen::Vector<std::complex<double>, EigD>& b,
         int len_a, int len_b, int len_c);
 
     /**
@@ -258,8 +258,8 @@ class Fluxes {
      */
     Eigen::Vector<std::complex<double>, EigD>
     complex_ca_vector_addition(
-        Eigen::Vector<std::complex<double>, EigD> a,
-        Eigen::Vector<std::complex<double>, EigD> b,
+        const Eigen::Vector<std::complex<double>, EigD>& a,
+        const Eigen::Vector<std::complex<double>, EigD>& b,
         int len_a, int len_b);
 
     /**
@@ -268,8 +268,8 @@ class Fluxes {
      * convolutions before the integral is evaluated.
      */
     virtual void analytic_even_terms(
-        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
-        const double& d, const double& nu);
+        int _j, int theta_type_j, double _theta_j, double _theta_j_p1,
+        const double d, const double nu);
 
     /**
      * Compute the odd and half-integer terms in the planet limb's
@@ -277,8 +277,8 @@ class Fluxes {
      * solution and therefore Gauss-legendre quadrature is employed.
      */
     virtual void numerical_odd_terms(
-        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
-        const double& d, const double& nu);
+        int _j, int theta_type_j, double _theta_j, double _theta_j_p1,
+        const double d, const double nu);
 
 };
 

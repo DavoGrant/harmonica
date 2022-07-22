@@ -34,16 +34,16 @@ class OrbitDerivatives : public OrbitTrajectories {
      * set {t0, p, a, i} may be computed.
      *
      * @param time model evaluation time [days].
-     * @param d empty planet-star centre separation [stellar radii].
-     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
-     * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i}.
-     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i}.
+     * @param out_d planet-star centre separation [stellar radii].
+     * @param out_z distance from sky-plane, z < 0 planet behind [stellar radii].
+     * @param out_nu planet velocity-star centre angle [radians].
+     * @param out_dd_dz derivatives array dd/dz z={t0, p, a, i}.
+     * @param out_dnu_dz derivatives array dnu/dz z={t0, p, a, i}.
      * @return void.
      */
     void compute_circular_orbit_and_derivatives(
-        const double& time, double& d, double& z,
-        double& nu, double dd_dz[], double dnu_dz[]);
+        const double time, double& out_d, double& out_z,
+        double& out_nu, double out_dd_dz[], double out_dnu_dz[]);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -54,16 +54,16 @@ class OrbitDerivatives : public OrbitTrajectories {
      * set {t0, p, a, i, e, w} may be computed.
      *
      * @param time model evaluation time [days].
-     * @param d empty planet-star centre separation [stellar radii].
-     * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
-     * @param nu empty planet velocity-star centre angle [radians].
-     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i, e, w}.
-     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i, e, w}.
+     * @param out_d planet-star centre separation [stellar radii].
+     * @param out_z distance from sky-plane, z < 0 planet behind [stellar radii].
+     * @param out_nu planet velocity-star centre angle [radians].
+     * @param out_dd_dz derivatives array dd/dz z={t0, p, a, i, e, w}.
+     * @param out_dnu_dz derivatives array dnu/dz z={t0, p, a, i, e, w}.
      * @return void.
      */
     void compute_eccentric_orbit_and_derivatives(
-        const double& time, double& d, double& z,
-        double& nu, double dd_dz[], double dnu_dz[]);
+        const double time, double& out_d, double& out_z,
+        double& out_nu, double out_dd_dz[], double out_dnu_dz[]);
 
 };
 

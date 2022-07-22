@@ -5,7 +5,7 @@
 #include "../constants/constants.hpp"
 
 
-TrueAnomaly solve_kepler(const double& M, const double& ecc) {
+TrueAnomaly solve_kepler(const double M, const double ecc) {
   // Compute eccentric anomaly.
   EccentricAnomaly ecc_anom = compute_eccentric_anomaly(M, ecc);
 
@@ -14,7 +14,7 @@ TrueAnomaly solve_kepler(const double& M, const double& ecc) {
 }
 
 
-EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc) {
+EccentricAnomaly compute_eccentric_anomaly(const double M, const double ecc) {
 
   const double g2s_e = 0.2588190451025207623489 * ecc;
   const double g3s_e = 0.5 * ecc;
@@ -148,7 +148,7 @@ EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc) {
 }
 
 
-double eccentric_anomaly_guess(const double& M, const double& ecc) {
+double eccentric_anomaly_guess(const double M, const double ecc) {
 
   const double ome = 1. - ecc;
   const double sqrt_ome = sqrt(ome);
@@ -168,7 +168,8 @@ double eccentric_anomaly_guess(const double& M, const double& ecc) {
 }
 
 
-TrueAnomaly compute_true_anomaly(const double& ecc, EccentricAnomaly ecc_anom) {
+TrueAnomaly compute_true_anomaly(const double ecc,
+                                 const EccentricAnomaly& ecc_anom) {
 
   const double ome = 1. - ecc;
   double sinf;

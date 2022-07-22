@@ -24,7 +24,7 @@ struct TrueAnomaly
  * @param ecc eccentricity.
  * @return sine and cosine of the true anomaly.
  */
-TrueAnomaly solve_kepler(const double& M, const double& ecc);
+TrueAnomaly solve_kepler(const double M, const double ecc);
 
 
 /**
@@ -37,7 +37,7 @@ TrueAnomaly solve_kepler(const double& M, const double& ecc);
  * @param ecc eccentricity.
  * @return sine and cosine of the eccentric anomaly.
  */
-EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc);
+EccentricAnomaly compute_eccentric_anomaly(const double M, const double ecc);
 
 
 /**
@@ -48,7 +48,7 @@ EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc);
  * @param ecc eccentricity, close to one.
  * @return eccentric anomaly guess.
  */
-double eccentric_anomaly_guess(const double& M, const double& ecc);
+double eccentric_anomaly_guess(const double M, const double ecc);
 
 
 /**
@@ -58,7 +58,8 @@ double eccentric_anomaly_guess(const double& M, const double& ecc);
  * @param sine and cosine of the eccentric anomaly.
  * @return sine and cosine of the true anomaly.
  */
-TrueAnomaly compute_true_anomaly(const double& ecc, EccentricAnomaly ecc_anom);
+TrueAnomaly compute_true_anomaly(const double ecc,
+                                 const EccentricAnomaly& ecc_anom);
 
 
 #endif

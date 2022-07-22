@@ -9,7 +9,7 @@ data = pd.DataFrame(
      ['a8d295310ea3d97b6e998d88da3cc15b4f2001bc',
       'Class inheritance', 9.08e-06, 2.54e-05],
      ['d0f43d57a2b5feedaea45f8abe99cc3ec85975aa',
-      'More pass by reference', 8.97e-06, 2.53e-05],],
+      'Selective pass by const reference', 8.76e-06, 2.35e-05],],
     columns=['commit', 'note', 'speed', 'speed_wgrad'])
 
 fig, ax1 = plt.subplots(1, 1, figsize=(7, 5))

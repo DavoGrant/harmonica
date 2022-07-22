@@ -33,13 +33,13 @@ class FluxDerivatives : public Fluxes {
      * @param d planet-star centre separation [stellar radii].
      * @param z distance from sky-plane, if z < 0 no transits [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
-     * @param f empty normalised light curve flux [].
-     * @param df_dz empty derivatives array df/dz z={d, nu, {us}, {rs}}.
+     * @param out_f normalised light curve flux [].
+     * @param out_df_dz derivatives array df/dz z={d, nu, {us}, {rs}}.
      * @return void.
      */
     void transit_flux_and_derivatives(
-        const double& d, const double& z, const double& nu,
-        double& f, double df_dz[]);
+        const double d, const double z, const double nu,
+        double& out_f, double out_df_dz[]);
 
   private:
 
@@ -68,15 +68,15 @@ class FluxDerivatives : public Fluxes {
      * These pairs are assigned as either planet=0, entire_planet=1,
      * star=2, entire_star=3, or beyond=4 (flux=0).
      */
-    void find_intersections_theta(const double& d, const double& nu) override final;
+    void find_intersections_theta(const double d, const double nu) override final;
 
     /**
      * Compute the line integrals s_n along a segment of the
      * star's limb from theta_j to theta_j_p1 anticlockwise.
      */
-    void s_star(int _j, int theta_type_j, double& _theta_j,
-                double& _theta_j_p1, const double& d,
-                const double& nu) override final;
+    void s_star(int _j, int theta_type_j, double _theta_j,
+                double _theta_j_p1, const double d,
+                const double nu) override final;
 
     /**
      * Compute model derivatives: the flux with respect to the model
@@ -113,8 +113,8 @@ class FluxDerivatives : public Fluxes {
      * the matrix eigenvalues lie on the unit circle.
      */
     std::vector<double> compute_real_theta_roots(
-      Eigen::Matrix<std::complex<double>, EigD, EigD>
-        companion_matrix, int& shape) override final;
+      const Eigen::Matrix<std::complex<double>, EigD, EigD>&
+        companion_matrix, int shape) override final;
 
     /**
      * Compute the even terms in the planet limb's line integral.
@@ -122,8 +122,8 @@ class FluxDerivatives : public Fluxes {
      * convolutions before the integral is evaluated.
      */
     void analytic_even_terms(
-        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
-        const double& d, const double& nu) override final;
+        int _j, int theta_type_j, double _theta_j, double _theta_j_p1,
+        const double d, const double nu) override final;
 
     /**
      * Compute the odd and half-integer terms in the planet limb's
@@ -131,8 +131,8 @@ class FluxDerivatives : public Fluxes {
      * solution and therefore Gauss-legendre quadrature is employed.
      */
     void numerical_odd_terms(
-        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
-        const double& d, const double& nu) override final;
+        int _j, int theta_type_j, double _theta_j, double _theta_j_p1,
+        const double d, const double nu) override final;
 
 };
 

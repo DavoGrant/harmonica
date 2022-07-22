@@ -14,16 +14,16 @@ void compute_orbit_trajectories(
   const double t0, const double period, const double a,
   const double inc, const double ecc, const double omega,
   py::array_t<double, py::array::c_style> times_py,
-  py::array_t<double, py::array::c_style> ds_py,
-  py::array_t<double, py::array::c_style> zs_py,
-  py::array_t<double, py::array::c_style> nus_py) {
+  py::array_t<double, py::array::c_style> out_ds_py,
+  py::array_t<double, py::array::c_style> out_zs_py,
+  py::array_t<double, py::array::c_style> out_nus_py) {
 
   // Unpack python arrays.
   auto times_py_ = times_py.unchecked<1>();
   int n_times = times_py_.shape(0);
-  auto ds_py_ = ds_py.mutable_unchecked<1>();
-  auto zs_py_ = zs_py.mutable_unchecked<1>();
-  auto nus_py_ = nus_py.mutable_unchecked<1>();
+  auto out_ds_py_ = out_ds_py.mutable_unchecked<1>();
+  auto out_zs_py_ = out_zs_py.mutable_unchecked<1>();
+  auto out_nus_py_ = out_nus_py.mutable_unchecked<1>();
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
@@ -32,10 +32,12 @@ void compute_orbit_trajectories(
     // Compute orbital trajectories.
     if (ecc == 0.) {
       // Circular case.
-      orbital.compute_circular_orbit(times_py_(i), ds_py_(i), zs_py_(i), nus_py_(i));
+      orbital.compute_circular_orbit(times_py_(i), out_ds_py_(i),
+                                      out_zs_py_(i), out_nus_py_(i));
     } else {
       // Eccentric case.
-      orbital.compute_eccentric_orbit(times_py_(i), ds_py_(i), zs_py_(i), nus_py_(i));
+      orbital.compute_eccentric_orbit(times_py_(i), out_ds_py_(i),
+                                       out_zs_py_(i), out_nus_py_(i));
     }
   }
 }
@@ -48,7 +50,7 @@ void compute_harmonica_light_curve(
   py::array_t<double, py::array::c_style> us_py,
   py::array_t<double, py::array::c_style> rs_py,
   py::array_t<double, py::array::c_style> times_py,
-  py::array_t<double, py::array::c_style> fs_py,
+  py::array_t<double, py::array::c_style> out_fs_py,
   int pnl_c, int pnl_e) {
 
   // Unpack python arrays.
@@ -66,7 +68,7 @@ void compute_harmonica_light_curve(
   }
   auto times_py_ = times_py.unchecked<1>();
   int n_times = times_py_.shape(0);
-  auto fs_py_ = fs_py.mutable_unchecked<1>();
+  auto out_fs_py_ = out_fs_py.mutable_unchecked<1>();
 
   // Iterate times.
   OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
@@ -84,7 +86,7 @@ void compute_harmonica_light_curve(
     }
 
     // Compute transit flux.
-    flux.transit_flux(d, z, nu, fs_py_(i));
+    flux.transit_flux(d, z, nu, out_fs_py_(i));
   }
 }
 
@@ -92,7 +94,7 @@ void compute_harmonica_light_curve(
 void compute_transmission_string(
   py::array_t<double, py::array::c_style> rs_py,
   py::array_t<double, py::array::c_style> thetas_py,
-  py::array_t<double, py::array::c_style> transmission_string_py) {
+  py::array_t<double, py::array::c_style> out_transmission_string_py) {
 
   // Unpack python arrays.
   auto rs_py_ = rs_py.unchecked<1>();
@@ -103,12 +105,12 @@ void compute_transmission_string(
     rs[i] = rs_py_(i);
   }
   auto thetas_py_ = thetas_py.mutable_unchecked<1>();
-  auto transmission_string_py_ = transmission_string_py.mutable_unchecked<1>();
+  auto out_transmission_string_py_ = out_transmission_string_py.mutable_unchecked<1>();
 
   // Compute transmission string.
   Fluxes flux(0, us, n_rs, rs, 0, 0);
   for (int i = 0; i < thetas_py_.shape(0); i++) {
-    transmission_string_py_(i) = flux.rp_theta(thetas_py_(i));
+    out_transmission_string_py_(i) = flux.rp_theta(thetas_py_(i));
   }
 }
 
