@@ -37,8 +37,8 @@ class OrbitTrajectories {
      * @param nu empty planet velocity-star centre angle [radians].
      * @return void.
      */
-    void compute_circular_orbit(const double &time, double &d,
-                                double &z, double &nu);
+    void compute_circular_orbit(const double& time, double& d,
+                                double& z, double& nu);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -54,8 +54,8 @@ class OrbitTrajectories {
      * @param nu empty planet velocity-star centre angle [radians].
      * @return void.
      */
-    void compute_eccentric_orbit(const double &time, double &d,
-                                 double &z, double &nu);
+    void compute_eccentric_orbit(const double& time, double& d,
+                                 double& z, double& nu);
 
   protected:
 

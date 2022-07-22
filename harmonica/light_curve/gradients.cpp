@@ -81,8 +81,8 @@ FluxDerivatives::FluxDerivatives(
 
 
 void FluxDerivatives::transit_flux_and_derivatives(
-    const double &d, const double &z, const double &nu,
-    double &f, double df_dz[]) {
+    const double& d, const double& z, const double& nu,
+    double& f, double df_dz[]) {
 
   this->reset_derivatives();
   this->compute_solution_vector(d, z, nu, f);
@@ -99,7 +99,7 @@ void FluxDerivatives::transit_flux_and_derivatives(
 }
 
 
-void FluxDerivatives::find_intersections_theta(const double &d, const double &nu) {
+void FluxDerivatives::find_intersections_theta(const double& d, const double& nu) {
 
   // Check cases where no obvious intersections, avoiding eigenvalue runtime.
   if (this->no_obvious_intersections(d, nu)) {
@@ -191,9 +191,9 @@ void FluxDerivatives::find_intersections_theta(const double &d, const double &nu
 }
 
 
-void FluxDerivatives::s_star(int _j, int theta_type_j, double &_theta_j,
-                    double &_theta_j_p1, const double &d,
-                    const double &nu) {
+void FluxDerivatives::s_star(int _j, int theta_type_j, double& _theta_j,
+                    double& _theta_j_p1, const double& d,
+                    const double& nu) {
   double phi_j;
   double phi_j_p1;
 
@@ -572,7 +572,7 @@ std::complex<double> FluxDerivatives::dh_j_dcn(
 
 std::vector<double> FluxDerivatives::compute_real_theta_roots(
   Eigen::Matrix<std::complex<double>, EigD, EigD>
-    companion_matrix, int &shape) {
+    companion_matrix, int& shape) {
 
   // Solve eigenvalues.
   Eigen::ComplexEigenSolver<Eigen::Matrix<std::complex<double>, EigD, EigD>> ces;
@@ -635,9 +635,9 @@ std::vector<double> FluxDerivatives::compute_real_theta_roots(
 }
 
 
-void FluxDerivatives::analytic_even_terms(int _j, int theta_type_j, double &_theta_j,
-                                 double &_theta_j_p1, const double &d,
-                                 const double &nu) {
+void FluxDerivatives::analytic_even_terms(int _j, int theta_type_j, double& _theta_j,
+                                 double& _theta_j_p1, const double& d,
+                                 const double& nu) {
   // Build and convolve beta_sin, beta_cos vectors.
   double _theta_diff = _theta_j_p1 - _theta_j;
   double sin_nu = std::sin(nu);
@@ -863,9 +863,9 @@ void FluxDerivatives::analytic_even_terms(int _j, int theta_type_j, double &_the
 }
 
 
-void FluxDerivatives::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
-                                 double &_theta_j_p1, const double &d,
-                                 const double &nu) {
+void FluxDerivatives::numerical_odd_terms(int _j, int theta_type_j, double& _theta_j,
+                                 double& _theta_j_p1, const double& d,
+                                 const double& nu) {
   double s1_planet = 0.;
   double half_theta_range = (_theta_j_p1 - _theta_j) / 2.;
 

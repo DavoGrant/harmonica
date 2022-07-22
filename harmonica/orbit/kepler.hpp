@@ -1,7 +1,19 @@
 #ifndef KEPLER_HPP
 #define KEPLER_HPP
 
-#include <tuple>
+
+struct EccentricAnomaly
+{
+  double sinE;
+  double cosE;
+};
+
+
+struct TrueAnomaly
+{
+  double sinf;
+  double cosf;
+};
 
 
 /**
@@ -12,18 +24,7 @@
  * @param ecc eccentricity.
  * @return sine and cosine of the true anomaly.
  */
-std::tuple<double, double> solve_kepler(const double M, const double ecc);
-
-
-/**
- * Eccentric anomaly guess to Kepler's equation when in
- * the singular corner of parameter space.
- *
- * @param M mean anomaly, close to zero.
- * @param ecc eccentricity, close to one.
- * @return eccentric anomaly guess.
- */
-double eccentric_anomaly_guess(const double M, const double ecc);
+TrueAnomaly solve_kepler(const double& M, const double& ecc);
 
 
 /**
@@ -36,8 +37,18 @@ double eccentric_anomaly_guess(const double M, const double ecc);
  * @param ecc eccentricity.
  * @return sine and cosine of the eccentric anomaly.
  */
-std::tuple<double, double> compute_eccentric_anomaly(
-  const double M, const double ecc);
+EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc);
+
+
+/**
+ * Eccentric anomaly guess to Kepler's equation when in
+ * the singular corner of parameter space.
+ *
+ * @param M mean anomaly, close to zero.
+ * @param ecc eccentricity, close to one.
+ * @return eccentric anomaly guess.
+ */
+double eccentric_anomaly_guess(const double& M, const double& ecc);
 
 
 /**
@@ -47,8 +58,7 @@ std::tuple<double, double> compute_eccentric_anomaly(
  * @param sine and cosine of the eccentric anomaly.
  * @return sine and cosine of the true anomaly.
  */
-std::tuple<double, double> compute_true_anomaly(
-  const double ecc, std::tuple<double, double> sin_cos_ea);
+TrueAnomaly compute_true_anomaly(const double& ecc, EccentricAnomaly ecc_anom);
 
 
 #endif

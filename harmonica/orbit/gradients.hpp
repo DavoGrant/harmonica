@@ -42,8 +42,8 @@ class OrbitDerivatives : public OrbitTrajectories {
      * @return void.
      */
     void compute_circular_orbit_and_derivatives(
-        const double &time, double &d, double &z,
-        double &nu, double dd_dz[], double dnu_dz[]);
+        const double& time, double& d, double& z,
+        double& nu, double dd_dz[], double dnu_dz[]);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -62,8 +62,8 @@ class OrbitDerivatives : public OrbitTrajectories {
      * @return void.
      */
     void compute_eccentric_orbit_and_derivatives(
-        const double &time, double &d, double &z,
-        double &nu, double dd_dz[], double dnu_dz[]);
+        const double& time, double& d, double& z,
+        double& nu, double dd_dz[], double dnu_dz[]);
 
 };
 

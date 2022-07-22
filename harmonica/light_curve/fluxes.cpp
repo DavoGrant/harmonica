@@ -132,7 +132,7 @@ Fluxes::Fluxes(int ld_law, double us[], int n_rs, double rs[],
 }
 
 
-double Fluxes::rp_theta(double &_theta) {
+double Fluxes::rp_theta(double& _theta) {
   std::complex<double> rp = 0.;
   for (int n = -m_N_c; n < m_N_c + 1; n++) {
     rp += m_c(n + m_N_c) * std::exp((1. * n) * 1.i * _theta);
@@ -141,8 +141,8 @@ double Fluxes::rp_theta(double &_theta) {
 }
 
 
-void Fluxes::transit_flux(const double &d, const double &z,
-                          const double &nu, double &f) {
+void Fluxes::transit_flux(const double& d, const double& z,
+                          const double& nu, double& f) {
 
   this->compute_solution_vector(d, z, nu, f);
 
@@ -157,8 +157,8 @@ void Fluxes::transit_flux(const double &d, const double &z,
 }
 
 
-void Fluxes::compute_solution_vector(const double &d, const double &z,
-                                     const double &nu, double &f) {
+void Fluxes::compute_solution_vector(const double& d, const double& z,
+                                     const double& nu, double& f) {
 
   // Reset and pre-compute some position-specific quantities.
   this->reset_intersections_integrals();
@@ -192,7 +192,7 @@ void Fluxes::compute_solution_vector(const double &d, const double &z,
 }
 
 
-void Fluxes::find_intersections_theta(const double &d, const double &nu) {
+void Fluxes::find_intersections_theta(const double& d, const double& nu) {
 
   // Check cases where no obvious intersections, avoiding eigenvalue runtime.
   if (this->no_obvious_intersections(d, nu)) { return; }
@@ -236,9 +236,9 @@ void Fluxes::find_intersections_theta(const double &d, const double &nu) {
 }
 
 
-void Fluxes::s_planet(int _j, int theta_type_j, double &_theta_j,
-                      double &_theta_j_p1, const double &d,
-                      const double &nu) {
+void Fluxes::s_planet(int _j, int theta_type_j, double& _theta_j,
+                      double& _theta_j_p1, const double& d,
+                      const double& nu) {
 
   // Compute the closed-form even terms.
   this->analytic_even_terms(_j, theta_type_j, _theta_j,
@@ -250,9 +250,9 @@ void Fluxes::s_planet(int _j, int theta_type_j, double &_theta_j,
 }
 
 
-void Fluxes::s_star(int _j, int theta_type_j, double &_theta_j,
-                    double &_theta_j_p1, const double &d,
-                    const double &nu) {
+void Fluxes::s_star(int _j, int theta_type_j, double& _theta_j,
+                    double& _theta_j_p1, const double& d,
+                    const double& nu) {
   double phi_j;
   double phi_j_p1;
 
@@ -306,7 +306,7 @@ void Fluxes::reset_intersections_integrals() {
 }
 
 
-void Fluxes::select_legendre_order(const double &d) {
+void Fluxes::select_legendre_order(const double& d) {
   // Select regime switch: centre or edge.
   int position_switch;
   double outer_radii = m_max_rp + d;
@@ -352,7 +352,7 @@ void Fluxes::select_legendre_order(const double &d) {
 }
 
 
-void Fluxes::pre_compute_psq(const double &d, const double &nu) {
+void Fluxes::pre_compute_psq(const double& d, const double& nu) {
   m_td = 2. * d;
   m_dd = d * d;
   m_omdd = 1. - m_dd;
@@ -363,7 +363,7 @@ void Fluxes::pre_compute_psq(const double &d, const double &nu) {
 }
 
 
-double Fluxes::rs_theta(const double &d, double &dcos_thetamnu,
+double Fluxes::rs_theta(const double& d, double& dcos_thetamnu,
                         int plus_solution) {
   if (d <= 1.) {
     return dcos_thetamnu + std::sqrt(dcos_thetamnu * dcos_thetamnu
@@ -382,7 +382,7 @@ double Fluxes::rs_theta(const double &d, double &dcos_thetamnu,
 }
 
 
-double Fluxes::drp_dtheta(double &_theta) {
+double Fluxes::drp_dtheta(double& _theta) {
   std::complex<double> rp = 0.;
   for (int n = -m_N_c; n < m_N_c + 1; n++) {
     rp += 1.i * (1. * n) * m_c(n + m_N_c) * std::exp((1. * n) * 1.i * _theta);
@@ -391,7 +391,7 @@ double Fluxes::drp_dtheta(double &_theta) {
 }
 
 
-double Fluxes::d2rp_dtheta2(double &_theta) {
+double Fluxes::d2rp_dtheta2(double& _theta) {
   std::complex<double> rp = 0.;
   for (int n = -m_N_c; n < m_N_c + 1; n++) {
     rp += (1.i * (1. * n)) * (1.i * (1. * n)) * m_c(n + m_N_c)
@@ -402,7 +402,7 @@ double Fluxes::d2rp_dtheta2(double &_theta) {
 
 
 std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
-                                                           int &shape) {
+                                                           int& shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires m_c(0 + m_N_c) as it runs -m_N_c through m_N_c.
   std::complex<double> moo_denom = -1. / (1. * m_N_c * m_c(shape));
@@ -419,7 +419,7 @@ std::complex<double> Fluxes::extrema_companion_matrix_D_jk(int j, int k,
 
 
 std::complex<double> Fluxes::intersection_companion_matrix_C_jk_base(
-  int j, int k, int &shape) {
+  int j, int k, int& shape) {
   // NB. matrix elements are one-indexed.
   // Also, c_0 requires m_c(0 + m_N_c) as it runs -m_N_c through m_N_c.
   if (k == shape) {
@@ -560,7 +560,7 @@ std::complex<double> Fluxes::h_j(
 }
 
 
-bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
+bool Fluxes::no_obvious_intersections(const double& d, const double& nu) {
 
   bool noi = false;
   if (d <= 1.) {
@@ -600,7 +600,7 @@ bool Fluxes::no_obvious_intersections(const double &d, const double &nu) {
 
 std::vector<double> Fluxes::compute_real_theta_roots(
   Eigen::Matrix<std::complex<double>, EigD, EigD>
-    companion_matrix, int &shape) {
+    companion_matrix, int& shape) {
 
   // Solve eigenvalues.
   Eigen::ComplexEigenSolver<Eigen::Matrix<std::complex<double>, EigD, EigD>> ces;
@@ -620,7 +620,7 @@ std::vector<double> Fluxes::compute_real_theta_roots(
 }
 
 
-bool Fluxes::trivial_configuration(const double &d, const double &nu) {
+bool Fluxes::trivial_configuration(const double& d, const double& nu) {
 
   bool tc = false;
   double _nu = nu;
@@ -660,8 +660,8 @@ bool Fluxes::trivial_configuration(const double &d, const double &nu) {
 }
 
 
-void Fluxes::characterise_intersection_pairs(const double &d,
-                                             const double &nu) {
+void Fluxes::characterise_intersection_pairs(const double& d,
+                                             const double& nu) {
 
   int T_theta_j;
   int T_theta_j_p1;
@@ -718,7 +718,7 @@ void Fluxes::characterise_intersection_pairs(const double &d,
 
 
 void Fluxes::associate_intersections(
-  int j, const double &d, double &dcos_thetamnu, int &T_theta_j) {
+  int j, const double& d, double& dcos_thetamnu, int& T_theta_j) {
   if (d <= 1.) {
     // Always T+ when the planet is inside the stellar disc.
     T_theta_j = intersections::T_plus;
@@ -737,8 +737,8 @@ void Fluxes::associate_intersections(
 
 
 void Fluxes::gradient_intersections(
-  int j, double &dsin_thetamnu, double &dcos_thetamnu,
-  int plus_solution, int &dT_dtheta_theta_j) {
+  int j, double& dsin_thetamnu, double& dcos_thetamnu,
+  int plus_solution, int& dT_dtheta_theta_j) {
 
   double grad = this->drp_dtheta(m_theta[j]) + dsin_thetamnu;
   double frac_term = (dsin_thetamnu * dcos_thetamnu) / std::sqrt(
@@ -807,9 +807,9 @@ Fluxes::complex_ca_vector_addition(
 }
 
 
-void Fluxes::analytic_even_terms(int _j, int theta_type_j, double &_theta_j,
-                                 double &_theta_j_p1, const double &d,
-                                 const double &nu) {
+void Fluxes::analytic_even_terms(int _j, int theta_type_j, double& _theta_j,
+                                 double& _theta_j_p1, const double& d,
+                                 const double& nu) {
   // Build and convolve beta_sin, beta_cos vectors.
   double _theta_diff = _theta_j_p1 - _theta_j;
   double sin_nu = std::sin(nu);
@@ -885,9 +885,9 @@ beta_cos_conv_c = complex_convolve(
 }
 
 
-void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double &_theta_j,
-                                 double &_theta_j_p1, const double &d,
-                                 const double &nu) {
+void Fluxes::numerical_odd_terms(int _j, int theta_type_j, double& _theta_j,
+                                 double& _theta_j_p1, const double& d,
+                                 const double& nu) {
   double s1_planet = 0.;
   double half_theta_range = (_theta_j_p1 - _theta_j) / 2.;
 

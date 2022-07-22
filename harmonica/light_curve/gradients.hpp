@@ -38,8 +38,8 @@ class FluxDerivatives : public Fluxes {
      * @return void.
      */
     void transit_flux_and_derivatives(
-        const double &d, const double &z, const double &nu,
-        double &f, double df_dz[]);
+        const double& d, const double& z, const double& nu,
+        double& f, double df_dz[]);
 
   private:
 
@@ -71,7 +71,7 @@ class FluxDerivatives : public Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    void find_intersections_theta(const double &d, const double &nu) override final;
+    void find_intersections_theta(const double& d, const double& nu) override final;
 
     /**
      * Compute the line integrals s_n along segments of the
@@ -85,9 +85,9 @@ class FluxDerivatives : public Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
-    void s_star(int _j, int theta_type_j, double &_theta_j,
-                double &_theta_j_p1, const double &d,
-                const double &nu) override final;
+    void s_star(int _j, int theta_type_j, double& _theta_j,
+                double& _theta_j_p1, const double& d,
+                const double& nu) override final;
 
     /**
      * Compute model derivatives: the flux with respect to the model
@@ -146,7 +146,7 @@ class FluxDerivatives : public Fluxes {
      */
     std::vector<double> compute_real_theta_roots(
       Eigen::Matrix<std::complex<double>, EigD, EigD>
-        companion_matrix, int &shape) override final;
+        companion_matrix, int& shape) override final;
 
     /**
      * Compute the even terms in the planet limb's line integral.
@@ -162,8 +162,8 @@ class FluxDerivatives : public Fluxes {
      * @return void.
      */
     void analytic_even_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
-        const double &d, const double &nu) override final;
+        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
+        const double& d, const double& nu) override final;
 
     /**
      * Compute the odd and half-integer terms in the planet limb's
@@ -179,8 +179,8 @@ class FluxDerivatives : public Fluxes {
      * @return void.
      */
     void numerical_odd_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
-        const double &d, const double &nu) override final;
+        int _j, int theta_type_j, double& _theta_j, double& _theta_j_p1,
+        const double& d, const double& nu) override final;
 
 };
 

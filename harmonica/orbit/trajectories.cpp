@@ -1,5 +1,4 @@
 #include <cmath>
-#include <tuple>
 
 #include "trajectories.hpp"
 #include "kepler.hpp"
@@ -31,7 +30,7 @@ OrbitTrajectories::OrbitTrajectories(double t0, double period, double a,
 
 
 void OrbitTrajectories::compute_circular_orbit(
-  const double &time, double &d, double &z, double &nu) {
+  const double& time, double& d, double& z, double& nu) {
 
   // Compute time of periastron.
   const double tp = m_t0 - fractions::pi_d_2 / m_n;
@@ -62,7 +61,7 @@ void OrbitTrajectories::compute_circular_orbit(
 
 
 void OrbitTrajectories::compute_eccentric_orbit(
-  const double &time, double &d, double &z, double &nu) {
+  const double& time, double& d, double& z, double& nu) {
 
   // Compute time of periastron.
   m_some = std::sqrt(1. - m_ecc);
@@ -75,13 +74,13 @@ void OrbitTrajectories::compute_eccentric_orbit(
   const double M = (time - tp) * m_n;
 
   // Compute sine and cosine of the true anomaly.
-  std::tuple<double, double> sin_cos_f = solve_kepler(M, m_ecc);
-  m_sin_f = std::get<0>(sin_cos_f);
-  m_cos_f = std::get<1>(sin_cos_f);
+  TrueAnomaly true_anom = solve_kepler(M, m_ecc);
+  m_sin_f = true_anom.sinf;
+  m_cos_f = true_anom.cosf;
 
   // Compute location of planet centre relative to stellar centre.
   m_omes = 1. - m_ecc * m_ecc;
-  m_ope_cosf = 1. + m_ecc * std::get<1>(sin_cos_f);
+  m_ope_cosf = 1. + m_ecc * m_cos_f;
   m_r = m_a * m_omes / m_ope_cosf;
   m_sin_fpw = m_cos_f * m_sin_omega + m_sin_f * m_cos_omega;
   m_cos_fpw = m_cos_f * m_cos_omega - m_sin_f * m_sin_omega;

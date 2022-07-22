@@ -1,5 +1,4 @@
 #include <cmath>
-#include <tuple>
 
 #include "gradients.hpp"
 #include "kepler.hpp"
@@ -12,7 +11,7 @@ OrbitDerivatives::OrbitDerivatives(double t0, double period, double a,
 
 
 void OrbitDerivatives::compute_circular_orbit_and_derivatives(
-  const double &time, double &d, double &z, double &nu,
+  const double& time, double& d, double& z, double& nu,
   double dd_dz[], double dnu_dz[]) {
 
   this->compute_circular_orbit(time, d, z, nu);
@@ -59,7 +58,7 @@ void OrbitDerivatives::compute_circular_orbit_and_derivatives(
 
 
 void OrbitDerivatives::compute_eccentric_orbit_and_derivatives(
-  const double &time, double &d, double &z, double &nu,
+  const double& time, double& d, double& z, double& nu,
   double dd_dz[], double dnu_dz[]) {
 
   this->compute_eccentric_orbit(time, d, z, nu);

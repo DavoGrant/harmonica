@@ -1,43 +1,20 @@
 #include <cmath>
-#include <tuple>
 #include <cstdlib>
 
 #include "kepler.hpp"
 #include "../constants/constants.hpp"
 
 
-std::tuple<double, double> solve_kepler(const double M, const double ecc) {
+TrueAnomaly solve_kepler(const double& M, const double& ecc) {
   // Compute eccentric anomaly.
-  std::tuple<double, double> sin_cos_E;
-  sin_cos_E = compute_eccentric_anomaly(M, ecc);
+  EccentricAnomaly ecc_anom = compute_eccentric_anomaly(M, ecc);
 
   // Compute true anomaly.
-  return compute_true_anomaly(ecc, sin_cos_E);
+  return compute_true_anomaly(ecc, ecc_anom);
 }
 
 
-double eccentric_anomaly_guess(const double M, const double ecc) {
-
-  const double ome = 1. - ecc;
-  const double sqrt_ome = sqrt(ome);
-  const double chi = M / (sqrt_ome * ome);
-  const double Lam = sqrt(8 + 9 * chi * chi);
-  const double S = cbrt(Lam + 3 * chi);
-  const double sigma = 6 * chi / (2 + S * S + 4. / (S * S));
-  const double s2 = sigma * sigma;
-  const double s4 = s2 * s2;
-
-  const double denom = 1.0 / (s2 + 2);
-  const double E = sigma * (1 + s2 * ome * denom * ((s2 + 20) / 60.
-                   + s2 * ome * denom * denom * (s2 * s4 + 25 * s4
-                   + 340 * s2 + 840) / 1400));
-
-  return E * sqrt_ome;
-}
-
-
-std::tuple<double, double> compute_eccentric_anomaly(
-  const double M, const double ecc) {
+EccentricAnomaly compute_eccentric_anomaly(const double& M, const double& ecc) {
 
   const double g2s_e = 0.2588190451025207623489 * ecc;
   const double g3s_e = 0.5 * ecc;
@@ -151,8 +128,6 @@ std::tuple<double, double> compute_eccentric_anomaly(
     sinE = MAsign * (sE * (1 - 0.5 * dEA * dEA) + dEA * cE);
     cosE = cE * (1 - 0.5 * dEA * dEA) - dEA * sE;
 
-    return std::make_tuple(sinE, cosE);
-
   } else {
 
     // Use Householder's third order method to guarantee performance
@@ -163,25 +138,46 @@ std::tuple<double, double> compute_eccentric_anomaly(
            * (1 - dEA * dEA * fractions::one_sixth));
     cosE = cE * (1 - 0.5 * dEA * dEA) - dEA * sE
            * (1 - dEA * dEA * fractions::one_sixth);
-
-    return std::make_tuple(sinE, cosE);
   }
+
+  EccentricAnomaly ecc_anom;
+  ecc_anom.sinE = sinE;
+  ecc_anom.cosE = cosE;
+
+  return ecc_anom;
 }
 
 
-std::tuple<double, double> compute_true_anomaly(
-  const double ecc, std::tuple<double, double> sin_cos_ea) {
+double eccentric_anomaly_guess(const double& M, const double& ecc) {
 
   const double ome = 1. - ecc;
-  double sin_ea = std::get<0>(sin_cos_ea);
-  double cos_ea = std::get<1>(sin_cos_ea);
+  const double sqrt_ome = sqrt(ome);
+  const double chi = M / (sqrt_ome * ome);
+  const double Lam = sqrt(8 + 9 * chi * chi);
+  const double S = cbrt(Lam + 3 * chi);
+  const double sigma = 6 * chi / (2 + S * S + 4. / (S * S));
+  const double s2 = sigma * sigma;
+  const double s4 = s2 * s2;
+
+  const double denom = 1.0 / (s2 + 2);
+  const double E = sigma * (1 + s2 * ome * denom * ((s2 + 20) / 60.
+                   + s2 * ome * denom * denom * (s2 * s4 + 25 * s4
+                   + 340 * s2 + 840) / 1400));
+
+  return E * sqrt_ome;
+}
+
+
+TrueAnomaly compute_true_anomaly(const double& ecc, EccentricAnomaly ecc_anom) {
+
+  const double ome = 1. - ecc;
   double sinf;
   double cosf;
 
-  double denom = 1 + cos_ea;
+  double denom = 1 + ecc_anom.cosE;
   if (denom > 1.0e-10) {
 
-    double tanf2 = sqrt((1 + ecc) / ome) * sin_ea / denom;  // tan(0.5*f)
+    double tanf2 = sqrt((1 + ecc) / ome) * ecc_anom.sinE / denom;  // tan(0.5*f)
     double tanf2_2 = tanf2 * tanf2;
 
     // Then we compute sin(f) and cos(f) using:
@@ -191,11 +187,15 @@ std::tuple<double, double> compute_true_anomaly(
     sinf = 2 * tanf2 * denom;
     cosf = (1 - tanf2_2) * denom;
 
-    return std::make_tuple(sinf, cosf);
-
   } else {
-
     // If cos(E) = -1, E = pi and tan(0.5*E) -> inf and f = E = pi
-    return std::make_tuple(0., -1.);
+    sinf = 0.;
+    cosf = -1.;
   }
+
+  TrueAnomaly true_anom;
+  true_anom.sinf = sinf;
+  true_anom.cosf = cosf;
+
+  return true_anom;
 }
