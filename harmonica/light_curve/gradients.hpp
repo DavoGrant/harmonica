@@ -37,8 +37,9 @@ class FluxDerivatives : public Fluxes {
      * @param df_dz empty derivatives array df/dz z={d, nu, {us}, {rs}}.
      * @return void.
      */
-    void transit_flux(const double &d, const double &z, const double &nu,
-                      double &f, double df_dz[]);
+    void transit_flux_and_derivatives(
+        const double &d, const double &z, const double &nu,
+        double &f, double df_dz[]);
 
   private:
 

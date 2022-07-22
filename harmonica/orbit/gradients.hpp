@@ -1,11 +1,13 @@
-#ifndef ORBITTRAJECTORIES_HPP
-#define ORBITTRAJECTORIES_HPP
+#ifndef ORBITDERIVATIVES_HPP
+#define ORBITDERIVATIVES_HPP
+
+#include "trajectories.hpp"
 
 
 /**
- * Orbital trajectories class.
+ * Orbital trajectories and derivatives class.
  */
-class OrbitTrajectories {
+class OrbitDerivatives : public OrbitTrajectories {
 
   public:
 
@@ -20,8 +22,8 @@ class OrbitTrajectories {
      * @param omega argument of periastron [radians].
      * @param require_gradients derivatives switch.
      */
-    OrbitTrajectories(double t0, double period, double a,
-                      double inc, double ecc, double omega);
+    OrbitDerivatives(double t0, double period, double a,
+                     double inc, double ecc, double omega);
 
     /**
      * Compute circular orbit trajectories of a planet-star system.
@@ -35,10 +37,13 @@ class OrbitTrajectories {
      * @param d empty planet-star centre separation [stellar radii].
      * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
+     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i}.
+     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i}.
      * @return void.
      */
-    void compute_circular_orbit(const double &time, double &d,
-                                double &z, double &nu);
+    void compute_circular_orbit_and_derivatives(
+        const double &time, double &d, double &z,
+        double &nu, double dd_dz[], double dnu_dz[]);
 
     /**
      * Compute eccentric orbit trajectories of a planet-star system.
@@ -52,21 +57,13 @@ class OrbitTrajectories {
      * @param d empty planet-star centre separation [stellar radii].
      * @param z distance from sky-plane, z < 0 planet behind [stellar radii].
      * @param nu empty planet velocity-star centre angle [radians].
+     * @param dd_dz empty derivatives array dd/dz z={t0, p, a, i, e, w}.
+     * @param dnu_dz empty derivatives array dnu/dz z={t0, p, a, i, e, w}.
      * @return void.
      */
-    void compute_eccentric_orbit(const double &time, double &d,
-                                 double &z, double &nu);
-
-  protected:
-
-    // Orbital parameters.
-    double m_t0, m_period, m_n, m_a, m_inc, m_sin_inc, m_cos_inc,
-           m_ecc, m_omega, m_sin_omega, m_cos_omega;
-
-    // Intermediate vals.
-    double m_x, m_y, m_d_squared, m_r, m_sin_M, m_cos_M, m_atan_mcsM,
-           m_sin_fpw, m_cos_fpw, m_ope_cosf, m_omes, m_sin_f, m_cos_f,
-           m_sope, m_some, m_E0, m_atan_mcs_fpw;
+    void compute_eccentric_orbit_and_derivatives(
+        const double &time, double &d, double &z,
+        double &nu, double dd_dz[], double dnu_dz[]);
 
 };
 

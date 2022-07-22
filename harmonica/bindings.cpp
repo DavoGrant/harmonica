@@ -3,6 +3,7 @@
 
 #include "bindings.hpp"
 #include "orbit/trajectories.hpp"
+#include "orbit/gradients.hpp"
 #include "light_curve/fluxes.hpp"
 #include "light_curve/gradients.hpp"
 
@@ -25,18 +26,16 @@ void compute_orbit_trajectories(
   auto nus_py_ = nus_py.mutable_unchecked<1>();
 
   // Iterate times.
-  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, false);
+  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbital trajectories.
     if (ecc == 0.) {
       // Circular case.
-      orbital.compute_circular_orbit(times_py_(i), ds_py_(i), zs_py_(i),
-                                     nus_py_(i), nullptr, nullptr);
+      orbital.compute_circular_orbit(times_py_(i), ds_py_(i), zs_py_(i), nus_py_(i));
     } else {
       // Eccentric case.
-      orbital.compute_eccentric_orbit(times_py_(i), ds_py_(i), zs_py_(i),
-                                      nus_py_(i), nullptr, nullptr);
+      orbital.compute_eccentric_orbit(times_py_(i), ds_py_(i), zs_py_(i), nus_py_(i));
     }
   }
 }
@@ -70,7 +69,7 @@ void compute_harmonica_light_curve(
   auto fs_py_ = fs_py.mutable_unchecked<1>();
 
   // Iterate times.
-  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, false);
+  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega);
   Fluxes flux(ld_law, us, n_rs, rs, pnl_c, pnl_e);
   for (int i = 0; i < n_times; i++) {
 
@@ -78,10 +77,10 @@ void compute_harmonica_light_curve(
     double d, z, nu;
     if (ecc == 0.) {
       // Circular case.
-      orbital.compute_circular_orbit(times_py_(i), d, z, nu, nullptr, nullptr);
+      orbital.compute_circular_orbit(times_py_(i), d, z, nu);
     } else {
       // Eccentric case.
-      orbital.compute_eccentric_orbit(times_py_(i), d, z, nu, nullptr, nullptr);
+      orbital.compute_eccentric_orbit(times_py_(i), d, z, nu);
     }
 
     // Compute transit flux.
@@ -158,18 +157,18 @@ const void jax_light_curve(void* out_tuple, const void** in) {
   double* df_dz = (double*) out[1];
 
   // Iterate times.
-  OrbitTrajectories orbital(t0, period, a, inc, ecc, omega, true);
+  OrbitDerivatives orbital(t0, period, a, inc, ecc, omega);
   FluxDerivatives flux(ld_law, us, n_rs, rs, 20, 50);
   for (int i = 0; i < n_times; i++) {
 
     // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
     double d, z, nu;
     double dd_dx[6], dnu_dx[6];
-    orbital.compute_eccentric_orbit(times[i], d, z, nu, dd_dx, dnu_dx);
+    orbital.compute_eccentric_orbit_and_derivatives(times[i], d, z, nu, dd_dx, dnu_dx);
 
     // Compute flux and derivatives wrt y={d, nu, {us}, {rs}}.
     double df_dy[n_y_derivatives];
-    flux.transit_flux(d, z, nu, f[i], df_dy);
+    flux.transit_flux_and_derivatives(d, z, nu, f[i], df_dy);
 
     // Compute total derivatives wrt z={t0, p, a, i, e, w, {us}, {rs}}.
     int idx_ravel = i * n_z_derivatives;

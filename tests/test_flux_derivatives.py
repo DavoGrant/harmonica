@@ -57,6 +57,8 @@ class TestFlux(unittest.TestCase):
         self.assertEqual(df_dz.shape[0], self.times.shape[0])
         self.assertEqual(df_dz.shape[1], 6 + 2 + 3)
 
+        # todo add check for output values is finte, same for flux tests
+
         # # Check JVP. # todo not working until we take out non param args.
         # der_jit = jit(lambda arg_values, arg_tangents: jvp(
         #     jax_light_curve_prim, arg_values, arg_tangents))

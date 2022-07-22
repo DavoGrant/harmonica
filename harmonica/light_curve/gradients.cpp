@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
-#include <iostream>
 
 #include "gradients.hpp"
 #include "../constants/constants.hpp"
@@ -81,8 +80,9 @@ FluxDerivatives::FluxDerivatives(
 }
 
 
-void FluxDerivatives::transit_flux(const double &d, const double &z,
-                                   const double &nu, double &f, double df_dz[]) {
+void FluxDerivatives::transit_flux_and_derivatives(
+    const double &d, const double &z, const double &nu,
+    double &f, double df_dz[]) {
 
   this->reset_derivatives();
   this->compute_solution_vector(d, z, nu, f);
