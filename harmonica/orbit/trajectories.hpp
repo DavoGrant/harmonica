@@ -18,7 +18,6 @@ class OrbitTrajectories {
      * @param inc orbital inclination [radians].
      * @param ecc eccentricity [].
      * @param omega argument of periastron [radians].
-     * @param require_gradients derivatives switch.
      */
     OrbitTrajectories(double t0, double period, double a,
                       double inc, double ecc, double omega);
@@ -28,8 +27,6 @@ class OrbitTrajectories {
      * The separation distance, d, is between the planet and stellar centres
      * and the angle, nu, is between the planet's velocity and the stellar
      * centre. Both quantities are computed in the plane of the sky.
-     * Optionally, the partial derivatives dd/dz and dnu/dz, for z in the
-     * set {t0, p, a, i} may be computed.
      *
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].
@@ -45,8 +42,6 @@ class OrbitTrajectories {
      * The separation distance, d, is between the planet and stellar centres
      * and the angle, nu, is between the planet's velocity and the stellar
      * centre. Both quantities are computed in the plane of the sky.
-     * Optionally, the partial derivatives dd/dz and dnu/dz, for z in the
-     * set {t0, p, a, i, e, w} may be computed.
      *
      * @param time model evaluation time [days].
      * @param d empty planet-star centre separation [stellar radii].

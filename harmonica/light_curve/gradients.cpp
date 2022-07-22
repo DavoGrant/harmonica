@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
+#include <iostream>
 
 #include "gradients.hpp"
 #include "../constants/constants.hpp"
@@ -1018,7 +1019,6 @@ void FluxDerivatives::numerical_odd_terms(int _j, int theta_type_j, double& _the
     double s12_planet = 0.;
     double s32_planet = 0.;
 
-    // todo may not all need to be init 0.
     double ds12_zeta_zp_dd = 0., ds12_zeta_zp_dnu = 0.,
            ds12_zeta_zp_t_theta_j_dx = 0., ds12_zeta_zp_t_theta_j_p1_dx = 0.,
            ds12_zeta_zp_r_t_theta_j_dx = 0., ds12_zeta_zp_r_t_theta_j_p1_dx = 0.,
@@ -1077,10 +1077,14 @@ void FluxDerivatives::numerical_odd_terms(int _j, int theta_type_j, double& _the
 
       double opzp = 1 + zp_tk;
       double ds1_dzeta = eta * m_l_weights[k];
-      // todo: speed up expression by evaluating them for n + 2 etc. and simplify
-      double dzeta12_dzp = zp_tk * (0.5 * std::pow(zp_tk, 2.5) - 2.5 * std::pow(zp_tk, 0.5) + 2.) / (2.5 * omzp_tks * omzp_tks);
+      double dzeta12_dzp = fractions::one_fifth * (
+        4. * zp_tk - 5. * std::pow(zp_tk, fractions::three_halves)
+        + std::pow(zp_tk, fractions::seven_halves)) / (omzp_tks * omzp_tks);
       double dzeta1_dzp = fractions::one_third * (1. - 1. / (opzp * opzp));
-      double dzeta32_dzp = zp_tk * (1.5 * std::pow(zp_tk, 3.5) - 3.5 * std::pow(zp_tk, 1.5) + 2.) / (3.5 * omzp_tks * omzp_tks);
+      double dzeta32_dzp = zp_tk * (
+        2. + fractions::three_halves * std::pow(zp_tk, fractions::seven_halves)
+        - fractions::seven_halves * std::pow(zp_tk, fractions::three_halves))
+        / (fractions::seven_halves * omzp_tks * omzp_tks);
       double dzp_dd = (rp_tk * costkmnu - d) / zp_tk;
       double dzp_dnu = d * rp_tk * sintkmnu / zp_tk;
       double dzp_drp = (d * costkmnu - rp_tk) / zp_tk;
@@ -1100,7 +1104,6 @@ void FluxDerivatives::numerical_odd_terms(int _j, int theta_type_j, double& _the
       ds1_eta_dd += ds1_deta * deta_dd;
       ds32_eta_dd += ds32_deta * deta_dd;
 
-      // todo propogate
       ds12_zeta_zp_dnu += ds1_dzeta * dzeta12_dzp * dzp_dnu;
       ds1_zeta_zp_dnu += ds1_dzeta * dzeta1_dzp * dzp_dnu;
       ds32_zeta_zp_dnu += ds1_dzeta * dzeta32_dzp * dzp_dnu;
