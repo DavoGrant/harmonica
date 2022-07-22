@@ -41,7 +41,7 @@ class TestFlux(unittest.TestCase):
 
     def test_custom_jax_primitive_quad_ld(self):
         """ Test custom jax primitive for quadratic limb-darkening. """
-        n_dp = 4
+        n_dp = 4  #todo: update me to 100 ish.
         self._build_test_data_structures(n_dp=n_dp)
         args = (0.1, 0.5, 0.1, -0.003, 0.)
         args_struc = (0, self.t0, self.period, self.a, self.inc,
