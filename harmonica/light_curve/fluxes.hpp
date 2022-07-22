@@ -5,6 +5,9 @@
 #include <Eigen/Core>
 
 
+#define EigD Eigen::Dynamic
+
+
 /**
  * Fluxes class.
  */
@@ -48,40 +51,32 @@ class Fluxes {
   protected:
 
     // Limb-darkening variables.
-    double _ld_law;
-    double I_0, I_0_bts;
-    Eigen::Vector<double, Eigen::Dynamic> p;
+    double m_ld_law;
+    double m_I_0, m_I_0_bts;
+    Eigen::Vector<double, EigD> m_p;
 
     // Transmission-string variables.
-    int _n_rs, N_c;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> c;
-    double min_rp, max_rp;
+    int m_n_rs, m_N_c;
+    double m_min_rp, m_max_rp;
+    Eigen::Vector<std::complex<double>, EigD> m_c;
 
     // Intersection variables.
-    int C_shape;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-      D, C0;
-    std::vector<double> theta;
-    std::vector<int> theta_type;
+    int m_C_shape;
+    std::vector<int> m_theta_type;
+    std::vector<double> m_theta;
+    Eigen::Matrix<std::complex<double>, EigD, EigD> m_D, m_C0;
 
     // Position and integral variables.
-    double _td, _dd, _omdd;
-    std::complex<double> _expinu, _expminu, _d_expinu, _d_expminu;
-    int _len_c_conv_c, _len_beta_conv_c, _len_q_rhs, _mid_q_lhs, _len_q;
-    int N_q0, N_q2;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
-      _c_conv_c, _Delta_ew_c, _zeroes_c_conv_c;
-    Eigen::Vector<std::complex<double>, 3>
-      _beta_sin0, _beta_cos0;
-    Eigen::Vector<Eigen::Vector<std::complex<double>, Eigen::Dynamic>, Eigen::Dynamic>
-      els;
-    double alpha, s0, s12, s1, s32, s2;
-    int _N_l;
-    const double *_l_roots;
-    const double *_l_weights;
+    int m_N_l, m_N_q0, m_N_q2, m_len_c_conv_c, m_len_beta_conv_c,
+        m_len_q_rhs, m_mid_q_lhs, m_len_q;
+    const double *m_l_roots, *m_l_weights;
+    double m_td, m_dd, m_omdd, m_alpha, m_s0, m_s12, m_s1, m_s32, m_s2;
+    std::complex<double> m_expinu, m_expminu, m_d_expinu, m_d_expminu;
+    Eigen::Vector<std::complex<double>, 3> m_beta_sin0, m_beta_cos0;
+    Eigen::Vector<std::complex<double>, EigD> m_c_conv_c, m_Delta_ew_c;
 
-    // Switches.
-    int _precision_nl_centre, _precision_nl_edge;
+    // Precision switches.
+    int m_precision_nl_centre, m_precision_nl_edge;
 
     /**
      * Compute solution vector S.
@@ -110,34 +105,34 @@ class Fluxes {
 
     /**
      * Compute the line integrals s_n along segments of the
-     * planet's limb from theta_j to theta_j_plus_1 anticlockwise.
+     * planet's limb from theta_j to theta_j_p1 anticlockwise.
      *
      * @param _j index of theta vecto
      * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_planet line integral.
      */
     void s_planet(int _j, int theta_type_j, double &_theta_j,
-                  double &_theta_j_plus_1, const double &d,
+                  double &_theta_j_p1, const double &d,
                   const double &nu);
 
     /**
      * Compute the line integrals s_n along segments of the
-     * star's limb from theta_j to theta_j_plus_1 anticlockwise.
+     * star's limb from theta_j to theta_j_p1 anticlockwise.
      *
      * @param _j index of theta vecto
      * @param theta_type_j type of stellar line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
     virtual void s_star(int _j, int theta_type_j, double &_theta_j,
-                        double &_theta_j_plus_1, const double &d,
+                        double &_theta_j_p1, const double &d,
                         const double &nu);
 
     /**
@@ -285,8 +280,8 @@ class Fluxes {
      * @param shape number of rows=cols of matrix and complex eigenvalues.
      * @return vector of real roots in theta.
      */
-    std::vector<double> compute_real_theta_roots(
-        Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+    virtual std::vector<double> compute_real_theta_roots(
+        Eigen::Matrix<std::complex<double>, EigD, EigD>
           companion_matrix, int &shape);
 
     /**
@@ -353,9 +348,9 @@ class Fluxes {
      * @param len_c size of the output vector c.
      * @return c = a (*) b with size len_a + len_b - 1.
      */
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic> complex_convolve(
-        Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
-        Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+    Eigen::Vector<std::complex<double>, EigD> complex_convolve(
+        Eigen::Vector<std::complex<double>, EigD> a,
+        Eigen::Vector<std::complex<double>, EigD> b,
         int len_a, int len_b, int len_c);
 
     /**
@@ -367,10 +362,10 @@ class Fluxes {
      * @param len_b size of vector b.
      * @return a + b with size max(len_a, len_b).
      */
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
+    Eigen::Vector<std::complex<double>, EigD>
     complex_ca_vector_addition(
-        Eigen::Vector<std::complex<double>, Eigen::Dynamic> a,
-        Eigen::Vector<std::complex<double>, Eigen::Dynamic> b,
+        Eigen::Vector<std::complex<double>, EigD> a,
+        Eigen::Vector<std::complex<double>, EigD> b,
         int len_a, int len_b);
 
     /**
@@ -381,13 +376,13 @@ class Fluxes {
      * @param _j index of theta vector.
      * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
     virtual void analytic_even_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_plus_1,
+        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
         const double &d, const double &nu);
 
     /**
@@ -398,13 +393,13 @@ class Fluxes {
      * @param _j index of theta vecto
      * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
     virtual void numerical_odd_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_plus_1,
+        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
         const double &d, const double &nu);
 
 };

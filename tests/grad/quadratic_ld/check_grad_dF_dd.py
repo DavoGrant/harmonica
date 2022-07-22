@@ -1645,6 +1645,7 @@ def grad_arrow(x_draw, x, y, grad):
 
 while True:
     d_a = np.random.uniform(0.85, 1.15)
+    d_a = 0.4
     F_a = F_func(d_a)
 
     delta = 1.e-6

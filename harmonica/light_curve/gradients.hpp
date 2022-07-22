@@ -43,21 +43,21 @@ class FluxDerivatives : public Fluxes {
   private:
 
     // Derivative variables.
-    double df_dalpha;
-    double dI0_du1, dI0_du2, dI0_du3, dI0_du4;
-    double dalpha_ds0, dalpha_ds12, dalpha_ds1, dalpha_ds32, dalpha_ds2;
-    double ds0_dd, ds12_dd, ds1_dd, ds32_dd, ds2_dd;
-    double ds0_dnu, ds12_dnu, ds1_dnu, ds32_dnu, ds2_dnu;
-    Eigen::Vector<std::complex<double>, Eigen::Dynamic>
-      df_dcs, ds0_dcs, ds12_dcs, ds1_dcs, ds32_dcs, ds2_dcs;
-    std::complex<double> dc0_da0, dcplus_dan, dcminus_dan,
-                         dcplus_dbn, dcminus_dbn;
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-      dC_dd, dC_dnu;
-    Eigen::Vector<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Dynamic>
-      dC_dcs;
-    std::vector<double> dthetas_dd, dthetas_dnu;
-    std::vector<std::vector<std::complex<double>>> dthetas_dcs;
+    double m_df_dalpha, m_dI0_du1, m_dI0_du2, m_dI0_du3, m_dI0_du4,
+           m_dalpha_ds0, m_dalpha_ds12, m_dalpha_ds1, m_dalpha_ds32,
+           m_dalpha_ds2, m_ds0_dd, m_ds12_dd, m_ds1_dd, m_ds32_dd,
+           m_ds2_dd, m_ds0_dnu, m_ds12_dnu, m_ds1_dnu, m_ds32_dnu,
+           m_ds2_dnu;
+    std::complex<double> m_dc0_da0, m_dcplus_dan, m_dcminus_dan,
+                         m_dcplus_dbn, m_dcminus_dbn;
+    std::vector<double> m_dthetas_dd, m_dthetas_dnu;
+    std::vector<std::vector<std::complex<double>>> m_dthetas_dcs;
+    Eigen::Vector<std::complex<double>, EigD> m_zeroes_c_conv_c;
+    Eigen::Vector<Eigen::Vector<std::complex<double>, EigD>, EigD> m_els;
+    Eigen::Vector<Eigen::Matrix<std::complex<double>, EigD, EigD>, EigD> m_dC_dcs;
+    Eigen::Vector<std::complex<double>, EigD> m_df_dcs, m_ds0_dcs, m_ds12_dcs,
+                                              m_ds1_dcs, m_ds32_dcs, m_ds2_dcs;
+    Eigen::Matrix<std::complex<double>, EigD, EigD> m_dC_dd, m_dC_dnu;
 
     /**
      * Find and characterise the planet-stellar limb intersections vector,
@@ -70,23 +70,23 @@ class FluxDerivatives : public Fluxes {
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    virtual void find_intersections_theta(const double &d, const double &nu) final;
+    void find_intersections_theta(const double &d, const double &nu) override final;
 
     /**
      * Compute the line integrals s_n along segments of the
-     * star's limb from theta_j to theta_j_plus_1 anticlockwise.
+     * star's limb from theta_j to theta_j_p1 anticlockwise.
      *
      * @param _j index of theta vecto
      * @param theta_type_j type of stellar line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return computed sTp_star line integral.
      */
-    virtual void s_star(int _j, int theta_type_j, double &_theta_j,
-                        double &_theta_j_plus_1, const double &d,
-                        const double &nu) final;
+    void s_star(int _j, int theta_type_j, double &_theta_j,
+                double &_theta_j_p1, const double &d,
+                const double &nu) override final;
 
     /**
      * Compute model derivatives: the flux with respect to the model
@@ -143,9 +143,9 @@ class FluxDerivatives : public Fluxes {
      * @param require_eigenvectors derivatives switch.
      * @return vector of real roots in theta.
      */
-    virtual std::vector<double> compute_real_theta_roots(
-      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-        companion_matrix, int &shape) final;
+    std::vector<double> compute_real_theta_roots(
+      Eigen::Matrix<std::complex<double>, EigD, EigD>
+        companion_matrix, int &shape) override final;
 
     /**
      * Compute the even terms in the planet limb's line integral.
@@ -155,14 +155,14 @@ class FluxDerivatives : public Fluxes {
      * @param _j index of theta vector.
      * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    virtual void analytic_even_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_plus_1,
-        const double &d, const double &nu) final;
+    void analytic_even_terms(
+        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
+        const double &d, const double &nu) override final;
 
     /**
      * Compute the odd and half-integer terms in the planet limb's
@@ -172,14 +172,14 @@ class FluxDerivatives : public Fluxes {
      * @param _j index of theta vecto
      * @param theta_type_j type of planet line segment.
      * @param _theta_j start of line segment [radians].
-     * @param _theta_j_plus_1 end of line segment [radians].
+     * @param _theta_j_p1 end of line segment [radians].
      * @param d planet-star centre separation [stellar radii].
      * @param nu planet velocity-star centre angle [radians].
      * @return void.
      */
-    virtual void numerical_odd_terms(
-        int _j, int theta_type_j, double &_theta_j, double &_theta_j_plus_1,
-        const double &d, const double &nu) final;
+    void numerical_odd_terms(
+        int _j, int theta_type_j, double &_theta_j, double &_theta_j_p1,
+        const double &d, const double &nu) override final;
 
 };
 
