@@ -57,9 +57,11 @@ class TestFlux(unittest.TestCase):
                     self.t0, self.period, self.a, self.inc, ecc, w,
                     ld_law, us, rs, self.times, self.fs, 20, 50)
 
-                # Check output array type and shape.
+                # Check output array type, shape, and vals.
                 self.assertIsInstance(self.fs, np.ndarray)
                 self.assertEqual(self.fs.shape, self.times.shape)
+                self.assertEqual(np.sum(np.isfinite(self.fs)),
+                                 self.fs.shape[0])
 
     def test_api_light_curve(self):
         """ Test api, transit light curve. """
@@ -86,9 +88,11 @@ class TestFlux(unittest.TestCase):
                 ht.set_planet_transmission_string(rs)
                 fluxes = ht.get_transit_light_curve()
 
-                # Check output array type and shape.
+                # Check output array type, shape, and vals.
                 self.assertIsInstance(fluxes, np.ndarray)
                 self.assertEqual(fluxes.shape, self.times.shape)
+                self.assertEqual(np.sum(np.isfinite(fluxes)),
+                                 fluxes.shape[0])
 
     def test_api_light_curve_time_dependent(self):
         """ Test api, light curve w/ time dependence. """
@@ -128,9 +132,11 @@ class TestFlux(unittest.TestCase):
                 ht.set_planet_transmission_string(rs)
                 fluxes = ht.get_transit_light_curve()
 
-                # Check output array type and shape.
+                # Check output array type, shape, and vals.
                 self.assertIsInstance(fluxes, np.ndarray)
                 self.assertEqual(fluxes.shape, self.times.shape)
+                self.assertEqual(np.sum(np.isfinite(fluxes)),
+                                 fluxes.shape[0])
 
     def test_api_transmission_string(self):
         """ Test api, transmission string. """
@@ -143,9 +149,11 @@ class TestFlux(unittest.TestCase):
             ht.set_planet_transmission_string(rs[:n_rs])
             r_p = ht.get_planet_transmission_string(theta)
 
-            # Check output array type and shape.
+            # Check output array type, shape, and vals.
             self.assertIsInstance(r_p, np.ndarray)
             self.assertEqual(r_p.shape, theta.shape)
+            self.assertEqual(np.sum(np.isfinite(r_p)),
+                             r_p.shape[0])
 
     def test_api_transmission_string_time_dependent(self):
         """ Test api, transmission string w/ time dependence. """
@@ -166,10 +174,12 @@ class TestFlux(unittest.TestCase):
         ht.set_planet_transmission_string(rs)
         r_ps = ht.get_planet_transmission_string(theta)
 
-        # Check output array type and shape.
+        # Check output array type, shape, and vals.
         self.assertIsInstance(r_ps, np.ndarray)
         self.assertEqual(r_ps.shape[0], self.times.shape[0])
         self.assertEqual(r_ps.shape[1], theta.shape[0])
+        self.assertEqual(np.sum(np.isfinite(r_ps)),
+                         r_ps.shape[0] * r_ps.shape[1])
 
     def test_api_precision_check(self):
         """ Test api, precision check. """
@@ -184,9 +194,11 @@ class TestFlux(unittest.TestCase):
         ht.set_planet_transmission_string(rs)
         errors = ht.get_precision_estimate()
 
-        # Check output array type and shape.
+        # Check output array type, shape, and vals.
         self.assertIsInstance(errors, np.ndarray)
         self.assertEqual(errors.shape, self.times.shape)
+        self.assertEqual(np.sum(np.isfinite(errors)),
+                         errors.shape[0])
         self.assertLess(np.max(np.abs(errors)), 1.e-7)
 
 

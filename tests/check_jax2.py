@@ -7,9 +7,8 @@ import arviz as az
 import numpy as np
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from numpyro.infer.reparam import LocScaleReparam
 import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS, init_to_value, init_to_median
+from numpyro.infer import MCMC, NUTS, init_to_value
 
 from harmonica import bindings
 from harmonica.jax import harmonica_transit
@@ -19,7 +18,7 @@ def hlc_generate(t0=0., period=3.735, a=7.025, inc=86.9 * np.pi / 180.,
                  _us=None, _rs=None, _times=None):
     _fs = np.empty(_times.shape)
     bindings.light_curve(
-        t0, period, a, inc, 0., 0., 0, _us, _rs, _times, _fs, 20, 50)
+        t0, period, a, inc, 0., 0., 0, us, rs, _times, _fs, 20, 50)
     return _fs
 
 
@@ -33,14 +32,14 @@ print('N cores = ', n_cores)
 
 
 # Make reproducible.
-rng_key = jax.random.PRNGKey(112)
-np.random.seed(112)
+rng_key = jax.random.PRNGKey(12345)
+np.random.seed(12345)
 
 n_obs = 300
 times = np.linspace(-0.22, 0.22, n_obs)
 us = np.array([0.074, 0.193])
-rs = np.array([0.1, -0.003, 0., 0.003, 0.])
-var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
+rs = np.array([0.1])
+var_names = ['r0']
 y_sigma = 70.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
@@ -59,7 +58,7 @@ observed_fluxes += y_errs
 #     """ Typical Gaussian likelihood. """
 #     # Ln prior.
 #     ln_prior = -0.5 * np.sum(((params[0] - 0.1) / 0.01)**2)
-#     ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
+#     # ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
 #
 #     # Ln likelihood.
 #     model = hlc_generate(_us=us, _rs=params, _times=times)
@@ -69,7 +68,7 @@ observed_fluxes += y_errs
 #     return ln_like + ln_prior
 #
 #
-# coords = np.array([0.1, -0.003, 0., 0.003, 0.]) + 1.e-5 * np.random.randn(36, len(rs))
+# coords = np.array([0.1]) + 1.e-5 * np.random.randn(36, len(rs))
 # sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob)
 # state = sampler.run_mcmc(coords, 4000, progress=True)
 # chain = sampler.get_chain(discard=1000, flat=True)
@@ -77,40 +76,13 @@ observed_fluxes += y_errs
 # emcee_data = az.from_emcee(sampler, var_names)
 # print(az.summary(emcee_data, var_names, round_to=6).to_string())
 #
-# # figure = corner.corner(chain, truths=rs, labels=var_names)
-# figure = corner.corner(chain)
+# figure = corner.corner(chain, truths=rs, labels=var_names)
 # plt.show()
 
 
 def numpyro_model(t, obs_err, f_obs=None):
     """ Numpyro model. """
-    r0_hat = numpyro.sample('r0_hat', dist.Normal(0., 1.))
-    r0 = numpyro.deterministic('r0', 0.1 + r0_hat * 0.01)
-    # r1_hat = numpyro.sample('r1_hat', dist.Normal(0., 1.))
-    # r1 = numpyro.deterministic('r1', 0. + r1_hat * 0.01)
-    # r2_hat = numpyro.sample('r2_hat', dist.Normal(0., 1.))
-    # r2 = numpyro.deterministic('r2', 0. + r2_hat * 0.01)
-    # r3_hat = numpyro.sample('r3_hat', dist.Normal(0., 1.))
-    # r3 = numpyro.deterministic('r3', 0. + r3_hat * 0.01)
-    # r4_hat = numpyro.sample('r4_hat', dist.Normal(0., 1.))
-    # r4 = numpyro.deterministic('r4', 0. + r4_hat * 0.01)
-
-    # r0 = numpyro.sample('r0', dist.Normal(0.1, 0.01))
-    r1_frac = numpyro.sample('r1_frac', dist.Normal(0.0, 0.1))
-    r2_frac = numpyro.sample('r2_frac', dist.Normal(0.0, 0.1))
-    r3_frac = numpyro.sample('r3_frac', dist.Normal(0.0, 0.1))
-    r4_frac = numpyro.sample('r4_frac', dist.Normal(0.0, 0.1))
-
-    r1 = numpyro.deterministic('r1', r1_frac * r0)
-    r2 = numpyro.deterministic('r2', r2_frac * r0)
-    r3 = numpyro.deterministic('r3', r3_frac * r0)
-    r4 = numpyro.deterministic('r4', r4_frac * r0)
-
-    # todo: fraction of r0 seems good,
-    # todo: non centre at least ro seesm good,
-    # todo: dense mass for slightly slower but more ess?
-
-    # r0 = numpyro.sample('r0', dist.Uniform(0.09, 0.11))
+    r0 = numpyro.sample('r0', dist.Uniform(0.09, 0.11))
     # r1 = numpyro.sample('r1', dist.Uniform(-0.01, 0.01))
     # r2 = numpyro.sample('r2', dist.Uniform(-0.01, 0.01))
     # r3 = numpyro.sample('r3', dist.Uniform(-0.01, 0.01))
@@ -119,43 +91,37 @@ def numpyro_model(t, obs_err, f_obs=None):
     # # Model evaluation: this is our custom JAX primitive.
     fs = harmonica_transit(
         t, 0., 3.735, 7.025, 86.9 * np.pi / 180., 0., 0.,
-        'quadratic', us[0], us[1], r0, r1, r2, r3, r4)
+        'quadratic', us[0], us[1], r0)
 
     # Condition on the observations
     numpyro.sample('obs', dist.Normal(fs, obs_err), obs=f_obs)
 
 
-# from numpyro.handlers import reparam
-# reparam_model = reparam(numpyro_model, config={
-#     "r0": LocScaleReparam(0),
-#     "r1": LocScaleReparam(0),
-#     "r2": LocScaleReparam(0),
-#     "r3": LocScaleReparam(0),
-#     "r4": LocScaleReparam(0),})
+# config = {"betas": LocScaleReparam(centered=0)}
+# _rep_hs_model2 = numpyro.handlers.reparam(numpyro_model, config=config)
 
 # Define NUTS kernel.
+iinit = {'r0': 0.1}
 nuts_kernel = NUTS(
     numpyro_model,
     dense_mass=True,
-    adapt_mass_matrix=True,
     max_tree_depth=10,
-    target_accept_prob=0.65,
-    init_strategy=init_to_median(),
+    target_accept_prob=0.80,
+    init_strategy=init_to_value(
+        values=iinit),
 )
 
 # Define HMC sampling strategy.
 mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=1000,
-            num_chains=1, progress_bar=True)
+            num_chains=2, progress_bar=True)
 
 mcmc.run(rng_key, times, y_sigma, f_obs=observed_fluxes)
 
 numpyro_data = az.from_numpyro(mcmc)
-# print(az.summary(numpyro_data, var_names=var_names, round_to=6).to_string())
-print(az.summary(numpyro_data, round_to=6).to_string())
+print(az.summary(numpyro_data, var_names=var_names, round_to=6).to_string())
 
 samples = mcmc.get_samples()
-# fig = corner.corner(samples, truths=rs, labels=var_names)
-fig = corner.corner(samples)
+fig = corner.corner(samples, truths=rs, labels=var_names)
 plt.show()
 
 # todo: try (data - 1.) * 1.e3

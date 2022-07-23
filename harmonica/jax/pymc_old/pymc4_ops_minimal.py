@@ -146,6 +146,7 @@ with pm.Model() as model:
 
     pm.Normal('y', mu=flux, sigma=10.e-6, observed=obs)
 
+    # todo: init="adapt_full",
     trace = pm.sample(
         tune=100, draws=1000,
         chains=1, cores=1,

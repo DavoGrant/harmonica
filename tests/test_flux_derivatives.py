@@ -56,8 +56,8 @@ class TestFlux(unittest.TestCase):
         self.assertEqual(df_dz.ndim, 2)
         self.assertEqual(df_dz.shape[0], self.times.shape[0])
         self.assertEqual(df_dz.shape[1], 6 + 2 + 3)
-
-        # todo add check for output values is finte, same for flux tests
+        self.assertEqual(np.sum(np.isfinite(f)), n_dp)
+        self.assertEqual(np.sum(np.isfinite(df_dz)), n_dp * (6 + 2 + 3))
 
         # # Check JVP. # todo not working until we take out non param args.
         # der_jit = jit(lambda arg_values, arg_tangents: jvp(
