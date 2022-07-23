@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
-#include <iostream>
 
 #include "gradients.hpp"
 #include "../constants/constants.hpp"
@@ -299,7 +298,8 @@ void FluxDerivatives::s_star(int _j, int theta_type_j, double _theta_j,
   for (int n = -m_N_c; n < m_N_c + 1; n++) {
     int npN_c = n + m_N_c;
     dsn_dcs[npN_c] = -dsn_phi_j_rp_dcs[npN_c] + dsn_phi_j_p1_rp_dcs[npN_c]
-      - (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx) * m_dthetas_dcs[npN_c][_j]
+      - (dsn_phi_j_theta_j_dx + dsn_phi_j_rp_theta_j_dx)
+      * m_dthetas_dcs[npN_c][_j]
       + (dsn_phi_j_p1_theta_j_p1_dx
          + dsn_phi_j_p1_rp_theta_j_p1_dx) * m_dthetas_dcs[npN_c][_j + 1];
   }
@@ -367,8 +367,9 @@ void FluxDerivatives::f_derivatives(double df_dz[]) {
     df_dz[3] = m_df_dalpha * (dalpha_dI0 * m_dI0_du2 + dalpha_du2);
 
     // df_drs.
-    m_df_dcs = m_df_dalpha * (m_dalpha_ds0 * m_ds0_dcs + m_dalpha_ds1 * m_ds1_dcs
-                          + m_dalpha_ds2 * m_ds2_dcs);
+    m_df_dcs = m_df_dalpha * (m_dalpha_ds0 * m_ds0_dcs
+                              + m_dalpha_ds1 * m_ds1_dcs
+                              + m_dalpha_ds2 * m_ds2_dcs);
     for (int n = 0; n < m_N_c + 1; n++) {
       if (n == 0){
         df_dz[4] = (m_df_dcs(m_N_c) * m_dc0_da0).real();
@@ -382,12 +383,14 @@ void FluxDerivatives::f_derivatives(double df_dz[]) {
   } else {
 
     // df_dd, df_dnu.
-    df_dz[0] = m_df_dalpha * (m_dalpha_ds0 * m_ds0_dd + m_dalpha_ds12 * m_ds12_dd
-                            + m_dalpha_ds1 * m_ds1_dd + m_dalpha_ds32 * m_ds32_dd
-                            + m_dalpha_ds2 * m_ds2_dd);
-    df_dz[1] = m_df_dalpha * (m_dalpha_ds0 * m_ds0_dnu + m_dalpha_ds12 * m_ds12_dnu
-                            + m_dalpha_ds1 * m_ds1_dnu + m_dalpha_ds32 * m_ds32_dnu
-                            + m_dalpha_ds2 * m_ds2_dnu);
+    df_dz[0] = m_df_dalpha * (
+      m_dalpha_ds0 * m_ds0_dd + m_dalpha_ds12 * m_ds12_dd
+      + m_dalpha_ds1 * m_ds1_dd + m_dalpha_ds32 * m_ds32_dd
+      + m_dalpha_ds2 * m_ds2_dd);
+    df_dz[1] = m_df_dalpha * (
+      m_dalpha_ds0 * m_ds0_dnu + m_dalpha_ds12 * m_ds12_dnu
+      + m_dalpha_ds1 * m_ds1_dnu + m_dalpha_ds32 * m_ds32_dnu
+      + m_dalpha_ds2 * m_ds2_dnu);
 
     // df_du1, df_du2, df_du3, df_du4.
     double dalpha_du1 = m_I_0 * (m_s12 - m_s0);
@@ -400,9 +403,10 @@ void FluxDerivatives::f_derivatives(double df_dz[]) {
     df_dz[5] = m_df_dalpha * (dalpha_dI0 * m_dI0_du4 + dalpha_du4);
 
     // df_drs.
-    m_df_dcs = m_df_dalpha * (m_dalpha_ds0 * m_ds0_dcs + m_dalpha_ds12 * m_ds12_dcs
-                          + m_dalpha_ds1 * m_ds1_dcs + m_dalpha_ds32 * m_ds32_dcs
-                          + m_dalpha_ds2 * m_ds2_dcs);
+    m_df_dcs = m_df_dalpha * (
+      m_dalpha_ds0 * m_ds0_dcs + m_dalpha_ds12 * m_ds12_dcs
+      + m_dalpha_ds1 * m_ds1_dcs + m_dalpha_ds32 * m_ds32_dcs
+      + m_dalpha_ds2 * m_ds2_dcs);
     for (int n = 0; n < m_N_c + 1; n++) {
       if (n == 0){
         df_dz[6] = (m_df_dcs(m_N_c) * m_dc0_da0).real();
@@ -425,9 +429,11 @@ void FluxDerivatives::reset_derivatives() {
     m_dthetas_dcs[n + m_N_c].clear();
   }
   m_ds0_dd = 0., m_ds12_dd = 0., m_ds1_dd = 0., m_ds32_dd = 0., m_ds2_dd = 0.;
-  m_ds0_dnu = 0., m_ds12_dnu = 0., m_ds1_dnu = 0., m_ds32_dnu = 0., m_ds2_dnu = 0.;
+  m_ds0_dnu = 0., m_ds12_dnu = 0., m_ds1_dnu = 0., m_ds32_dnu = 0.,
+  m_ds2_dnu = 0.;
+
   m_ds0_dcs.setZero(), m_ds12_dcs.setZero(), m_ds1_dcs.setZero(),
-                     m_ds32_dcs.setZero(), m_ds2_dcs.setZero();
+  m_ds32_dcs.setZero(), m_ds2_dcs.setZero();
 }
 
 
@@ -750,7 +756,8 @@ void FluxDerivatives::analytic_even_terms(
         beta_sin, m_els(npN_c), 3, m_n_rs, m_len_beta_conv_c);
 
     dq0_dcs(npN_c) = complex_ca_vector_addition(
-      2. * c_conv_el, -d * (beta_cos_conv_el + 1.i * (1. * n) * beta_sin_conv_el),
+      2. * c_conv_el, -d * (beta_cos_conv_el
+                            + 1.i * (1. * n) * beta_sin_conv_el),
       m_len_c_conv_c, m_len_beta_conv_c);
 
     Eigen::Vector<std::complex<double>, EigD>
@@ -760,7 +767,8 @@ void FluxDerivatives::analytic_even_terms(
 
     dq2_dcs(npN_c) = complex_ca_vector_addition(
         complex_convolve(dq_lhs_dcn, q0, m_len_q_rhs, m_len_q_rhs, m_len_q),
-        complex_convolve(q_lhs, dq0_dcs(npN_c), m_len_q_rhs, m_len_q_rhs, m_len_q),
+        complex_convolve(q_lhs, dq0_dcs(npN_c), m_len_q_rhs,
+                         m_len_q_rhs, m_len_q),
         m_len_q, m_len_q);
   }
 
@@ -929,7 +937,8 @@ void FluxDerivatives::numerical_odd_terms(
       for (int n = -m_N_c; n < m_N_c + 1; n++) {
         int npN_c = n + m_N_c;
         std::complex<double> drp_dcn = std::exp((1. * n) * 1.i * t_k);
-        std::complex<double> drpdash_dcn = (1. * n) * 1.i * std::exp((1. * n) * 1.i * t_k);
+        std::complex<double> drpdash_dcn = (1. * n) * 1.i
+                                            * std::exp((1. * n) * 1.i * t_k);
         ds1_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta_dzp * dzp_drp * drp_dcn;
         ds1_eta_rp_dcs[npN_c] += ds1_deta * deta_drp * drp_dcn;
         ds1_eta_rpdash_dcs[npN_c] += ds1_deta * deta_drdash * drpdash_dcn;
@@ -967,10 +976,12 @@ void FluxDerivatives::numerical_odd_terms(
     m_s1 += half_theta_range * s1_planet;
 
     ds1_theta_j_dd += -fractions::one_half * s1_planet * m_dthetas_dd[_j];
-    ds1_theta_j_p1_dd += fractions::one_half * s1_planet * m_dthetas_dd[_j + 1];
+    ds1_theta_j_p1_dd += fractions::one_half * s1_planet
+                         * m_dthetas_dd[_j + 1];
 
     ds1_theta_j_dnu += -fractions::one_half * s1_planet * m_dthetas_dnu[_j];
-    ds1_theta_j_p1_dnu += fractions::one_half * s1_planet * m_dthetas_dnu[_j + 1];
+    ds1_theta_j_p1_dnu += fractions::one_half * s1_planet
+                          * m_dthetas_dnu[_j + 1];
 
     m_ds1_dd += ds1_theta_j_dd + ds1_theta_j_p1_dd
               + half_theta_range * (
@@ -1001,12 +1012,15 @@ void FluxDerivatives::numerical_odd_terms(
                               + ds1_eta_rdash_t_theta_j_p1_dx));
     for (int n = -m_N_c; n < m_N_c + 1; n++) {
       int npN_c = n + m_N_c;
-      std::complex<double> ds1_theta_j_dcn = -fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j];
-      std::complex<double> ds1_theta_j_p1_dcn = fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j + 1];
+      std::complex<double> ds1_theta_j_dcn = -fractions::one_half * s1_planet
+                                             * m_dthetas_dcs[npN_c][_j];
+      std::complex<double> ds1_theta_j_p1_dcn = fractions::one_half * s1_planet
+                                                * m_dthetas_dcs[npN_c][_j + 1];
 
       m_ds1_dcs(npN_c) += ds1_theta_j_dcn + ds1_theta_j_p1_dcn
                           + half_theta_range * (
-        ds1_zeta_zp_rp_dcs[npN_c] + ds1_eta_rp_dcs[npN_c] + ds1_eta_rpdash_dcs[npN_c]
+        ds1_zeta_zp_rp_dcs[npN_c] + ds1_eta_rp_dcs[npN_c]
+        + ds1_eta_rpdash_dcs[npN_c]
         + m_dthetas_dcs[npN_c][_j] * (ds1_zeta_zp_t_theta_j_dx
                                     + ds1_zeta_zp_r_t_theta_j_dx
                                     + ds1_eta_t_theta_j_dx
@@ -1117,14 +1131,18 @@ void FluxDerivatives::numerical_odd_terms(
       for (int n = -m_N_c; n < m_N_c + 1; n++) {
         int npN_c = n + m_N_c;
         std::complex<double> drp_dcn = std::exp((1. * n) * 1.i * t_k);
-        std::complex<double> drpdash_dcn = (1. * n) * 1.i * std::exp((1. * n) * 1.i * t_k);
-        ds12_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta12_dzp * dzp_drp * drp_dcn;
+        std::complex<double> drpdash_dcn = (1. * n) * 1.i
+                                           * std::exp((1. * n) * 1.i * t_k);
+        ds12_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta12_dzp
+                                      * dzp_drp * drp_dcn;
         ds12_eta_rp_dcs[npN_c] += ds12_deta * deta_drp * drp_dcn;
         ds12_eta_rpdash_dcs[npN_c] += ds12_deta * deta_drdash * drpdash_dcn;
-        ds1_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta1_dzp * dzp_drp * drp_dcn;
+        ds1_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta1_dzp
+                                     * dzp_drp * drp_dcn;
         ds1_eta_rp_dcs[npN_c] += ds1_deta * deta_drp * drp_dcn;
         ds1_eta_rpdash_dcs[npN_c] += ds1_deta * deta_drdash * drpdash_dcn;
-        ds32_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta32_dzp * dzp_drp * drp_dcn;
+        ds32_zeta_zp_rp_dcs[npN_c] += ds1_dzeta * dzeta32_dzp
+                                      * dzp_drp * drp_dcn;
         ds32_eta_rp_dcs[npN_c] += ds32_deta * deta_drp * drp_dcn;
         ds32_eta_rpdash_dcs[npN_c] += ds32_deta * deta_drdash * drpdash_dcn;
       }
@@ -1295,16 +1313,23 @@ void FluxDerivatives::numerical_odd_terms(
                               + ds32_eta_rdash_t_theta_j_p1_dx));
     for (int n = -m_N_c; n < m_N_c + 1; n++) {
       int npN_c = n + m_N_c;
-      std::complex<double> ds12_theta_j_dcn = -fractions::one_half * s12_planet * m_dthetas_dcs[npN_c][_j];
-      std::complex<double> ds12_theta_j_p1_dcn = fractions::one_half * s12_planet * m_dthetas_dcs[npN_c][_j + 1];
-      std::complex<double> ds1_theta_j_dcn = -fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j];
-      std::complex<double> ds1_theta_j_p1_dcn = fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j + 1];
-      std::complex<double> ds32_theta_j_dcn = -fractions::one_half * s32_planet * m_dthetas_dcs[npN_c][_j];
-      std::complex<double> ds32_theta_j_p1_dcn = fractions::one_half * s32_planet * m_dthetas_dcs[npN_c][_j + 1];
+      std::complex<double> ds12_theta_j_dcn =
+        -fractions::one_half * s12_planet * m_dthetas_dcs[npN_c][_j];
+      std::complex<double> ds12_theta_j_p1_dcn =
+        fractions::one_half * s12_planet * m_dthetas_dcs[npN_c][_j + 1];
+      std::complex<double> ds1_theta_j_dcn =
+        -fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j];
+      std::complex<double> ds1_theta_j_p1_dcn =
+        fractions::one_half * s1_planet * m_dthetas_dcs[npN_c][_j + 1];
+      std::complex<double> ds32_theta_j_dcn =
+        -fractions::one_half * s32_planet * m_dthetas_dcs[npN_c][_j];
+      std::complex<double> ds32_theta_j_p1_dcn =
+        fractions::one_half * s32_planet * m_dthetas_dcs[npN_c][_j + 1];
 
       m_ds12_dcs(npN_c) += ds12_theta_j_dcn + ds12_theta_j_p1_dcn
                           + half_theta_range * (
-        ds12_zeta_zp_rp_dcs[npN_c] + ds12_eta_rp_dcs[npN_c] + ds12_eta_rpdash_dcs[npN_c]
+        ds12_zeta_zp_rp_dcs[npN_c] + ds12_eta_rp_dcs[npN_c]
+        + ds12_eta_rpdash_dcs[npN_c]
         + m_dthetas_dcs[npN_c][_j] * (ds12_zeta_zp_t_theta_j_dx
                                     + ds12_zeta_zp_r_t_theta_j_dx
                                     + ds12_eta_t_theta_j_dx
@@ -1317,7 +1342,8 @@ void FluxDerivatives::numerical_odd_terms(
                                         + ds12_eta_rdash_t_theta_j_p1_dx));
       m_ds1_dcs(npN_c) += ds1_theta_j_dcn + ds1_theta_j_p1_dcn
                           + half_theta_range * (
-        ds1_zeta_zp_rp_dcs[npN_c] + ds1_eta_rp_dcs[npN_c] + ds1_eta_rpdash_dcs[npN_c]
+        ds1_zeta_zp_rp_dcs[npN_c] + ds1_eta_rp_dcs[npN_c]
+        + ds1_eta_rpdash_dcs[npN_c]
         + m_dthetas_dcs[npN_c][_j] * (ds1_zeta_zp_t_theta_j_dx
                                     + ds1_zeta_zp_r_t_theta_j_dx
                                     + ds1_eta_t_theta_j_dx
@@ -1330,7 +1356,8 @@ void FluxDerivatives::numerical_odd_terms(
                                         + ds1_eta_rdash_t_theta_j_p1_dx));
       m_ds32_dcs(npN_c) += ds32_theta_j_dcn + ds32_theta_j_p1_dcn
                           + half_theta_range * (
-        ds32_zeta_zp_rp_dcs[npN_c] + ds32_eta_rp_dcs[npN_c] + ds32_eta_rpdash_dcs[npN_c]
+        ds32_zeta_zp_rp_dcs[npN_c] + ds32_eta_rp_dcs[npN_c]
+        + ds32_eta_rpdash_dcs[npN_c]
         + m_dthetas_dcs[npN_c][_j] * (ds32_zeta_zp_t_theta_j_dx
                                     + ds32_zeta_zp_r_t_theta_j_dx
                                     + ds32_eta_t_theta_j_dx

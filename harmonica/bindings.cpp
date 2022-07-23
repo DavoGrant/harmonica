@@ -105,7 +105,8 @@ void compute_transmission_string(
     rs[i] = rs_py_(i);
   }
   auto thetas_py_ = thetas_py.mutable_unchecked<1>();
-  auto out_transmission_string_py_ = out_transmission_string_py.mutable_unchecked<1>();
+  auto out_transmission_string_py_ =
+    out_transmission_string_py.mutable_unchecked<1>();
 
   // Compute transmission string.
   Fluxes flux(0, us, n_rs, rs, 0, 0);
@@ -166,7 +167,8 @@ const void jax_light_curve(void* out_tuple, const void** in) {
     // Compute orbit and derivatives wrt x={t0, p, a, i, e, w}.
     double d, z, nu;
     double dd_dx[6], dnu_dx[6];
-    orbital.compute_eccentric_orbit_and_derivatives(times[i], d, z, nu, dd_dx, dnu_dx);
+    orbital.compute_eccentric_orbit_and_derivatives(
+      times[i], d, z, nu, dd_dx, dnu_dx);
 
     // Compute flux and derivatives wrt y={d, nu, {us}, {rs}}.
     double df_dy[n_y_derivatives];

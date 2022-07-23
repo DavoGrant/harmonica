@@ -9,11 +9,6 @@ np.random.seed(123)
 n_ints = 500
 n_repeats = 1000
 
-# todo: adding const ref everywhere possible
-# todo: adding const to variables where possible too
-# todo: adding const as method labels where possible to
-# todo: less precompute slow down
-
 # System params.
 t0 = 0.
 period = 4.055259

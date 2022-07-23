@@ -147,7 +147,7 @@ void Fluxes::transit_flux(const double d, const double z,
     m_alpha = m_I_0 * (m_s0 * m_p(0) + m_s1 * m_p(1) + m_s2 * m_p(2));
   } else {
     m_alpha = m_I_0 * (m_s0 * m_p(0) + m_s12 * m_p(1) + m_s1 * m_p(2)
-                   + m_s32 * m_p(3) + m_s2 * m_p(4));
+                       + m_s32 * m_p(3) + m_s2 * m_p(4));
   }
   out_f = 1. - m_alpha;
 }
@@ -313,28 +313,28 @@ void Fluxes::select_legendre_order(const double d) {
   }
 
   // Set precision by number of legendre roots utilised.
-  if (position_switch == 50) {
+  if (position_switch == 20) {
     // Default for centre.
+    m_N_l = 20;
+    m_l_roots = legendre::roots_twenty;
+    m_l_weights = legendre::weights_twenty;
+  } else if (position_switch == 50) {
+    // Default for edge.
     m_N_l = 50;
     m_l_roots = legendre::roots_fifty;
     m_l_weights = legendre::weights_fifty;
-  } else if (position_switch == 500) {
-    // Default for edge.
-    m_N_l = 500;
-    m_l_roots = legendre::roots_five_hundred;
-    m_l_weights = legendre::weights_five_hundred;
-  } else if (position_switch == 200) {
-    m_N_l = 200;
-    m_l_roots = legendre::roots_two_hundred;
-    m_l_weights = legendre::weights_two_hundred;
   } else if (position_switch == 100) {
     m_N_l = 100;
     m_l_roots = legendre::roots_hundred;
     m_l_weights = legendre::weights_hundred;
-  } else if (position_switch == 20) {
-    m_N_l = 20;
-    m_l_roots = legendre::roots_twenty;
-    m_l_weights = legendre::weights_twenty;
+  } else if (position_switch == 200) {
+    m_N_l = 200;
+    m_l_roots = legendre::roots_two_hundred;
+    m_l_weights = legendre::weights_two_hundred;
+  } else if (position_switch == 500) {
+    m_N_l = 500;
+    m_l_roots = legendre::roots_five_hundred;
+    m_l_weights = legendre::weights_five_hundred;
   } else if (position_switch == 10) {
     m_N_l = 10;
     m_l_roots = legendre::roots_ten;
