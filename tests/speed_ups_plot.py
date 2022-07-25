@@ -11,7 +11,9 @@ data = pd.DataFrame(
      ['a8d295310ea3d97b6e998d88da3cc15b4f2001bc',
       'Class inheritance', 9.08e-06, 2.54e-05],
      ['d367e5cc994e2d64786cda4c19e384b192984c03',
-      'Selective pass by const reference', 8.76e-06, 2.35e-05],],
+      'Selective pass by const reference', 8.76e-06, 2.35e-05],
+     ['d367e5cc994e2d64786cda4c19e384b192984c03',
+      'Remove grad branching for ld law', 8.76e-06, 2.31e-05],],
     columns=['commit', 'note', 'speed', 'speed_grad'])
 
 fig, ax1 = plt.subplots(1, 1, figsize=(7, 5))

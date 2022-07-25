@@ -1,15 +1,13 @@
 import os
 import jax
-import emcee
 import corner
 import numpyro
 import arviz as az
 import numpy as np
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from numpyro.infer.reparam import LocScaleReparam
 import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS, init_to_value, init_to_median
+from numpyro.infer import MCMC, NUTS, init_to_median
 
 from harmonica import bindings
 from harmonica.jax import harmonica_transit_quad_ld
@@ -46,93 +44,24 @@ y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 observed_fluxes = hlc_generate(_us=us, _rs=rs, _times=times)
 observed_fluxes += y_errs
 
-# fig = plt.figure(figsize=(8, 6))
-# ax1 = plt.subplot(1, 1, 1)
-# ax1.errorbar(times, observed_fluxes, yerr=y_sigma, fmt=".k", capsize=0)
-# ax1.set_xlabel('Time / days')
-# ax1.set_ylabel('Relative flux')
-# plt.show()
-
-
-# def log_prob(params):
-#     """ Typical Gaussian likelihood. """
-#     # Ln prior.
-#     ln_prior = -0.5 * np.sum(((params[0] - 0.1) / 0.01)**2)
-#     ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
-#
-#     # Ln likelihood.
-#     model = hlc_generate(_us=us, _rs=params, _times=times)
-#     ln_like = -0.5 * np.sum((observed_fluxes - model)**2 / y_sigma**2
-#                             + np.log(2 * np.pi * y_sigma**2))
-#
-#     return ln_like + ln_prior
-#
-#
-# coords = np.array([0.1, 0., 0., 0., 0.]) + 1.e-5 * np.random.randn(16, len(rs))
-# sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob)
-# state = sampler.run_mcmc(coords, 6000, progress=True)
-# chain = sampler.get_chain(discard=2000, flat=True)
-#
-# emcee_data = az.from_emcee(sampler, var_names)
-# print(az.summary(emcee_data, var_names, round_to=6).to_string())
-
-# # figure = corner.corner(chain, truths=rs, labels=var_names)
-# figure = corner.corner(chain)
-# plt.show()
-
 
 def numpyro_model(t, obs_err, f_obs=None):
     """ Numpyro model. """
     r0_tilde = numpyro.sample('r0_hat', dist.Normal(0., 1.))
     r0 = numpyro.deterministic('r0', 0.1 + r0_tilde * 0.01)
-    # r1_hat = numpyro.sample('r1_hat', dist.Normal(0., 1.))
-    # r1 = numpyro.deterministic('r1', 0. + r1_hat * 0.01)
-    # r2_hat = numpyro.sample('r2_hat', dist.Normal(0., 1.))
-    # r2 = numpyro.deterministic('r2', 0. + r2_hat * 0.01)
-    # r3_hat = numpyro.sample('r3_hat', dist.Normal(0., 1.))
-    # r3 = numpyro.deterministic('r3', 0. + r3_hat * 0.01)
-    # r4_hat = numpyro.sample('r4_hat', dist.Normal(0., 1.))
-    # r4 = numpyro.deterministic('r4', 0. + r4_hat * 0.01)
 
-    # r0 = numpyro.sample('r0', dist.Normal(0.1, 0.01))
-    r1_frac = numpyro.sample('r1_frac', dist.Normal(0.0, 0.1))
-    r2_frac = numpyro.sample('r2_frac', dist.Normal(0.0, 0.1))
-    r3_frac = numpyro.sample('r3_frac', dist.Normal(0.0, 0.1))
-    r4_frac = numpyro.sample('r4_frac', dist.Normal(0.0, 0.1))
-
-    r1 = numpyro.deterministic('r1', r1_frac * r0)
-    r2 = numpyro.deterministic('r2', r2_frac * r0)
-    r3 = numpyro.deterministic('r3', r3_frac * r0)
-    r4 = numpyro.deterministic('r4', r4_frac * r0)
-
-    # todo: fraction of r0 seems good,
-    # todo: non centre at least ro seesm good,
-    # todo: dense mass for slightly slower but more ess?
-    # todo: what is the min max tree depth? expensive gradient
-    # todo: try multi variate dist for conciseness
-
-    # r0 = numpyro.sample('r0', dist.Uniform(0.09, 0.11))
-    # r1 = numpyro.sample('r1', dist.Uniform(-0.01, 0.01))
-    # r2 = numpyro.sample('r2', dist.Uniform(-0.01, 0.01))
-    # r3 = numpyro.sample('r3', dist.Uniform(-0.01, 0.01))
-    # r4 = numpyro.sample('r4', dist.Uniform(-0.01, 0.01))
+    # rh_frac = numpyro.sample('rh_frac', dist.MultivariateNormal(jnp.zeros(4), jnp.diag(jnp.ones(4) * 0.1)))
+    rh_frac = numpyro.sample('rh_frac', dist.Normal(0.0, 0.1), sample_shape=(4,))
+    rh = numpyro.deterministic('rh', rh_frac * r0)
 
     # # Model evaluation: this is our custom JAX primitive.
     fs = harmonica_transit_quad_ld(
         t, 0., 3.735, 7.025, 86.9 * np.pi / 180., 0., 0.,
-        us[0], us[1], r0, r1, r2, r3, r4)
+        us[0], us[1], jnp.array([r0, rh[0], rh[1], rh[2], rh[3]]))
 
     # Condition on the observations
     numpyro.sample('obs', dist.Normal(fs, obs_err), obs=f_obs)
 
-
-# from numpyro.handlers import reparam
-# reparam_model = reparam(numpyro_model, config={
-#     "r0": LocScaleReparam(0),
-#     "r1": LocScaleReparam(0),
-#     "r2": LocScaleReparam(0),
-#     "r3": LocScaleReparam(0),
-#     "r4": LocScaleReparam(0),})
 
 # Define NUTS kernel.
 nuts_kernel = NUTS(
@@ -158,10 +87,6 @@ samples = mcmc.get_samples()
 # fig = corner.corner(samples, truths=rs, labels=var_names)
 fig = corner.corner(samples)
 plt.show()
-
-# todo: try (data - 1.) * 1.e3
-# see https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html#checking-against-numerical-differences
-# and https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html#handling-non-differentiable-arguments
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 ax1.set_aspect('equal', 'box')

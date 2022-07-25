@@ -12,7 +12,7 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS, init_to_value, init_to_median
 
 from harmonica import bindings
-from harmonica.jax import harmonica_transit_quad_ld
+from harmonica.jax import harmonica_transit
 
 
 def hlc_generate(t0=0., period=3.735, a=7.025, inc=86.9 * np.pi / 180.,
@@ -31,16 +31,17 @@ n_cores = jax.local_device_count()
 numpyro.set_host_device_count(n_cores)
 print('N cores = ', n_cores)
 
-# Make reproducible.
-rng_key = jax.random.PRNGKey(123)
-np.random.seed(123)
 
-n_obs = 300
+# Make reproducible.
+rng_key = jax.random.PRNGKey(112)
+np.random.seed(112)
+
+n_obs = 500
 times = np.linspace(-0.22, 0.22, n_obs)
 us = np.array([0.074, 0.193])
 rs = np.array([0.1, -0.003, 0., 0.003, 0.])
-var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
-y_sigma = 35.e-6
+var_names = ['r0', 'r1', 'r2', 'r3', 'r4', 'u1', 'u2']
+y_sigma = 15.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
 observed_fluxes = hlc_generate(_us=us, _rs=rs, _times=times)
@@ -58,24 +59,25 @@ observed_fluxes += y_errs
 #     """ Typical Gaussian likelihood. """
 #     # Ln prior.
 #     ln_prior = -0.5 * np.sum(((params[0] - 0.1) / 0.01)**2)
-#     ln_prior += -0.5 * np.sum((params[1:] / 0.01)**2)
+#     ln_prior += -0.5 * np.sum((params[1:-2] / 0.01)**2)
+#     ln_prior += -0.5 * np.sum((params[-2:] / 1.)**2)
 #
 #     # Ln likelihood.
-#     model = hlc_generate(_us=us, _rs=params, _times=times)
+#     model = hlc_generate(_us=params[-2:], _rs=params[:-2], _times=times)
 #     ln_like = -0.5 * np.sum((observed_fluxes - model)**2 / y_sigma**2
 #                             + np.log(2 * np.pi * y_sigma**2))
 #
 #     return ln_like + ln_prior
 #
 #
-# coords = np.array([0.1, 0., 0., 0., 0.]) + 1.e-5 * np.random.randn(16, len(rs))
+# coords = np.array([0.1, 0., 0., 0., 0., 0.1, 0.1]) + 1.e-5 * np.random.randn(16, len(rs) + len(us))
 # sampler = emcee.EnsembleSampler(coords.shape[0], coords.shape[1], log_prob)
 # state = sampler.run_mcmc(coords, 6000, progress=True)
 # chain = sampler.get_chain(discard=2000, flat=True)
 #
 # emcee_data = az.from_emcee(sampler, var_names)
 # print(az.summary(emcee_data, var_names, round_to=6).to_string())
-
+#
 # # figure = corner.corner(chain, truths=rs, labels=var_names)
 # figure = corner.corner(chain)
 # plt.show()
@@ -83,18 +85,16 @@ observed_fluxes += y_errs
 
 def numpyro_model(t, obs_err, f_obs=None):
     """ Numpyro model. """
+    q1 = numpyro.sample('q1', dist.Uniform(0., 1.))
+    q2 = numpyro.sample('q2', dist.Uniform(0., 1.))
+    u1 = numpyro.deterministic('u1', 2. * jnp.sqrt(q1) * q2)
+    u2 = numpyro.deterministic('u2', jnp.sqrt(q1) * (1. - 2. * q2))
+    # u1 = numpyro.sample('u1', dist.Uniform(0., 1.))
+    # u2 = numpyro.sample('u2', dist.Uniform(0., 1.))
+
     r0_tilde = numpyro.sample('r0_hat', dist.Normal(0., 1.))
     r0 = numpyro.deterministic('r0', 0.1 + r0_tilde * 0.01)
-    # r1_hat = numpyro.sample('r1_hat', dist.Normal(0., 1.))
-    # r1 = numpyro.deterministic('r1', 0. + r1_hat * 0.01)
-    # r2_hat = numpyro.sample('r2_hat', dist.Normal(0., 1.))
-    # r2 = numpyro.deterministic('r2', 0. + r2_hat * 0.01)
-    # r3_hat = numpyro.sample('r3_hat', dist.Normal(0., 1.))
-    # r3 = numpyro.deterministic('r3', 0. + r3_hat * 0.01)
-    # r4_hat = numpyro.sample('r4_hat', dist.Normal(0., 1.))
-    # r4 = numpyro.deterministic('r4', 0. + r4_hat * 0.01)
 
-    # r0 = numpyro.sample('r0', dist.Normal(0.1, 0.01))
     r1_frac = numpyro.sample('r1_frac', dist.Normal(0.0, 0.1))
     r2_frac = numpyro.sample('r2_frac', dist.Normal(0.0, 0.1))
     r3_frac = numpyro.sample('r3_frac', dist.Normal(0.0, 0.1))
@@ -105,22 +105,10 @@ def numpyro_model(t, obs_err, f_obs=None):
     r3 = numpyro.deterministic('r3', r3_frac * r0)
     r4 = numpyro.deterministic('r4', r4_frac * r0)
 
-    # todo: fraction of r0 seems good,
-    # todo: non centre at least ro seesm good,
-    # todo: dense mass for slightly slower but more ess?
-    # todo: what is the min max tree depth? expensive gradient
-    # todo: try multi variate dist for conciseness
-
-    # r0 = numpyro.sample('r0', dist.Uniform(0.09, 0.11))
-    # r1 = numpyro.sample('r1', dist.Uniform(-0.01, 0.01))
-    # r2 = numpyro.sample('r2', dist.Uniform(-0.01, 0.01))
-    # r3 = numpyro.sample('r3', dist.Uniform(-0.01, 0.01))
-    # r4 = numpyro.sample('r4', dist.Uniform(-0.01, 0.01))
-
     # # Model evaluation: this is our custom JAX primitive.
-    fs = harmonica_transit_quad_ld(
+    fs = harmonica_transit(
         t, 0., 3.735, 7.025, 86.9 * np.pi / 180., 0., 0.,
-        us[0], us[1], r0, r1, r2, r3, r4)
+        'quadratic', u1, u2, r0, r1, r2, r3, r4)
 
     # Condition on the observations
     numpyro.sample('obs', dist.Normal(fs, obs_err), obs=f_obs)
@@ -145,7 +133,7 @@ nuts_kernel = NUTS(
 )
 
 # Define HMC sampling strategy.
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=500,
+mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=1000,
             num_chains=2, progress_bar=True)
 
 mcmc.run(rng_key, times, y_sigma, f_obs=observed_fluxes)
@@ -154,14 +142,12 @@ numpyro_data = az.from_numpyro(mcmc)
 # print(az.summary(numpyro_data, var_names=var_names, round_to=6).to_string())
 print(az.summary(numpyro_data, round_to=6).to_string())
 
+mcmc.print_summary()
 samples = mcmc.get_samples()
-# fig = corner.corner(samples, truths=rs, labels=var_names)
-fig = corner.corner(samples)
-plt.show()
 
-# todo: try (data - 1.) * 1.e3
-# see https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html#checking-against-numerical-differences
-# and https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html#handling-non-differentiable-arguments
+# # fig = corner.corner(samples, truths=rs, labels=var_names)
+# fig = corner.corner(samples)
+# plt.show()
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 ax1.set_aspect('equal', 'box')

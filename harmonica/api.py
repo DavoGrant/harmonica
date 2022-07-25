@@ -3,8 +3,7 @@ from harmonica import bindings
 
 
 class HarmonicaTransit(object):
-    """
-    Harmonica transit class.
+    """ Harmonica transit class.
 
     Compute transit light curves for a given transmission string
     through parameterising the planet shape as a Fourier series.
@@ -84,8 +83,7 @@ class HarmonicaTransit(object):
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
                   ecc=0., omega=0.):
-        """
-        Set/update orbital parameters.
+        """ Set/update orbital parameters.
 
         Parameters
         ----------
@@ -111,8 +109,7 @@ class HarmonicaTransit(object):
         self._omega = omega
 
     def set_stellar_limb_darkening(self, u=None, limb_dark_law='quadratic'):
-        """
-        Set/update stellar limb darkening parameters.
+        """ Set/update stellar limb darkening parameters.
 
         Parameters
         ----------
@@ -132,8 +129,7 @@ class HarmonicaTransit(object):
             self._ld_mode = 1
 
     def set_planet_transmission_string(self, r=None):
-        """
-        Set/update planet transmission string parameters.
+        """ Set/update planet transmission string parameters.
 
         Parameters
         ----------
@@ -158,8 +154,7 @@ class HarmonicaTransit(object):
             self._time_dep_strings = True
 
     def get_transit_light_curve(self):
-        """
-        Get transit light curve.
+        """ Get transit light curve.
 
         Returns
         -------
@@ -185,9 +180,8 @@ class HarmonicaTransit(object):
         return self.fs
 
     def get_planet_transmission_string(self, theta):
-        """
-        Get transmission string evaluated at an array of angles around
-        the planet's terminator.
+        """ Get transmission string evaluated at an array of angles
+            around the planet's terminator.
 
         Parameters
         ----------
@@ -219,8 +213,7 @@ class HarmonicaTransit(object):
         return r_p
 
     def get_precision_estimate(self):
-        """
-        Get light curve precision estimate.
+        """ Get light curve precision estimate.
 
         Returns
         -------

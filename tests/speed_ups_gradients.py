@@ -2,7 +2,7 @@ import jax
 import time
 import numpy as np
 
-from harmonica.jax import harmonica_transit
+from harmonica.jax import harmonica_transit_quad_ld
 
 
 # Config.
@@ -24,8 +24,8 @@ fs = np.empty(times.shape, dtype=np.float64, order='C')
 runtimes = []
 for i in range(n_repeats):
     start = time.time()
-    harmonica_transit(times, t0, period, a, inc, 0., 0.,
-                      'quadratic', us[0], us[1], rs[0], rs[1], rs[2], rs[3], rs[4])
+    harmonica_transit_quad_ld(times, t0, period, a, inc, 0., 0.,
+                              us[0], us[1], rs[0], rs[1], rs[2], rs[3], rs[4])
     end = time.time()
     runtimes.append(end - start)
 
