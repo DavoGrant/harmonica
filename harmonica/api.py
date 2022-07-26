@@ -1,21 +1,24 @@
 import numpy as np
-
 from harmonica import bindings
 
 
 class HarmonicaTransit(object):
-    """
-    Harmonica transit class.
+    """ Harmonica transit class.
 
     Compute transit light curves for a given transmission string
     through parameterising the planet shape as a Fourier series.
 
     Parameters
     ----------
-    times : type
-        Description [units].
-    ds : type
-        Description [units].
+    times : ndarray, optional
+        1D array of model evaluation times [days].
+    pnl_c and pnl_e : int, optional
+        Number of legendre roots used to approximate the integrals
+        with no closed form solution. pnl_c corresponds to when the
+        planet lies entirely inside the stellar disc, and pnl_e
+        corresponds to when the planet intersects the stellar limb.
+        Allowed values = {10, 20, 100, 200, 500}. Use
+        get_precision_estimate() to check model precision.
 
     Methods
     -------
@@ -28,22 +31,12 @@ class HarmonicaTransit(object):
 
     Notes
     -----
-    Some notes about where the method is described.
-
-    Perhaps a further note about the limb darkening for common uses.
-    For example a quadratic law; u=[0.1, 0.2], limb_dark_law=`integers`,
-    or a 4-param non-linear law u=[0.1, 0.2, 0.1, 0.2], limb_dark_law=`
-    half-integers`.
-
-    Perhaps a further note about the r coeffs intuition. If only r=[r0]
-    is given then r0 is the radius of a circular planet.
-
-    Perhaps a further note about the use of the require_gradients arg.
+    The algorithm is detailed in Grant and Wakeford 2022.
+    Todo: add link.
 
     """
 
-    def __init__(self, times=None, ds=None, nus=None,
-                 require_gradients=False, pnl_c=50, pnl_e=500):
+    def __init__(self, times=None, pnl_c=20, pnl_e=50):
         # Orbital parameters.
         self._t0 = None
         self._period = None
@@ -58,39 +51,30 @@ class HarmonicaTransit(object):
 
         # Planet parameters.
         self._r = None
-
-        # Evaluation arrays.
-        if times is not None:
-            self.times = np.ascontiguousarray(times, dtype=np.float64)
-            self.ds = np.empty(times.shape, dtype=np.float64, order='C')
-            self.nus = np.empty(times.shape, dtype=np.float64, order='C')
-            self._orbit_updated = True
-            self.lc = np.empty(times.shape, dtype=np.float64, order='C')
-        else:
-            self.ds = np.ascontiguousarray(ds, dtype=np.float64)
-            self.nus = np.ascontiguousarray(nus, dtype=np.float64)
-            self._orbit_updated = False
-            self.lc = np.empty(ds.shape, dtype=np.float64, order='C')
-
-        self._require_gradients = require_gradients
-        n_od = self.ds.shape + (6,)
-        self.ds_grad = np.empty(n_od, dtype=np.float64, order='C')
-        self.nus_grad = np.empty(n_od, dtype=np.float64, order='C')
-        n_lcd = self.ds.shape + (6 + 3 + 5,)
-        self.lc_grad = np.empty(n_lcd, dtype=np.float64, order='C')
+        self._time_dep_strings = False
 
         # Precision: number of legendre roots at centre and edges.
         self._pnl_c = pnl_c
         self._pnl_e = pnl_e
 
+        # Evaluation arrays.
+        if times is not None:
+            self.times = np.ascontiguousarray(times, dtype=np.float64)
+            self.fs = np.empty(times.shape, dtype=np.float64)
+        else:
+            self.times = None
+            self.fs = None
+
     def __repr__(self):
-        return '<Harmonica transit: require_gradients={}>'.format(
-            self._require_gradients)
+        if self.times is not None:
+            return '<Harmonica transit: {} eval points>'.format(
+                self.times.shape[0])
+        else:
+            return '<Harmonica transit: transmission strings mode>'
 
     def set_orbit(self, t0=None, period=None, a=None, inc=None,
                   ecc=0., omega=0.):
-        """
-        Set/update orbital parameters.
+        """ Set/update orbital parameters.
 
         Parameters
         ----------
@@ -102,11 +86,10 @@ class HarmonicaTransit(object):
             Semi-major axis [stellar radii].
         inc : float
             Orbital inclination [radians].
-        ecc : float
-            Eccentricity [], 0 <= ecc < 1.
-        omega : float
-            Argument of periastron [radians]. If ecc is not 0.
-            then omega must also be specified.
+        ecc : float, optional
+            Eccentricity [], 0 <= ecc < 1. Default=0.
+        omega : float, optional
+            Argument of periastron [radians]. Default=0.
 
         """
         self._t0 = t0
@@ -115,110 +98,130 @@ class HarmonicaTransit(object):
         self._inc = inc
         self._ecc = ecc
         self._omega = omega
-        self._orbit_updated = True
 
     def set_stellar_limb_darkening(self, u=None, limb_dark_law='quadratic'):
-        """
-        Set/update stellar limb darkening parameters.
+        """ Set/update stellar limb darkening parameters.
 
         Parameters
         ----------
-        limb_dark_law : string; `quadratic` or `non-linear`
-            The stellar limb darkening law.
-        u :  (N,) array_like
-            Limb-darkening coefficients. 1D array of coefficients that
-            correspond to the limb darkening law specified by the
-            limb_dark_law.
+        u : ndarray,
+            1D array of limb-darkening coefficients which correspond to
+            the limb-darkening law specified by limb_dark_law. The
+            quadratic law requires two coefficients and the non-linear
+            law requires four coefficients.
+        limb_dark_law : string, optional; `quadratic` or `non-linear`
+            The stellar limb darkening law. Default=`quadratic`.
 
         """
-        self._u = u
+        self._u = np.ascontiguousarray(u, dtype=np.float64)
         if limb_dark_law == 'quadratic':
             self._ld_mode = 0
         else:
             self._ld_mode = 1
 
     def set_planet_transmission_string(self, r=None):
-        """
-        Set/update planet transmission string parameters.
+        """ Set/update planet transmission string parameters.
 
         Parameters
         ----------
-        r :  (N,) or (N, M) array_like
+        r : ndarray (N,) or (M, N)
             Transmission string coefficients. 1D array of N Fourier
             coefficients that specify the planet radius as a function
-            of angle in the sky-plane. Coefficients correspond to
+            of angle in the sky-plane.
+
             ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
-            + \sum_{n=1}^N b_n \csin{(n \theta)}`` where the resulting
-            input is r=[a_0, a_1, b_1, a_2, b_2,..]. For time-dependent
-            transmission strings, use a 2D array with N Fourier
-            coefficients and M time steps, where M is equal to the
-            number of model evaluation epochs.
+            + \sum_{n=1}^N b_n \csin{(n \theta)}``
+
+            The input array is given as r=[a_0, a_1, b_1, a_2, b_2,..].
+            For time-dependent transmission strings, use a 2D array
+            with M time steps and N Fourier coefficients, where M is
+            equal to the number of model evaluation times.
 
         """
-        self._r = r
+        self._r = np.ascontiguousarray(r, dtype=np.float64)
+        if r.ndim == 1:
+            self._time_dep_strings = False
+        else:
+            self._time_dep_strings = True
 
     def get_transit_light_curve(self):
-        """
-        Get transit light curve.
+        """ Get transit light curve.
 
         Returns
         -------
-        if self._require_gradients == False:
-            name : type
-                Description of return object.
-        else
-            name : type
-                Description of return object.
+        fluxes : ndarray (M,),
+            The transit light curve fluxes evaluated at M times.
 
         """
-        # Get orbit (if parameters updated).
-        if self._orbit_updated:
-            bindings.orbit(self._t0, self._period, self._a,
-                           self._inc, self._ecc, self._omega,
-                           self.times, self.ds, self.nus,
-                           self.ds_grad, self.nus_grad,
-                           require_gradients=self._require_gradients)
-            self._orbit_updated = False
+        if not self._time_dep_strings:
+            bindings.light_curve(
+                self._t0, self._period, self._a, self._inc, self._ecc,
+                self._omega, self._ld_mode, self._u, self._r,
+                self.times, self.fs, self._pnl_c, self._pnl_e)
+        else:
+            for i in range(self.times.shape[0]):
+                t = np.array([self.times[i]])
+                f = np.array([self.fs[i]])
+                bindings.light_curve(
+                    self._t0, self._period, self._a, self._inc, self._ecc,
+                    self._omega, self._ld_mode, self._u, self._r[i],
+                    t, f, self._pnl_c, self._pnl_e)
+                self.fs[i] = f
 
-        # Get light curve.
-        bindings.light_curve(self._ld_mode, self._u, self._r,
-                             self.ds, self.nus, self.lc,
-                             self.ds_grad, self.nus_grad, self.lc_grad,
-                             self._pnl_c, self._pnl_e,
-                             require_gradients=self._require_gradients)
+        return np.copy(self.fs)
 
-        return np.copy(self.lc)
-
-    def get_planet_transmission_string(self):
-        """
-        Get transmission string evaluated at given angles.
+    def get_planet_transmission_string(self, theta):
+        """ Get transmission string evaluated at an array of angles
+            around the planet's terminator.
 
         Parameters
         ----------
-        name : type
-            Description of parameter.
+        theta : ndarray,
+            1D array of angles at which to evaluate the transmission
+            string.
 
         Returns
         -------
-        name : type
-            Description of return object.
+        if r.ndim == 1:
+            r_p : ndarray (N,),
+                The transmission string, ``r_{\rm{p}}(\theta)``, evaluated
+                at N thetas.
+        elif r.ndim == 2:
+            r_p : ndarray (M, N),
+                The transmission strings, ``r_{\rm{p}}(\theta)``, each
+                M strings evaluated at N provided thetas.
 
         """
-        return
+        theta = np.ascontiguousarray(theta, dtype=np.float64)
+        if not self._time_dep_strings:
+            r_p = np.empty(theta.shape, dtype=np.float64)
+            bindings.transmission_string(self._r, theta, r_p)
+        else:
+            r_p = np.empty((self._r.shape[0], theta.shape[0]), dtype=np.float64)
+            for i in range(r_p.shape[0]):
+                bindings.transmission_string(self._r[i], theta, r_p[i])
 
-    def get_precision_estimate(self, N_l):
-        """
-        Get light curve precision estimates.
+        return r_p
 
-        Parameters
-        ----------
-        name : type
-            Description of parameter.
+    def get_precision_estimate(self):
+        """ Get light curve precision estimate.
 
         Returns
         -------
-        name : type
-            Description of return object.
+        residuals : ndarray
+            Difference between light curve generated at user set precision
+            and the light curve at max precision.
 
         """
-        return
+        # Get light curve for user set precision.
+        lc_user = self.get_transit_light_curve()
+
+        # Get light curve at max precision.
+        lc_best = np.empty(lc_user.shape, dtype=np.float64)
+        bindings.light_curve(self._t0, self._period, self._a,
+                             self._inc, self._ecc, self._omega,
+                             self._ld_mode, self._u, self._r,
+                             self.times, lc_best,
+                             500, 500)
+
+        return lc_user - lc_best
