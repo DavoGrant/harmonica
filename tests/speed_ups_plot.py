@@ -13,20 +13,22 @@ data = pd.DataFrame(
      ['d367e5cc994e2d64786cda4c19e384b192984c03',
       'Selective pass by const reference', 8.76e-06, 2.35e-05],
      ['d367e5cc994e2d64786cda4c19e384b192984c03',
-      'Remove grad branching for ld law', 8.76e-06, 2.31e-05],],
+      'Remove grad branching for ld law', 8.76e-06, 2.31e-05],
+     ['d367e5cc994e2d64786cda4c19e384b192984c03',
+      'Compile flag -ffast-math can get away with.', 3.70e-06, 1.25e-05],],
     columns=['commit', 'note', 'speed', 'speed_grad'])
 
 fig, ax1 = plt.subplots(1, 1, figsize=(7, 5))
 x = np.arange(len(data))
 width = 0.3
-ax1.bar(x - width/2, data['speed'] * 1.e2 * 1.e3,
+ax1.bar(x - width/2, data['speed'] * 1.e3 * 1.e3,
         width=width, color='#bc5090', label='Model')
-ax1.bar(x + width/2, data['speed_grad'] * 1.e2 * 1.e3,
+ax1.bar(x + width/2, data['speed_grad'] * 1.e3 * 1.e3,
         width=width, color='#58508d', label='Model + gradients')
 
 ax1.set_xticks(x, data['note'])
 ax1.set_xlabel('Commit history')
-ax1.set_ylabel('Runtime per 100 point light curve / ms')
+ax1.set_ylabel('Runtime per 1000 point light curve / ms')
 ax1.legend(loc='upper right')
 
 plt.tight_layout()

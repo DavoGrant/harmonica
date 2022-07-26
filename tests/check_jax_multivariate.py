@@ -13,7 +13,7 @@ from harmonica import bindings
 from harmonica.jax import harmonica_transit_quad_ld
 
 
-def hlc_generate(t0=0., period=3.735, a=7.025, inc=86.9 * np.pi / 180.,
+def hlc_generate(t0=0., period=4.06, a=11.55, inc=87.8 * np.pi / 180.,
                  _us=None, _rs=None, _times=None):
     _fs = np.empty(_times.shape)
     bindings.light_curve(
@@ -33,59 +33,74 @@ print('N cores = ', n_cores)
 rng_key = jax.random.PRNGKey(123)
 np.random.seed(123)
 
-n_obs = 300
-times = np.linspace(-0.22, 0.22, n_obs)
-us = np.array([0.074, 0.193])
-rs = np.array([0.1, -0.003, 0., 0.003, 0.])
+n_obs = 465
+times = np.linspace(-0.17, 0.17, n_obs)
+us = np.array([0.1, 0.136])
+rs = np.array([0.1457, -0.003, 0., 0.003, 0.])
 var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
-y_sigma = 35.e-6
+y_sigma = 100.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
 observed_fluxes = hlc_generate(_us=us, _rs=rs, _times=times)
 observed_fluxes += y_errs
 
+# fig = plt.figure(figsize=(8, 6))
+# ax1 = plt.subplot(1, 1, 1)
+# ax1.errorbar(times, observed_fluxes, yerr=y_sigma, fmt=".k", capsize=0)
+# ax1.set_xlabel('Time / days')
+# ax1.set_ylabel('Relative flux')
+# plt.show()
+
 
 def numpyro_model(t, obs_err, f_obs=None):
     """ Numpyro model. """
-    r0_tilde = numpyro.sample('r0_hat', dist.Normal(0., 1.))
-    r0 = numpyro.deterministic('r0', 0.1 + r0_tilde * 0.01)
+    # Non-centred planet radius: r0.
+    r0_tilde = numpyro.sample('r0_tilde', dist.Normal(0., 1.))
+    r0 = numpyro.deterministic('r0', 0.1457 + r0_tilde * 0.01)
 
-    # rh_frac = numpyro.sample('rh_frac', dist.MultivariateNormal(jnp.zeros(4), jnp.diag(jnp.ones(4) * 0.1)))
-    rh_frac = numpyro.sample('rh_frac', dist.Normal(0.0, 0.1), sample_shape=(4,))
-    rh = numpyro.deterministic('rh', rh_frac * r0)
+    # Higher order radius harmonics: r1/r0, r2/r0, r3/r0, r4/r0.
+    rn_frac = numpyro.sample('rn_frac', dist.Normal(0.0, 0.1), sample_shape=(4,))
 
-    # # Model evaluation: this is our custom JAX primitive.
+    # Transmission string parameter vector.
+    r = numpyro.deterministic('r', jnp.concatenate([jnp.array([r0]), rn_frac * r0]))
+
+    # Model evaluation: this is our custom JAX primitive.
     fs = harmonica_transit_quad_ld(
-        t, 0., 3.735, 7.025, 86.9 * np.pi / 180., 0., 0.,
-        us[0], us[1], jnp.array([r0, rh[0], rh[1], rh[2], rh[3]]))
+        times=t, t0=0., period=4.06, a=11.55, inc=87.8 * np.pi / 180.,
+        u1=us[0], u2=us[1], r=r)
 
     # Condition on the observations
     numpyro.sample('obs', dist.Normal(fs, obs_err), obs=f_obs)
+
+    # todo: fraction of r0 seems good,
+    # todo: non centre at least ro seesm good,
+    # todo: dense mass for slightly slower but more ess?
+    # todo: what is the min max tree depth? expensive gradient
+    # todo: try multi variate dist for conciseness
 
 
 # Define NUTS kernel.
 nuts_kernel = NUTS(
     numpyro_model,
-    dense_mass=True,
-    adapt_mass_matrix=True,
-    max_tree_depth=10,
-    target_accept_prob=0.65,
+    dense_mass=True, adapt_mass_matrix=True,
+    max_tree_depth=1, target_accept_prob=0.65,
     init_strategy=init_to_median(),
 )
 
 # Define HMC sampling strategy.
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=500,
+mcmc = MCMC(nuts_kernel,
+            num_warmup=1000, num_samples=1000,
             num_chains=2, progress_bar=True)
 
 mcmc.run(rng_key, times, y_sigma, f_obs=observed_fluxes)
 
 numpyro_data = az.from_numpyro(mcmc)
-# print(az.summary(numpyro_data, var_names=var_names, round_to=6).to_string())
-print(az.summary(numpyro_data, round_to=6).to_string())
-
 samples = mcmc.get_samples()
-# fig = corner.corner(samples, truths=rs, labels=var_names)
-fig = corner.corner(samples)
+chain = np.array(samples['r'])
+
+print(az.summary(numpyro_data, var_names=['r'], round_to=6).to_string())
+
+fig = corner.corner(chain, truths=rs, labels=var_names)
 plt.show()
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -93,7 +108,7 @@ ax1.set_aspect('equal', 'box')
 labelled = False
 theta = np.linspace(-np.pi, np.pi, 1000)
 
-chain = np.array([samples['r0'], samples['r1'], samples['r2'], samples['r3'], samples['r4']]).T
+
 for sample in chain[np.random.randint(len(chain), size=50)]:
     r_p = np.empty(theta.shape, dtype=np.float64)
     bindings.transmission_string(sample, theta, r_p)

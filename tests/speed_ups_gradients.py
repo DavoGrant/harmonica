@@ -25,7 +25,7 @@ runtimes = []
 for i in range(n_repeats):
     start = time.time()
     harmonica_transit_quad_ld(times, t0, period, a, inc, 0., 0.,
-                              us[0], us[1], rs[0], rs[1], rs[2], rs[3], rs[4])
+                              us[0], us[1], rs)
     end = time.time()
     runtimes.append(end - start)
 

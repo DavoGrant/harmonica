@@ -35,23 +35,23 @@ print('N cores = ', n_cores)
 rng_key = jax.random.PRNGKey(123)
 np.random.seed(123)
 
-n_obs = 300
+n_obs = 500
 times = np.linspace(-0.22, 0.22, n_obs)
 us = np.array([0.074, 0.193])
 rs = np.array([0.1, -0.003, 0., 0.003, 0.])
 var_names = ['r0', 'r1', 'r2', 'r3', 'r4']
-y_sigma = 35.e-6
+y_sigma = 100.e-6
 y_errs = np.random.normal(loc=0., scale=y_sigma, size=n_obs)
 
 observed_fluxes = hlc_generate(_us=us, _rs=rs, _times=times)
 observed_fluxes += y_errs
 
-# fig = plt.figure(figsize=(8, 6))
-# ax1 = plt.subplot(1, 1, 1)
-# ax1.errorbar(times, observed_fluxes, yerr=y_sigma, fmt=".k", capsize=0)
-# ax1.set_xlabel('Time / days')
-# ax1.set_ylabel('Relative flux')
-# plt.show()
+fig = plt.figure(figsize=(8, 6))
+ax1 = plt.subplot(1, 1, 1)
+ax1.errorbar(times, observed_fluxes, yerr=y_sigma, fmt=".k", capsize=0)
+ax1.set_xlabel('Time / days')
+ax1.set_ylabel('Relative flux')
+plt.show()
 
 
 # def log_prob(params):
