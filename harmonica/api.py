@@ -177,7 +177,7 @@ class HarmonicaTransit(object):
                     t, f, self._pnl_c, self._pnl_e)
                 self.fs[i] = f
 
-        return self.fs
+        return np.copy(self.fs)
 
     def get_planet_transmission_string(self, theta):
         """ Get transmission string evaluated at an array of angles
