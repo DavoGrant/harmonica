@@ -33,3 +33,7 @@ tmtagsHistory
 
 # Caches.
 .ipynb_checkpoints
+
+# Data.
+*.txt
+*.csv
