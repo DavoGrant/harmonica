@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/docs/graphics/transmission_string_animation_logo.gif" align="middle" width="400px" alt="Harmonica"><br>
+  <img src="/docs/graphics/transmission_string_animation_logo_small.gif" align="middle" width="400px" alt="Harmonica"><br>
 </p>
 
 <h1 align="center">Harmonica</h1>
