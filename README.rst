@@ -17,3 +17,12 @@ Harmonica
 
 | Read the full documentation at: `harmonica.readthedocs.io <https://harmonica.readthedocs.io/>`_.
 | Read the full methods paper at: `mnras <https://link/to/mnras/paper>`_ or on the `arxiv <https://link/to/arxiv/paper/>`_.
+
+
+.. raw:: html
+
+    <embed>
+        <video width="320" height="240" autoplay loop muted>
+            <source src="docs/graphics/transmission_string_animation_logo.mp4" type="video/mp4" />
+        </video>
+    </embed>

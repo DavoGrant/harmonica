@@ -9,6 +9,58 @@ import matplotlib.pyplot as plt
 from harmonica import HarmonicaTransit
 
 
+
+
+# fig = plt.figure(figsize=(8, 8))
+# ax1 = plt.subplot(1, 1, 1)
+# ax1.set_aspect('equal', 'box')
+#
+# theta = np.linspace(-np.pi, np.pi, 1000)
+#
+# ht = HarmonicaTransit()
+# rs = np.array([0.1, -0.02, 0.01, 0.01, 0.005, -0.009, -0.003, -0.001, 0.001])
+# ht.set_planet_transmission_string(rs)
+# transmission_string_truht = ht.get_planet_transmission_string(theta)
+#
+#
+# ax1.plot(transmission_string_truht * np.cos(theta),
+#          transmission_string_truht * np.sin(theta),
+#          lw=2.5, c='#ffffff', ls='--')
+# plt.axis('off')
+# ax1.set_xlim(-0.175, 0.175)
+# ax1.set_ylim(-0.175, 0.175)
+# plt.savefig('/Users/davidgrant/Downloads/fourier_{}.png'.format(00), transparent=True)
+#
+# for _rr in range(1, 10, 2):
+#     fig = plt.figure(figsize=(8, 8))
+#     ax1 = plt.subplot(1, 1, 1)
+#     ax1.set_aspect('equal', 'box')
+#
+#     theta = np.linspace(-np.pi, np.pi, 1000)
+#
+#     ht = HarmonicaTransit()
+#     rs_new = np.copy(rs[:_rr])
+#     ht.set_planet_transmission_string(rs_new)
+#     transmission_string = ht.get_planet_transmission_string(theta)
+#
+#
+#     ax1.plot(transmission_string_truht * np.cos(theta),
+#              transmission_string_truht * np.sin(theta),
+#              lw=2.5, c='#ffffff', ls='--')
+#
+#     ax1.plot(transmission_string * np.cos(theta),
+#              transmission_string * np.sin(theta),
+#              lw=2.5, c='#FFD200')
+#     plt.axis('off')
+#     ax1.set_xlim(-0.175, 0.175)
+#     ax1.set_ylim(-0.175, 0.175)
+#
+#     plt.savefig('/Users/davidgrant/Downloads/fourier_{}.png'.format(_rr), transparent=True)
+#
+# exit()
+
+
+
 # Input parameters.
 rs = np.array([0.1, -0.005, 0., 0.005, 0.])
 theta = np.linspace(-np.pi, np.pi, 1000)
