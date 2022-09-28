@@ -51,7 +51,6 @@ for rs in tss:
             bindings.orbit(t0, period, a, inc, 0., 0., times, ds, zs, nus)
             ds_1.append(np.median(ds))
 
-        fs = np.empty(times.shape, dtype=np.float64, order='C')
         ht = HarmonicaTransit(times, pnl_c=20, pnl_e=50)
 
         runtimes = []
@@ -78,7 +77,6 @@ for rs in tss:
     rs_res = []
     for n_i in n_ints:
         times = np.linspace(-0.21, 0.21, int(n_i))
-        fs = np.empty(times.shape, dtype=np.float64, order='C')
         ht = HarmonicaTransit(times, pnl_c=20, pnl_e=50)
 
         runtimes = []
@@ -102,26 +100,26 @@ ax1 = plt.subplot(2, 1, 1)
 ax2 = plt.subplot(2, 1, 2)
 
 ax1.plot(ds_1, res_1[0],
-         c=cmap(0.05), label='$N_c = 0$', linestyle='--', marker='o')
+         c=cmap(0.0), alpha=0.85, label='$N_c = 0$', linestyle='--', marker='o')
 ax1.plot(ds_1, res_1[1],
-         c=cmap(0.275), label='$N_c = 1$', linestyle='--', marker='o')
+         c=cmap(0.275), alpha=0.85, label='$N_c = 1$', linestyle='--', marker='o')
 ax1.plot(ds_1, res_1[2],
-         c=cmap(0.5), label='$N_c = 2$', linestyle='--', marker='o')
+         c=cmap(0.5), alpha=0.85, label='$N_c = 2$', linestyle='--', marker='o')
 ax1.plot(ds_1, res_1[3],
-         c=cmap(0.725), label='$N_c = 3$', linestyle='--', marker='o')
+         c=cmap(0.725), alpha=0.85, label='$N_c = 3$', linestyle='--', marker='o')
 ax1.plot(ds_1, res_1[4],
-         c=cmap(0.95), label='$N_c = 4$', linestyle='--', marker='o')
+         c=cmap(0.95), alpha=0.85, label='$N_c = 4$', linestyle='--', marker='o')
 
 ax2.plot(n_ints, res_2[0],
-         c=cmap(0.05), label='$N_c = 0$', linestyle='--', marker='o')
+         c=cmap(0.0), alpha=0.85, label='$N_c = 0$', linestyle='--', marker='o')
 ax2.plot(n_ints, res_2[1],
-         c=cmap(0.275), label='$N_c = 1$', linestyle='--', marker='o')
+         c=cmap(0.275), alpha=0.85, label='$N_c = 1$', linestyle='--', marker='o')
 ax2.plot(n_ints, res_2[2],
-         c=cmap(0.5), label='$N_c = 2$', linestyle='--', marker='o')
+         c=cmap(0.5), alpha=0.85, label='$N_c = 2$', linestyle='--', marker='o')
 ax2.plot(n_ints, res_2[3],
-         c=cmap(0.725), label='$N_c = 3$', linestyle='--', marker='o')
+         c=cmap(0.725), alpha=0.85, label='$N_c = 3$', linestyle='--', marker='o')
 ax2.plot(n_ints, res_2[4],
-         c=cmap(0.95), label='$N_c = 4$', linestyle='--', marker='o')
+         c=cmap(0.95), alpha=0.85, label='$N_c = 4$', linestyle='--', marker='o')
 
 ax1.tick_params(axis='both', which='both', labelsize=12)
 ax2.tick_params(axis='both', which='both', labelsize=12)

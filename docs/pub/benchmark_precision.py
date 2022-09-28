@@ -25,6 +25,7 @@ u1, u2 = sld.compute_quadratic_ld_coeffs(
     mode='JWST_NIRSpec_G395H')
 
 us = np.array([1., u1, u2])
+# us = np.array([1., 0.5, -0.25])  # Test that make odd terms zero.
 B = np.array([[1., -1., -1.],
               [0., 1., 2.],
               [0., 0., -1.]])
@@ -359,15 +360,15 @@ fig = plt.figure(figsize=(6, 11))
 ax1 = plt.subplot(1, 1, 1)
 
 ax1.plot(ds, np.abs(fs_20 - fs_numerical),
-         c=cmap(0.05), label='$N_l = 20$')
+         c=cmap(0.0), alpha=0.85, label='$N_l = 20$')
 ax1.plot(ds, np.abs(fs_50 - fs_numerical),
-         c=cmap(0.275), label='$N_l = 50$')
+         c=cmap(0.275), alpha=0.85, label='$N_l = 50$')
 ax1.plot(ds, np.abs(fs_100 - fs_numerical),
-         c=cmap(0.5), label='$N_l = 100$')
+         c=cmap(0.5), alpha=0.85, label='$N_l = 100$')
 ax1.plot(ds, np.abs(fs_200 - fs_numerical),
-         c=cmap(0.725), label='$N_l = 200$')
+         c=cmap(0.725), alpha=0.85, label='$N_l = 200$')
 ax1.plot(ds, np.abs(fs_500 - fs_numerical),
-         c=cmap(0.95), label='$N_l = 500$')
+         c=cmap(0.95), alpha=0.85, label='$N_l = 500$')
 
 ax1.axhline(10.e-6, ls='--', color='#000000', alpha=0.5)
 ax1.text(0.8, 15.e-6, 'Approx JWST noise floor', color='#000000', alpha=0.6, fontsize=12)
