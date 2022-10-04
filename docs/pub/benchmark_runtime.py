@@ -70,7 +70,7 @@ for rs in tss:
     res_1.append(rs_res)
 
 # Test runtime vs n data points.
-n_ints = np.logspace(0, 4, 15)
+n_ints = np.logspace(0, 5, 15)
 res_2 = []
 for rs in tss:
 
