@@ -138,11 +138,28 @@ class HarmonicaTransit(object):
             equal to the number of model evaluation times.
 
         """
-        self._r = np.ascontiguousarray(r, dtype=np.float64)
         if r.ndim == 1:
             self._time_dep_strings = False
+            if not r.shape[0] % 2:
+                # Require odd N coeffs.
+                r = np.append(r, 0.)
+            while not np.any(r[-2:]):
+                # Require Nth coeffs not both zero.
+                r = r[:-2]
+            self._r = np.ascontiguousarray(r, dtype=np.float64)
+
         else:
             self._time_dep_strings = True
+            if not r.shape[1] % 2:
+                # Require odd N coeffs.
+                r = np.c_[r, np.zeros(r.shape[0])]
+
+            self._r = []
+            for m in range(r.shape[0]):
+                self._r.append(np.ascontiguousarray(r[m], dtype=np.float64))
+                while not np.any(self._r[m][-2:]):
+                    # Require Nth coeffs not both zero.
+                    self._r[m] = self._r[m][:-2]
 
     def get_transit_light_curve(self):
         """ Get transit light curve.
@@ -197,7 +214,7 @@ class HarmonicaTransit(object):
             r_p = np.empty(theta.shape, dtype=np.float64)
             bindings.transmission_string(self._r, theta, r_p)
         else:
-            r_p = np.empty((self._r.shape[0], theta.shape[0]), dtype=np.float64)
+            r_p = np.empty((len(self._r), theta.shape[0]), dtype=np.float64)
             for i in range(r_p.shape[0]):
                 bindings.transmission_string(self._r[i], theta, r_p[i])
 
@@ -217,11 +234,22 @@ class HarmonicaTransit(object):
         lc_user = self.get_transit_light_curve()
 
         # Get light curve at max precision.
-        lc_best = np.empty(lc_user.shape, dtype=np.float64)
-        bindings.light_curve(self._t0, self._period, self._a,
-                             self._inc, self._ecc, self._omega,
-                             self._ld_mode, self._u, self._r,
-                             self.times, lc_best,
-                             500, 500)
+        if not self._time_dep_strings:
+            lc_best = np.empty(lc_user.shape, dtype=np.float64)
+            bindings.light_curve(self._t0, self._period, self._a,
+                                 self._inc, self._ecc, self._omega,
+                                 self._ld_mode, self._u, self._r,
+                                 self.times, lc_best,
+                                 500, 500)
+        else:
+            lc_best = np.empty(lc_user.shape, dtype=np.float64)
+            for i in range(self.times.shape[0]):
+                t = np.array([self.times[i]])
+                f = np.array([self.fs[i]])
+                bindings.light_curve(
+                    self._t0, self._period, self._a, self._inc, self._ecc,
+                    self._omega, self._ld_mode, self._u, self._r[i],
+                    t, f, 500, 500)
+                lc_best[i] = f
 
         return lc_user - lc_best
