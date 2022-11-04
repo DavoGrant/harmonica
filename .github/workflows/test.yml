@@ -14,7 +14,7 @@ concurrency:
 jobs:
   build:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         platform: [windows-latest, macos-latest, ubuntu-latest]
         python-version: ["3.6", "3.11"]
@@ -42,5 +42,4 @@ jobs:
       - name: Test
         run: |
           python tests/test_flux.py
-#          python -m unittest tests.test_flux
-#          python -m unittest tests.test_flux_derivatives
+          python tests/test_flux_derivatives.py
