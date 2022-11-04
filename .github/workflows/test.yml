@@ -41,5 +41,6 @@ jobs:
 
       - name: Test
         run: |
-          python -m unittest tests.test_flux
-          python -m unittest tests.test_flux_derivatives
+          python tests/test_flux.py
+#          python -m unittest tests.test_flux
+#          python -m unittest tests.test_flux_derivatives
