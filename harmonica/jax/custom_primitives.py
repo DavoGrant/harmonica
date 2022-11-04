@@ -171,7 +171,8 @@ def harmonica_transit_nonlinear_ld(times, t0, period, a, inc, ecc=0., omega=0.,
     r : ndarray
         Transmission string coefficients. 1D array of N Fourier
         coefficients that specify the planet radius as a function
-        of angle in the sky-plane.
+        of angle in the sky-plane. The length of r must be odd,
+        and the final two coefficients must not both be zero.
 
         ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
         + \sum_{n=1}^N b_n \csin{(n \theta)}``

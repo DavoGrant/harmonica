@@ -33,6 +33,7 @@ tmtagsHistory
 
 # Caches.
 .ipynb_checkpoints
+.pytest_cache
 
 # Data.
 *.txt
