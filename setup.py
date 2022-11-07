@@ -1,5 +1,13 @@
+import os
+import codecs
 from setuptools import setup
 from pybind11.setup_helpers import Pybind11Extension, build_ext
+
+
+def read(*parts: str) -> str:
+    here = os.path.dirname(os.path.realpath(__file__))
+    with codecs.open(os.path.join(here, *parts), "rb", "utf-8") as f:
+        return f.read()
 
 
 ext_modules = [
@@ -20,7 +28,7 @@ ext_modules = [
 ]
 
 setup(
-    name="harmonica",
+    name="planet-harmonica",
     version="0.0.1",
     author="David Grant",
     author_email="david.grant@bristol.ac.uk",
@@ -28,7 +36,7 @@ setup(
     license="MIT",
     packages=["harmonica", "harmonica.jax"],
     description="Light curves for exoplanet transmission mapping.",
-    long_description=open("README.md").read(),
+    long_description=read("README.md"),
     python_requires=">=3.6",
     install_requires=["numpy",
                       "jax; platform_system!='Windows'",
