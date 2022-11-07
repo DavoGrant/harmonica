@@ -35,8 +35,6 @@ setup(
                       "jaxlib; platform_system!='Windows'"],
     cmdclass={"build_ext": build_ext},
     ext_modules=ext_modules,
-    package_data={"": ["README.md", "LICENSE"]},
-    include_package_data=True,
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
