@@ -39,7 +39,9 @@ jobs:
       - name: Build and install
         run: pip install --verbose .
 
-      - name: Test
-        run: |
-          python tests/test_flux.py
-          python tests/test_flux_derivatives.py
+      - name: Test flux
+        run: python tests/test_flux.py
+
+      - name: Test flux derivatives
+        if: ${{ matrix.platform != windows-latest }}
+        run: python tests/test_flux_derivatives.py
