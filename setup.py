@@ -4,12 +4,6 @@ from setuptools import setup
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 
-def read(*parts: str) -> str:
-    here = os.path.dirname(os.path.realpath(__file__))
-    with codecs.open(os.path.join(here, *parts), "rb", "utf-8") as f:
-        return f.read()
-
-
 ext_modules = [
     Pybind11Extension(
         "harmonica/bindings",
@@ -36,7 +30,7 @@ setup(
     license="MIT",
     packages=["harmonica", "harmonica.jax"],
     description="Light curves for exoplanet transmission mapping.",
-    long_description=read("README.md"),
+    long_description="Light curves for exoplanet transmission mapping.",
     python_requires=">=3.6",
     install_requires=["numpy",
                       "jax; platform_system!='Windows'",
