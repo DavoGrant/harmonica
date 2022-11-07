@@ -2,9 +2,6 @@ name: build wheels and upload to pypi
 
 on:
   workflow_dispatch:
-  release:
-    types:
-      - published
 
 jobs:
   build_wheels:
@@ -51,7 +48,6 @@ jobs:
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v3
         with:

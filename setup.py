@@ -21,7 +21,7 @@ ext_modules = [
 
 setup(
     name="planet-harmonica",
-    version="0.0.1",
+    version="0.0.2",
     author="David Grant",
     author_email="david.grant@bristol.ac.uk",
     url="https://github.com/DavoGrant/harmonica",
@@ -30,9 +30,7 @@ setup(
     description="Light curves for exoplanet transmission mapping.",
     long_description="Light curves for exoplanet transmission mapping.",
     python_requires=">=3.6",
-    install_requires=["numpy",
-                      "jax; platform_system!='Windows'",
-                      "jaxlib; platform_system!='Windows'"],
+    install_requires=["numpy", "jax", "jaxlib"],
     cmdclass={"build_ext": build_ext},
     ext_modules=ext_modules,
     classifiers=[
