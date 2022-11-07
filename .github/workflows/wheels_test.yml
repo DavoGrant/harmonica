@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest]
 
     steps:
       - name: Checkout
@@ -21,6 +21,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.1
         env:
+          CIBW_BUILD: cp39-*
           CIBW_SKIP: "pp* *-manylinux_i686 *-musllinux*"
           CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
 
