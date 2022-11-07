@@ -1,10 +1,7 @@
-name: build wheels and upload to pypi
+name: build wheels and upload to test pypi
 
 on:
   workflow_dispatch:
-  release:
-    types:
-      - published
 
 jobs:
   build_wheels:
@@ -24,7 +21,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.1
         env:
-          CIBW_BUILD: cp39-*
+          CIBW_BUILD: cp310-*
           CIBW_SKIP: "pp* *-manylinux_i686 *-musllinux*"
           CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
 
@@ -52,7 +49,6 @@ jobs:
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-#    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v3
         with:
