@@ -42,6 +42,8 @@ jobs:
       - name: Test flux
         run: python tests/test_flux.py
 
+      - run: echo "${{ matrix.platform }}"
+
       - name: Test flux derivatives
         if: ${{ matrix.platform != 'windows-latest' }}
         run: python tests/test_flux_derivatives.py
