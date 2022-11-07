@@ -43,5 +43,5 @@ jobs:
         run: python tests/test_flux.py
 
       - name: Test flux derivatives
-        if: ${{ matrix.platform != windows-latest }}
+        if: ${{ matrix.platform != 'windows-latest' }}
         run: python tests/test_flux_derivatives.py
