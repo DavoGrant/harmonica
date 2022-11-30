@@ -20,19 +20,9 @@ class HarmonicaTransit(object):
         Allowed values = {10, 20, 100, 200, 500}. Use
         get_precision_estimate() to check model precision.
 
-    Methods
-    -------
-    set_orbit()
-    set_stellar_limb_darkening()
-    set_planet_transmission_string()
-    get_transit_light_curve()
-    get_planet_transmission_string()
-    get_precision_estimate()
-
     Notes
     -----
     The algorithm is detailed in Grant and Wakeford 2022.
-    Todo: add link.
 
     """
 
@@ -104,7 +94,7 @@ class HarmonicaTransit(object):
 
         Parameters
         ----------
-        u : ndarray,
+        u : ndarray
             1D array of limb-darkening coefficients which correspond to
             the limb-darkening law specified by limb_dark_law. The
             quadratic law requires two coefficients and the non-linear
@@ -129,8 +119,10 @@ class HarmonicaTransit(object):
             coefficients that specify the planet radius as a function
             of angle in the sky-plane.
 
-            ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
-            + \sum_{n=1}^N b_n \csin{(n \theta)}``
+            .. math::
+
+                r_{\\rm{p}}(\\theta) = \\sum_{n=0}^N a_n \\cos{(n \\theta)}
+                + \\sum_{n=1}^N b_n \\sin{(n \\theta)}
 
             The input array is given as r=[a_0, a_1, b_1, a_2, b_2,..].
             For time-dependent transmission strings, use a 2D array
@@ -166,7 +158,7 @@ class HarmonicaTransit(object):
 
         Returns
         -------
-        fluxes : ndarray (M,),
+        fluxes : ndarray (M,)
             The transit light curve fluxes evaluated at M times.
 
         """
@@ -200,12 +192,12 @@ class HarmonicaTransit(object):
         Returns
         -------
         if r.ndim == 1:
-            r_p : ndarray (N,),
-                The transmission string, ``r_{\rm{p}}(\theta)``, evaluated
+            r_p : ndarray (N,)
+                The transmission string, :math:`r_{\\rm{p}}(\\theta)`, evaluated
                 at N thetas.
         elif r.ndim == 2:
-            r_p : ndarray (M, N),
-                The transmission strings, ``r_{\rm{p}}(\theta)``, each
+            r_p : ndarray (M, N)
+                The transmission strings, :math:`r_{\\rm{p}}(\\theta)`, each
                 M strings evaluated at N provided thetas.
 
         """
