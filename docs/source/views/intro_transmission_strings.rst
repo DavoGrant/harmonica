@@ -1,3 +1,0 @@
-Introducing transmission strings
-================================
-
