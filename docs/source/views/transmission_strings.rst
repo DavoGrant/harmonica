@@ -36,4 +36,5 @@ The above shapes demonstrate the basis (shown up to :math:`n=3`) for
 generating various shapes. A transmission string may then be constructed
 from a linear combination of each shape contribution. To construct
 shapes of increasing complexity, more and more harmonics must be
-included. For further reference see `Grant and Wakeford 2023 <https://>`_.
+included. For further reference see
+`Grant and Wakeford 2023 <https://doi.org/10.1093/mnras/stac3632>`_.

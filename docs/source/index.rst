@@ -10,8 +10,8 @@ Harmonica is a python package for computing transit light curves of
 different shaped occultors. The primary utility of this code is for
 mapping exoplanet atmospheres around their terminators, however the
 technique can be applied to any transit light curve to derive the shape
-of the transiting body. Be sure to have a quick read through how the
-shapes, known as :doc:`transmission strings <views/transmission_strings>`,
+of the transiting body. Be sure to have a quick read through of how the
+shapes, referred to as :doc:`transmission strings <views/transmission_strings>`,
 are defined before you get going.
 
 .. toctree::
