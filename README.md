@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/docs/graphics/transmission_string_animation_logo_small.gif" align="middle" width="400px" alt="Harmonica"><br>
+  <img src="/docs/source/images/transmission_string_animation_logo_small.gif" align="middle" width="400px" height="400px" alt="Harmonica"><br>
 </p>
 
 <h1 align="center">Harmonica</h1>
@@ -21,4 +21,4 @@ pip install planet-harmonica
 ```
 
 Read the full documentation at: [harmonica.readthedocs.io](https://harmonica.readthedocs.io).<br>
-Read the full methods paper at: [mnras](https://link/to/mnras/paper) or on the [arxiv](https://link/to/arxiv/paper).<br>
+Read the full methods paper at: [mnras](https://doi.org/10.1093/mnras/stac3632) or on the [arxiv](https://link/to/arxiv/paper).<br>

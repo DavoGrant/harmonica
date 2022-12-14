@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Checkout
@@ -21,7 +21,8 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.1
         env:
-          CIBW_BUILD: cp39-macosx_x86_64
+          CIBW_BUILD: cp39-manylinux*
+          CIBW_SKIP: "pp* *-manylinux_i686 *-musllinux*"
 
       - uses: actions/upload-artifact@v3
         with:

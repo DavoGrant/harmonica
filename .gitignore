@@ -34,6 +34,7 @@ tmtagsHistory
 # Caches.
 .ipynb_checkpoints
 .pytest_cache
+docs/source/views/api/summary
 
 # Data.
 *.txt

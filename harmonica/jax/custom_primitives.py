@@ -40,8 +40,10 @@ def harmonica_transit_quad_ld(times, t0, period, a, inc, ecc=0., omega=0.,
         of angle in the sky-plane. The length of r must be odd,
         and the final two coefficients must not both be zero.
 
-        ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
-        + \sum_{n=1}^N b_n \csin{(n \theta)}``
+        .. math::
+
+            r_{\\rm{p}}(\\theta) = \\sum_{n=0}^N a_n \\cos{(n \\theta)}
+            + \\sum_{n=1}^N b_n \\sin{(n \\theta)}
 
         The input array is given as r=[a_0, a_1, b_1, a_2, b_2,..].
 
@@ -174,8 +176,10 @@ def harmonica_transit_nonlinear_ld(times, t0, period, a, inc, ecc=0., omega=0.,
         of angle in the sky-plane. The length of r must be odd,
         and the final two coefficients must not both be zero.
 
-        ``r_{\rm{p}}(\theta) = \sum_{n=0}^N a_n \cos{(n \theta)}
-        + \sum_{n=1}^N b_n \csin{(n \theta)}``
+        .. math::
+
+            r_{\\rm{p}}(\\theta) = \\sum_{n=0}^N a_n \\cos{(n \\theta)}
+            + \\sum_{n=1}^N b_n \\sin{(n \\theta)}
 
         The input array is given as r=[a_0, a_1, b_1, a_2, b_2,..].
 
