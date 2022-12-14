@@ -22,7 +22,7 @@ class HarmonicaTransit(object):
 
     Notes
     -----
-    The algorithm is detailed in Grant and Wakeford 2022.
+    The algorithm is detailed in Grant and Wakeford 2023.
 
     """
 

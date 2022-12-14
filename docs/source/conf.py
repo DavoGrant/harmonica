@@ -30,8 +30,7 @@ extensions = [
 autodoc_member_order = 'bysource'
 templates_path = ['_templates']
 exclude_patterns = []
-
-
+autodoc_mock_imports = ["harmonica.bindings", "harmonica.jax"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
