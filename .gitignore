@@ -40,3 +40,4 @@ docs/source/views/api/summary
 *.txt
 *.csv
 *.p
+!docs/requirements.txt

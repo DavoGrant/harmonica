@@ -1,0 +1,4 @@
+ipykernel
+nbsphinx
+# Temporary fix for lexer errors
+ipython!=8.7.0
