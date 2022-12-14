@@ -8,11 +8,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DavoGrant/ExoTiC-MIRI/actions/workflows/python-app.yml">
-    <img alt="GitHub Workflow Status" src="https://github.com/DavoGrant/ExoTiC-MIRI/workflows/unittests/badge.svg">
+  <a href="https://github.com/DavoGrant/harmonica/actions/workflows/unittests.yml">
+    <img alt="GitHub Workflow Status" src="https://github.com/DavoGrant/harmonica/actions/workflows/unittests.yml/badge.svg">
   </a>
-  <a href="https://exotic-miri.readthedocs.io/en/latest/?badge=latest">
-    <img alt="Read the Docs" src="https://readthedocs.org/projects/exotic-miri/badge/?version=latest">
+  <a href="https://harmonica.readthedocs.io/en/latest/?badge=latest">
+    <img alt="Read the Docs" src="https://readthedocs.org/projects/harmonica/badge/?version=latest">
   </a>
 </p>
 
