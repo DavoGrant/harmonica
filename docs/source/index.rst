@@ -7,7 +7,7 @@ Harmonica
 =========
 
 Harmonica is a python package for computing transit light curves of
-different shaped occultors. The primary utility of this code is for
+irregularly-shaped occultors. The primary utility of this code is for
 mapping exoplanet atmospheres around their terminators, however the
 technique can be applied to any transit light curve to derive the shape
 of the transiting body. Be sure to have a quick read through of how the
@@ -28,7 +28,7 @@ are defined before you get going.
 Acknowledgements
 ----------------
 
-Built by David Grant and
+Built by David Grant, Hannah Wakeford, and
 `contributors <https://github.com/DavoGrant/harmonica/graphs/contributors>`_.
 We are very happy to collaborate if you want to reach out.
 
