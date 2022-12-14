@@ -28,7 +28,9 @@ are defined before you get going.
 Acknowledgements
 ----------------
 
-Built by David Grant and `contributors <https://github.com/DavoGrant/harmonica/graphs/contributors>`_.
+Built by David Grant and
+`contributors <https://github.com/DavoGrant/harmonica/graphs/contributors>`_.
+We are very happy to collaborate if you want to reach out.
 
 If you make use of Harmonica in your research, see the :doc:`citation
 page <views/citation>` for info on how to cite this package. You can find
