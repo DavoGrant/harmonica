@@ -21,4 +21,4 @@ pip install planet-harmonica
 ```
 
 Read the full documentation at: [harmonica.readthedocs.io](https://harmonica.readthedocs.io).<br>
-Read the full methods paper at: [mnras](https://doi.org/10.1093/mnras/stac3632) or on the [arxiv](https://link/to/arxiv/paper).<br>
+Read the full methods paper at: [mnras](https://doi.org/10.1093/mnras/stac3632) or on the [arxiv](http://arxiv.org/abs/2212.07294).<br>
