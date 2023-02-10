@@ -6,12 +6,13 @@ If you make use of Harmonica in your research, please cite
 
 .. code-block::
 
-    @article{,
+    @article{grant2022transmission,
       title={Transmission strings: a technique for spatially mapping exoplanet atmospheres around their terminators},
       author={Grant, David and Wakeford, Hannah R},
       journal={Monthly Notices of the Royal Astronomical Society},
-      volume={},
-      pages={},
+      volume={519},
+      number={4},
+      pages={5114--5127},
       year={2023},
-      publisher={Blackwell Publishing Ltd Oxford, UK}
+      publisher={Oxford University Press}
     }
