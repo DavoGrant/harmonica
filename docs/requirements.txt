@@ -1,3 +1,4 @@
+numpy
 ipykernel
 nbsphinx
 # Temporary fix for lexer errors
