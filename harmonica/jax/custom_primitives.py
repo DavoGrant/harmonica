@@ -1,15 +1,14 @@
+import jax
 import numpy as np
-from jax import config
 import jax.numpy as jnp
 from jaxlib import xla_client
 from functools import partial
-from jax.interpreters import ad
-from jax import abstract_arrays, core, xla
+from jax.interpreters import ad, xla
 
 from harmonica import bindings
 
 # Enable double floating precision.
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 
 def harmonica_transit_quad_ld(times, t0, period, a, inc, ecc=0., omega=0.,
@@ -72,12 +71,12 @@ def jax_light_curve_quad_ld_prim(times, *params):
 def jax_light_curve_quad_ld_abstract_eval(abstract_times, *abstract_params):
     """ Define the abstract evaluation. """
     # Define first model output.
-    abstract_model_eval = abstract_arrays.ShapedArray(
+    abstract_model_eval = jax.core.ShapedArray(
         abstract_times.shape, abstract_times.dtype)
 
     # Define second model output.
     n_params = len(abstract_params)
-    abstract_model_derivatives = abstract_arrays.ShapedArray(
+    abstract_model_derivatives = jax.core.ShapedArray(
         tuple(abstract_times.shape) + (n_params,), abstract_times.dtype)
 
     return abstract_model_eval, abstract_model_derivatives
@@ -208,12 +207,12 @@ def jax_light_curve_nonlinear_ld_prim(times, *params):
 def jax_light_curve_nonlinear_ld_abstract_eval(abstract_times, *abstract_params):
     """ Define the abstract evaluation. """
     # Define first model output.
-    abstract_model_eval = abstract_arrays.ShapedArray(
+    abstract_model_eval = jax.core.ShapedArray(
         abstract_times.shape, abstract_times.dtype)
 
     # Define second model output.
     n_params = len(abstract_params)
-    abstract_model_derivatives = abstract_arrays.ShapedArray(
+    abstract_model_derivatives = jax.core.ShapedArray(
         tuple(abstract_times.shape) + (n_params,), abstract_times.dtype)
 
     return abstract_model_eval, abstract_model_derivatives
@@ -290,7 +289,7 @@ xla_client.register_custom_call_target(
     b'jax_light_curve_nonlinear_ld', bindings.jax_registrations()['jax_light_curve_nonlinear_ld'])
 
 # Create a primitive for quad ld.
-jax_light_curve_quad_ld_p = core.Primitive('jax_light_curve_quad_ld')
+jax_light_curve_quad_ld_p = jax.core.Primitive('jax_light_curve_quad_ld')
 jax_light_curve_quad_ld_p.multiple_results = True
 jax_light_curve_quad_ld_p.def_impl(partial(xla.apply_primitive, jax_light_curve_quad_ld_p))
 jax_light_curve_quad_ld_p.def_abstract_eval(jax_light_curve_quad_ld_abstract_eval)
@@ -299,7 +298,7 @@ xla.backend_specific_translations['cpu'][jax_light_curve_quad_ld_p] = \
 ad.primitive_jvps[jax_light_curve_quad_ld_p] = jax_light_curve_quad_ld_value_and_jvp
 
 # Create a primitive for non-linear ld.
-jax_light_curve_nonlinear_ld_p = core.Primitive('jax_light_curve_nonlinear_ld')
+jax_light_curve_nonlinear_ld_p = jax.core.Primitive('jax_light_curve_nonlinear_ld')
 jax_light_curve_nonlinear_ld_p.multiple_results = True
 jax_light_curve_nonlinear_ld_p.def_impl(partial(xla.apply_primitive, jax_light_curve_nonlinear_ld_p))
 jax_light_curve_nonlinear_ld_p.def_abstract_eval(jax_light_curve_nonlinear_ld_abstract_eval)
