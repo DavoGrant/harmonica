@@ -1,5 +1,5 @@
-import jax
 import numpy as np
+from jax import config
 import jax.numpy as jnp
 from jaxlib import xla_client
 from functools import partial
@@ -9,7 +9,7 @@ from jax import abstract_arrays, core, xla
 from harmonica import bindings
 
 # Enable double floating precision.
-jax.config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", True)
 
 
 def harmonica_transit_quad_ld(times, t0, period, a, inc, ecc=0., omega=0.,
