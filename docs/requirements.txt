@@ -1,5 +1,10 @@
 numpy
+jax
+jaxlib
+scipy
+numpyro
 ipykernel
 nbsphinx
+sphinx_rtd_theme
 # Temporary fix for lexer errors
 ipython!=8.7.0
